@@ -65,6 +65,7 @@ const Dashboard = () => {
   };
 
   const handleKPIDoubleClick = (kpiTitle: string) => {
+    console.log("Opening modal for:", kpiTitle);
     setSelectedKPI(kpiTitle);
     setModalOpen(true);
   };
@@ -149,7 +150,10 @@ const Dashboard = () => {
               <KPICard 
                 key={idx} 
                 {...kpi} 
-                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                onDoubleClick={() => {
+                  console.log("KPI clicked:", kpi.title);
+                  handleKPIDoubleClick(kpi.title);
+                }}
               />
             ))}
           </div>
@@ -165,7 +169,10 @@ const Dashboard = () => {
               <KPICard 
                 key={idx} 
                 {...kpi}
-                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                onDoubleClick={() => {
+                  console.log("KPI clicked:", kpi.title);
+                  handleKPIDoubleClick(kpi.title);
+                }}
               />
             ))}
           </div>
