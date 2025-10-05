@@ -63,7 +63,7 @@ export const useKPIDetails = (kpiTitle: string) => {
       .not("fecha_cierre", "is", null)
       .order("fecha_cierre", { ascending: false });
 
-    const details = vacantes?.map((v) => {
+    const vacantesConDias = vacantes?.map((v) => {
       const dias = Math.ceil(
         (new Date(v.fecha_cierre!).getTime() - new Date(v.fecha_solicitud).getTime()) /
         (1000 * 60 * 60 * 24)
@@ -74,16 +74,51 @@ export const useKPIDetails = (kpiTitle: string) => {
         dias,
         cliente: v.clientes_areas?.cliente_nombre,
         estatus: "Cerrada",
+        fechaSolicitud: v.fecha_solicitud,
+        fechaCierre: v.fecha_cierre,
       };
     }) || [];
 
-    setData(details);
+    const totalVacantes = vacantesConDias.length;
+    const promedioDias = totalVacantes > 0 
+      ? Math.round(vacantesConDias.reduce((acc, v) => acc + v.dias, 0) / totalVacantes)
+      : 0;
+    
+    const mejorVacante = vacantesConDias.length > 0
+      ? vacantesConDias.reduce((min, v) => v.dias < min.dias ? v : min)
+      : null;
+    
+    const peorVacante = vacantesConDias.length > 0
+      ? vacantesConDias.reduce((max, v) => v.dias > max.dias ? v : max)
+      : null;
+
+    const estadisticas = [
+      {
+        metrica: "Total de vacantes cerradas",
+        valor: `${totalVacantes} vacantes`,
+      },
+      {
+        metrica: "Tiempo promedio de cobertura",
+        valor: `${promedioDias} días`,
+      },
+      {
+        metrica: "Mejor tiempo de cierre",
+        valor: mejorVacante ? `${mejorVacante.dias} días - ${mejorVacante.puesto} (${mejorVacante.folio})` : "N/A",
+      },
+      {
+        metrica: "Peor tiempo de cierre",
+        valor: peorVacante ? `${peorVacante.dias} días - ${peorVacante.puesto} (${peorVacante.folio})` : "N/A",
+      },
+    ];
+
+    setData([...estadisticas, ...vacantesConDias]);
     setColumns([
+      { key: "metrica", label: "Métrica" },
+      { key: "valor", label: "Valor" },
       { key: "folio", label: "Folio" },
       { key: "puesto", label: "Puesto" },
       { key: "dias", label: "Días" },
       { key: "cliente", label: "Cliente" },
-      { key: "estatus", label: "Estatus" },
     ]);
   };
 

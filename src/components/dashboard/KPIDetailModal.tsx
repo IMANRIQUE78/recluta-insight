@@ -43,9 +43,11 @@ export const KPIDetailModal = ({
               </TableHeader>
               <TableBody>
                 {data.map((row, idx) => (
-                  <TableRow key={idx}>
+                  <TableRow key={idx} className={row.metrica ? "bg-muted/30 font-semibold" : ""}>
                     {columns.map((col) => (
-                      <TableCell key={col.key}>{row[col.key]}</TableCell>
+                      <TableCell key={col.key}>
+                        {row[col.key] !== undefined ? row[col.key] : ""}
+                      </TableCell>
                     ))}
                   </TableRow>
                 ))}

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -39,11 +40,22 @@ const getEstatusLabel = (estatus: string) => {
 export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTableProps) => {
   const { toast } = useToast();
   const [vacantes, setVacantes] = useState<any[]>([]);
+  const [filteredVacantes, setFilteredVacantes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [reclutadores, setReclutadores] = useState<any[]>([]);
+  const [selectedCliente, setSelectedCliente] = useState<string>("todos");
+  const [selectedReclutador, setSelectedReclutador] = useState<string>("todos");
+  const [selectedEstatus, setSelectedEstatus] = useState<string>("todos");
 
   useEffect(() => {
     loadVacantes();
+    loadFilters();
   }, [refreshTrigger]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [vacantes, selectedCliente, selectedReclutador, selectedEstatus]);
 
   const loadVacantes = async () => {
     setLoading(true);
@@ -77,6 +89,49 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
     }
   };
 
+  const loadFilters = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [clientesData, reclutadoresData] = await Promise.all([
+        supabase
+          .from("clientes_areas")
+          .select("id, cliente_nombre, area")
+          .eq("user_id", user.id)
+          .order("cliente_nombre"),
+        supabase
+          .from("reclutadores")
+          .select("id, nombre")
+          .eq("user_id", user.id)
+          .order("nombre")
+      ]);
+
+      if (clientesData.data) setClientes(clientesData.data);
+      if (reclutadoresData.data) setReclutadores(reclutadoresData.data);
+    } catch (error) {
+      console.error("Error loading filters:", error);
+    }
+  };
+
+  const applyFilters = () => {
+    let filtered = [...vacantes];
+
+    if (selectedCliente !== "todos") {
+      filtered = filtered.filter(v => v.cliente_area_id === selectedCliente);
+    }
+
+    if (selectedReclutador !== "todos") {
+      filtered = filtered.filter(v => v.reclutador_id === selectedReclutador);
+    }
+
+    if (selectedEstatus !== "todos") {
+      filtered = filtered.filter(v => v.estatus === selectedEstatus);
+    }
+
+    setFilteredVacantes(filtered);
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-MX", {
       year: "numeric",
@@ -98,8 +153,51 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
             No hay vacantes registradas. Crea tu primera vacante.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
+          <>
+            <div className="flex gap-4 mb-4 flex-wrap">
+              <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Cliente/Área" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los clientes</SelectItem>
+                  {clientes.map((cliente) => (
+                    <SelectItem key={cliente.id} value={cliente.id}>
+                      {cliente.cliente_nombre} - {cliente.area}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedReclutador} onValueChange={setSelectedReclutador}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Reclutador Asignado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los reclutadores</SelectItem>
+                  {reclutadores.map((reclutador) => (
+                    <SelectItem key={reclutador.id} value={reclutador.id}>
+                      {reclutador.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={selectedEstatus} onValueChange={setSelectedEstatus}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Estatus" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los estatus</SelectItem>
+                  <SelectItem value="abierta">Abierta</SelectItem>
+                  <SelectItem value="cerrada">Cerrada</SelectItem>
+                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Folio</TableHead>
@@ -112,7 +210,7 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vacantes.map((vacante) => (
+                {filteredVacantes.map((vacante) => (
                   <TableRow
                     key={vacante.id}
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
@@ -145,6 +243,7 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
               </TableBody>
             </Table>
           </div>
+          </>
         )}
       </CardContent>
     </Card>
