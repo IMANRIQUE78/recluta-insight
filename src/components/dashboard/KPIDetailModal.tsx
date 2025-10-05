@@ -8,6 +8,7 @@ interface KPIDetailModalProps {
   description?: string;
   data: Array<Record<string, any>>;
   columns: Array<{ key: string; label: string }>;
+  loading?: boolean;
 }
 
 export const KPIDetailModal = ({ 
@@ -16,7 +17,8 @@ export const KPIDetailModal = ({
   title, 
   description, 
   data, 
-  columns 
+  columns,
+  loading = false
 }: KPIDetailModalProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -26,24 +28,30 @@ export const KPIDetailModal = ({
           {description && <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
         <div className="mt-4">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((col) => (
-                  <TableHead key={col.key}>{col.label}</TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((row, idx) => (
-                <TableRow key={idx}>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">Cargando datos...</div>
+          ) : data.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No hay datos disponibles</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
                   {columns.map((col) => (
-                    <TableCell key={col.key}>{row[col.key]}</TableCell>
+                    <TableHead key={col.key}>{col.label}</TableHead>
                   ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.map((row, idx) => (
+                  <TableRow key={idx}>
+                    {columns.map((col) => (
+                      <TableCell key={col.key}>{row[col.key]}</TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -8,6 +8,7 @@ import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { useKPIs } from "@/hooks/useKPIs";
+import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { 
   Clock, 
   TrendingUp, 
@@ -27,25 +28,12 @@ const Dashboard = () => {
   const [selectedVacante, setSelectedVacante] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { kpis: kpiData, loading: kpiLoading } = useKPIs(refreshTrigger);
+  const { data: detailData, columns: detailColumns, loading: detailLoading } = useKPIDetails(selectedKPI);
 
   const handleKPIDoubleClick = (kpiTitle: string) => {
     setSelectedKPI(kpiTitle);
     setModalOpen(true);
   };
-
-  const mockDetailData = [
-    { folio: "VAC-001", puesto: "Desarrollador Senior", dias: 28, cliente: "TechCorp", estatus: "Cerrada" },
-    { folio: "VAC-002", puesto: "Gerente de Ventas", dias: 35, cliente: "RetailMax", estatus: "Cerrada" },
-    { folio: "VAC-003", puesto: "Analista de Datos", dias: 21, cliente: "DataSolutions", estatus: "Cerrada" },
-  ];
-
-  const detailColumns = [
-    { key: "folio", label: "Folio" },
-    { key: "puesto", label: "Puesto" },
-    { key: "dias", label: "Días" },
-    { key: "cliente", label: "Cliente" },
-    { key: "estatus", label: "Estatus" },
-  ];
 
   const kpis = [
     {
@@ -194,8 +182,9 @@ const Dashboard = () => {
         onOpenChange={setModalOpen}
         title={`Detalles: ${selectedKPI}`}
         description="Datos que generan este indicador"
-        data={mockDetailData}
+        data={detailData}
         columns={detailColumns}
+        loading={detailLoading}
       />
     </div>
   );
