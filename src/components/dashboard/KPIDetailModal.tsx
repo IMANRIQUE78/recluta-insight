@@ -33,26 +33,46 @@ export const KPIDetailModal = ({
           ) : data.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">No hay datos disponibles</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {columns.map((col) => (
-                    <TableHead key={col.key}>{col.label}</TableHead>
+            <div className="space-y-6">
+              {/* Estadísticas resumidas */}
+              {data.some(row => row.metrica) && (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {data.filter(row => row.metrica).map((stat, idx) => (
+                    <div key={idx} className="p-4 bg-muted/30 rounded-lg border">
+                      <p className="text-sm font-medium text-muted-foreground">{stat.metrica}</p>
+                      <p className="text-2xl font-bold mt-1">{stat.valor}</p>
+                    </div>
                   ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((row, idx) => (
-                  <TableRow key={idx} className={row.metrica ? "bg-muted/30 font-semibold" : ""}>
-                    {columns.map((col) => (
-                      <TableCell key={col.key}>
-                        {row[col.key] !== undefined ? row[col.key] : ""}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </div>
+              )}
+
+              {/* Tabla de detalles */}
+              {data.some(row => !row.metrica) && (
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Detalle por vacante</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        {columns.filter(col => col.key !== 'metrica' && col.key !== 'valor').map((col) => (
+                          <TableHead key={col.key}>{col.label}</TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.filter(row => !row.metrica).map((row, idx) => (
+                        <TableRow key={idx}>
+                          {columns.filter(col => col.key !== 'metrica' && col.key !== 'valor').map((col) => (
+                            <TableCell key={col.key}>
+                              {row[col.key] !== undefined ? row[col.key] : ""}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </DialogContent>

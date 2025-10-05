@@ -1,13 +1,45 @@
+import { LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/components/ui/use-toast";
 
-export const DashboardHeader = () => {
-  const { signOut, user } = useAuth();
+interface DashboardHeaderProps {
+  clientes: Array<{ id: string; cliente_nombre: string; area: string }>;
+  reclutadores: Array<{ id: string; nombre: string }>;
+  selectedCliente: string;
+  selectedReclutador: string;
+  selectedEstatus: string;
+  onClienteChange: (value: string) => void;
+  onReclutadorChange: (value: string) => void;
+  onEstatusChange: (value: string) => void;
+}
+
+export const DashboardHeader = ({
+  clientes,
+  reclutadores,
+  selectedCliente,
+  selectedReclutador,
+  selectedEstatus,
+  onClienteChange,
+  onReclutadorChange,
+  onEstatusChange,
+}: DashboardHeaderProps) => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast({
+      title: "Sesión cerrada",
+      description: "Has cerrado sesión exitosamente",
+    });
+    navigate("/auth");
+  };
 
   return (
-    <div className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 py-4">
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -23,63 +55,57 @@ export const DashboardHeader = () => {
                 <User className="h-4 w-4" />
               </Button>
 
-              <Button variant="outline" onClick={signOut}>
+              <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Salir
               </Button>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Select defaultValue="30">
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
+          {/* Filtros Globales */}
+          <div className="grid gap-3 md:grid-cols-3">
+            <Select value={selectedCliente} onValueChange={onClienteChange}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Todos los clientes" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">Último mes</SelectItem>
-                <SelectItem value="90">Últimos 3 meses</SelectItem>
-                <SelectItem value="180">Últimos 6 meses</SelectItem>
-                <SelectItem value="365">Último año</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select defaultValue="todos">
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="todos">Todos los clientes</SelectItem>
-                <SelectItem value="interno">Cliente interno</SelectItem>
-                <SelectItem value="externo">Cliente externo</SelectItem>
+                {clientes.map((cliente) => (
+                  <SelectItem key={cliente.id} value={cliente.id}>
+                    {cliente.cliente_nombre} - {cliente.area}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <Select defaultValue="todos">
-              <SelectTrigger className="w-[180px]">
-                <SelectValue />
+            <Select value={selectedReclutador} onValueChange={onReclutadorChange}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Todos los reclutadores" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background z-50">
                 <SelectItem value="todos">Todos los reclutadores</SelectItem>
-                <SelectItem value="r1">María González</SelectItem>
-                <SelectItem value="r2">Juan Pérez</SelectItem>
-                <SelectItem value="r3">Ana Martínez</SelectItem>
+                {reclutadores.map((reclutador) => (
+                  <SelectItem key={reclutador.id} value={reclutador.id}>
+                    {reclutador.nombre}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
-            <Select defaultValue="todas">
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
+            <Select value={selectedEstatus} onValueChange={onEstatusChange}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Todos los estatus" />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todas">Todas las modalidades</SelectItem>
-                <SelectItem value="presencial">Presencial</SelectItem>
-                <SelectItem value="remoto">Remoto</SelectItem>
-                <SelectItem value="hibrido">Híbrido</SelectItem>
+              <SelectContent className="bg-background z-50">
+                <SelectItem value="todos">Todos los estatus</SelectItem>
+                <SelectItem value="abierta">Abierta</SelectItem>
+                <SelectItem value="cerrada">Cerrada</SelectItem>
+                <SelectItem value="cancelada">Cancelada</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };

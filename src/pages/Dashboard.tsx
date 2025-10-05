@@ -125,70 +125,19 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader />
+      <DashboardHeader 
+        clientes={clientes}
+        reclutadores={reclutadores}
+        selectedCliente={selectedCliente}
+        selectedReclutador={selectedReclutador}
+        selectedEstatus={selectedEstatus}
+        onClienteChange={setSelectedCliente}
+        onReclutadorChange={setSelectedReclutador}
+        onEstatusChange={setSelectedEstatus}
+      />
       
       <div className="container mx-auto px-4 py-8 space-y-8">
         <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
-
-        {/* Filtros Globales */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Filtros</CardTitle>
-            <CardDescription>Segmenta los datos por cliente, reclutador o estatus</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Cliente/Área</label>
-                <Select value={selectedCliente} onValueChange={setSelectedCliente}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los clientes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los clientes</SelectItem>
-                    {clientes.map((cliente) => (
-                      <SelectItem key={cliente.id} value={cliente.id}>
-                        {cliente.cliente_nombre} - {cliente.area}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Reclutador Asignado</label>
-                <Select value={selectedReclutador} onValueChange={setSelectedReclutador}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los reclutadores" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los reclutadores</SelectItem>
-                    {reclutadores.map((reclutador) => (
-                      <SelectItem key={reclutador.id} value={reclutador.id}>
-                        {reclutador.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Estatus</label>
-                <Select value={selectedEstatus} onValueChange={setSelectedEstatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todos los estatus" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los estatus</SelectItem>
-                    <SelectItem value="abierta">Abierta</SelectItem>
-                    <SelectItem value="cerrada">Cerrada</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <section>
           <div className="mb-6">
