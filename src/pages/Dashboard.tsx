@@ -1,0 +1,181 @@
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { QuickActions } from "@/components/dashboard/QuickActions";
+import { 
+  Clock, 
+  TrendingUp, 
+  DollarSign, 
+  Users, 
+  Target,
+  XCircle,
+  Award,
+  UserCheck
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+const Dashboard = () => {
+  // Datos de ejemplo
+  const kpis = [
+    {
+      title: "Tiempo Promedio de Cobertura",
+      value: 28,
+      unit: "días",
+      trend: -12,
+      icon: <Clock className="h-4 w-4" />,
+    },
+    {
+      title: "Tasa de Éxito de Cierre",
+      value: 85,
+      unit: "%",
+      trend: 5,
+      icon: <Target className="h-4 w-4" />,
+    },
+    {
+      title: "Tasa de Cancelación",
+      value: 8,
+      unit: "%",
+      trend: -3,
+      icon: <XCircle className="h-4 w-4" />,
+    },
+    {
+      title: "Vacantes Abiertas",
+      value: 24,
+      trend: 15,
+      icon: <TrendingUp className="h-4 w-4" />,
+    },
+    {
+      title: "Costo por Contratación",
+      value: "$12,500",
+      trend: -8,
+      icon: <DollarSign className="h-4 w-4" />,
+    },
+    {
+      title: "Satisfacción del Cliente",
+      value: 4.3,
+      unit: "/5",
+      trend: 2,
+      icon: <Award className="h-4 w-4" />,
+    },
+    {
+      title: "Tasa de Rotación",
+      value: 12,
+      unit: "%",
+      trend: -5,
+      icon: <Users className="h-4 w-4" />,
+    },
+    {
+      title: "Entrevistados vs Contratados",
+      value: "1:4.2",
+      icon: <UserCheck className="h-4 w-4" />,
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      <DashboardHeader />
+      
+      <div className="container mx-auto px-4 py-8 space-y-8">
+        <QuickActions />
+
+        <section>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">Resumen Ejecutivo</h2>
+            <p className="text-muted-foreground">Métricas clave de tus procesos de reclutamiento</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {kpis.slice(0, 4).map((kpi, idx) => (
+              <KPICard key={idx} {...kpi} />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-2">Eficiencia Operativa</h2>
+            <p className="text-muted-foreground">Costos y productividad del equipo</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {kpis.slice(4, 8).map((kpi, idx) => (
+              <KPICard key={idx} {...kpi} />
+            ))}
+          </div>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-2">
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Vacantes Críticas</CardTitle>
+              <CardDescription>Vacantes con tiempo de cobertura elevado</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { puesto: "Desarrollador Senior Full Stack", dias: 45, cliente: "TechCorp" },
+                  { puesto: "Gerente de Operaciones", dias: 38, cliente: "RetailMax" },
+                  { puesto: "Analista de Datos", dias: 35, cliente: "DataSolutions" },
+                ].map((vacante, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                    <div className="flex-1">
+                      <p className="font-medium">{vacante.puesto}</p>
+                      <p className="text-sm text-muted-foreground">{vacante.cliente}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-destructive">{vacante.dias} días</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Fuentes Más Efectivas</CardTitle>
+              <CardDescription>De donde provienen tus mejores candidatos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[
+                  { fuente: "LinkedIn", contratados: 45, tasa: 18 },
+                  { fuente: "Referidos", contratados: 32, tasa: 28 },
+                  { fuente: "Portales de Empleo", contratados: 28, tasa: 12 },
+                  { fuente: "Base Interna", contratados: 15, tasa: 22 },
+                ].map((fuente, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{fuente.fuente}</span>
+                      <span className="text-sm font-bold text-success">{fuente.tasa}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-gradient-primary rounded-full transition-all"
+                          style={{ width: `${fuente.tasa * 3}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground">{fuente.contratados}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
+        <Card className="shadow-md">
+          <CardHeader>
+            <CardTitle>Pronóstico de Demanda de Personal</CardTitle>
+            <CardDescription>Proyección de vacantes para los próximos 6 meses</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64 flex items-center justify-center text-muted-foreground">
+              Gráfico de pronóstico (próximamente)
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
