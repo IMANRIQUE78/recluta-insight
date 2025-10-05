@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface VacanteFormProps {
   open: boolean;
@@ -22,7 +25,6 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   const [reclutadores, setReclutadores] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
-    folio: "",
     titulo_puesto: "",
     cliente_area_id: "",
     fecha_solicitud: new Date().toISOString().split('T')[0],
@@ -30,10 +32,14 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
     estatus: "abierta" as const,
     motivo: "crecimiento" as const,
     lugar_trabajo: "hibrido" as const,
-    senioridad: "junior" as const,
     sueldo_bruto_aprobado: "",
     observaciones: "",
   });
+
+  const [openClienteCombo, setOpenClienteCombo] = useState(false);
+  const [openReclutadorCombo, setOpenReclutadorCombo] = useState(false);
+  const [newClienteValue, setNewClienteValue] = useState("");
+  const [newReclutadorValue, setNewReclutadorValue] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -72,11 +78,19 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      const { error } = await supabase.from("vacantes").insert({
-        ...formData,
-        user_id: user.id,
+      const { error } = await supabase.from("vacantes").insert([{
+        titulo_puesto: formData.titulo_puesto,
+        cliente_area_id: formData.cliente_area_id,
+        fecha_solicitud: formData.fecha_solicitud,
+        reclutador_id: formData.reclutador_id || null,
+        estatus: formData.estatus,
+        motivo: formData.motivo,
+        lugar_trabajo: formData.lugar_trabajo,
         sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
-      });
+        observaciones: formData.observaciones || null,
+        user_id: user.id,
+        folio: "", // El trigger lo generará automáticamente
+      }]);
 
       if (error) throw error;
 
@@ -99,9 +113,72 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
     }
   };
 
+  const handleAddCliente = async () => {
+    if (!newClienteValue.trim()) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("clientes_areas")
+        .insert({
+          cliente_nombre: newClienteValue,
+          area: "General",
+          tipo_cliente: "interno",
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await loadClientes();
+      setFormData({ ...formData, cliente_area_id: data.id });
+      setNewClienteValue("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAddReclutador = async () => {
+    if (!newReclutadorValue.trim()) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("reclutadores")
+        .insert({
+          nombre: newReclutadorValue,
+          correo: `${newReclutadorValue.toLowerCase().replace(/\s/g, '.')}@example.com`,
+          senioridad: "junior",
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      await loadReclutadores();
+      setFormData({ ...formData, reclutador_id: data.id });
+      setNewReclutadorValue("");
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
-      folio: "",
       titulo_puesto: "",
       cliente_area_id: "",
       fecha_solicitud: new Date().toISOString().split('T')[0],
@@ -109,7 +186,6 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       estatus: "abierta",
       motivo: "crecimiento",
       lugar_trabajo: "hibrido",
-      senioridad: "junior",
       sueldo_bruto_aprobado: "",
       observaciones: "",
     });
@@ -124,28 +200,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="folio">Folio Único*</Label>
-              <Input
-                id="folio"
-                value={formData.folio}
-                onChange={(e) => setFormData({ ...formData, folio: e.target.value })}
-                placeholder="VAC-001"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fecha_solicitud">Fecha de Solicitud*</Label>
-              <Input
-                id="fecha_solicitud"
-                type="date"
-                value={formData.fecha_solicitud}
-                onChange={(e) => setFormData({ ...formData, fecha_solicitud: e.target.value })}
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="fecha_solicitud">Fecha de Solicitud*</Label>
+            <Input
+              id="fecha_solicitud"
+              type="date"
+              value={formData.fecha_solicitud}
+              onChange={(e) => setFormData({ ...formData, fecha_solicitud: e.target.value })}
+              required
+            />
           </div>
 
           <div className="space-y-2">
@@ -161,42 +224,121 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente/Área*</Label>
-              <Select
-                value={formData.cliente_area_id}
-                onValueChange={(value) => setFormData({ ...formData, cliente_area_id: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente" />
-                </SelectTrigger>
-                <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.cliente_nombre} - {cliente.area} ({cliente.tipo_cliente})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Cliente/Área*</Label>
+              <Popover open={openClienteCombo} onOpenChange={setOpenClienteCombo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openClienteCombo}
+                    className="w-full justify-between"
+                  >
+                    {formData.cliente_area_id
+                      ? clientes.find((c) => c.id === formData.cliente_area_id)?.cliente_nombre
+                      : "Seleccionar cliente..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Buscar o crear cliente..." 
+                      value={newClienteValue}
+                      onValueChange={setNewClienteValue}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <Button
+                          variant="ghost"
+                          className="w-full"
+                          onClick={handleAddCliente}
+                        >
+                          Crear "{newClienteValue}"
+                        </Button>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {clientes.map((cliente) => (
+                          <CommandItem
+                            key={cliente.id}
+                            value={cliente.cliente_nombre}
+                            onSelect={() => {
+                              setFormData({ ...formData, cliente_area_id: cliente.id });
+                              setOpenClienteCombo(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.cliente_area_id === cliente.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {cliente.cliente_nombre} - {cliente.area}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="reclutador">Reclutador Asignado</Label>
-              <Select
-                value={formData.reclutador_id}
-                onValueChange={(value) => setFormData({ ...formData, reclutador_id: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sin asignar" />
-                </SelectTrigger>
-                <SelectContent>
-                  {reclutadores.map((reclutador) => (
-                    <SelectItem key={reclutador.id} value={reclutador.id}>
-                      {reclutador.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Reclutador Asignado</Label>
+              <Popover open={openReclutadorCombo} onOpenChange={setOpenReclutadorCombo}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={openReclutadorCombo}
+                    className="w-full justify-between"
+                  >
+                    {formData.reclutador_id
+                      ? reclutadores.find((r) => r.id === formData.reclutador_id)?.nombre
+                      : "Sin asignar..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Buscar o crear reclutador..." 
+                      value={newReclutadorValue}
+                      onValueChange={setNewReclutadorValue}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        <Button
+                          variant="ghost"
+                          className="w-full"
+                          onClick={handleAddReclutador}
+                        >
+                          Crear "{newReclutadorValue}"
+                        </Button>
+                      </CommandEmpty>
+                      <CommandGroup>
+                        {reclutadores.map((reclutador) => (
+                          <CommandItem
+                            key={reclutador.id}
+                            value={reclutador.nombre}
+                            onSelect={() => {
+                              setFormData({ ...formData, reclutador_id: reclutador.id });
+                              setOpenReclutadorCombo(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.reclutador_id === reclutador.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {reclutador.nombre}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -220,25 +362,6 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="senioridad">Senioridad*</Label>
-              <Select
-                value={formData.senioridad}
-                onValueChange={(value: any) => setFormData({ ...formData, senioridad: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="junior">Junior</SelectItem>
-                  <SelectItem value="senior">Senior</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
               <Label htmlFor="lugar_trabajo">Modalidad de Trabajo*</Label>
               <Select
                 value={formData.lugar_trabajo}
@@ -255,17 +378,17 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sueldo">Sueldo Bruto Aprobado</Label>
-              <Input
-                id="sueldo"
-                type="number"
-                value={formData.sueldo_bruto_aprobado}
-                onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="sueldo">Sueldo Bruto Aprobado</Label>
+            <Input
+              id="sueldo"
+              type="number"
+              value={formData.sueldo_bruto_aprobado}
+              onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
+              placeholder="0.00"
+            />
           </div>
 
           <div className="space-y-2">

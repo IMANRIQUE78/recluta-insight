@@ -34,7 +34,6 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
     estatus: "abierta" | "cerrada" | "cancelada";
     motivo: "crecimiento" | "reposicion" | "temporal";
     lugar_trabajo: "hibrido" | "remoto" | "presencial";
-    senioridad: "junior" | "senior";
     sueldo_bruto_aprobado: string;
     observaciones: string;
   }>({
@@ -47,7 +46,6 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
     estatus: "abierta",
     motivo: "crecimiento",
     lugar_trabajo: "hibrido",
-    senioridad: "junior",
     sueldo_bruto_aprobado: "",
     observaciones: "",
   });
@@ -66,7 +64,6 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         estatus: vacante.estatus || "abierta",
         motivo: vacante.motivo || "crecimiento",
         lugar_trabajo: vacante.lugar_trabajo || "hibrido",
-        senioridad: vacante.senioridad || "junior",
         sueldo_bruto_aprobado: vacante.sueldo_bruto_aprobado?.toString() || "",
         observaciones: vacante.observaciones || "",
       });
@@ -292,25 +289,6 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="senioridad">Senioridad</Label>
-              <Select
-                value={formData.senioridad}
-                onValueChange={(value: any) => setFormData({ ...formData, senioridad: value })}
-                disabled={isLocked}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="junior">Junior</SelectItem>
-                  <SelectItem value="senior">Senior</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="lugar_trabajo">Modalidad de Trabajo</Label>
               <Select

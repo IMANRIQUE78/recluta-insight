@@ -31,6 +31,8 @@ const Dashboard = () => {
     setModalOpen(true);
   };
 
+  const [kpiData, setKpiData] = useState<any[]>([]);
+  
   const mockDetailData = [
     { folio: "VAC-001", puesto: "Desarrollador Senior", dias: 28, cliente: "TechCorp", estatus: "Cerrada" },
     { folio: "VAC-002", puesto: "Gerente de Ventas", dias: 35, cliente: "RetailMax", estatus: "Cerrada" },
