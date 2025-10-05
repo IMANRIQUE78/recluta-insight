@@ -2,7 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Upload, FileSpreadsheet } from "lucide-react";
 
-export const QuickActions = () => {
+interface QuickActionsProps {
+  onNewVacante: () => void;
+}
+
+export const QuickActions = ({ onNewVacante }: QuickActionsProps) => {
   return (
     <Card className="shadow-md">
       <CardHeader>
@@ -10,7 +14,11 @@ export const QuickActions = () => {
         <CardDescription>Gestiona tus datos de reclutamiento</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-3">
-        <Button className="w-full justify-start" variant="outline">
+        <Button 
+          className="w-full justify-start" 
+          variant="outline"
+          onClick={onNewVacante}
+        >
           <Plus className="mr-2 h-4 w-4" />
           Nueva Vacante
         </Button>

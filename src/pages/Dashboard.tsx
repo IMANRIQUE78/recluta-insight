@@ -4,6 +4,9 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ForecastChart } from "@/components/dashboard/ForecastChart";
 import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
+import { VacanteForm } from "@/components/dashboard/VacanteForm";
+import { VacantesTable } from "@/components/dashboard/VacantesTable";
+import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { 
   Clock, 
   TrendingUp, 
@@ -19,6 +22,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 const Dashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
+  const [vacanteFormOpen, setVacanteFormOpen] = useState(false);
+  const [selectedVacante, setSelectedVacante] = useState<any>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleKPIDoubleClick = (kpiTitle: string) => {
     setSelectedKPI(kpiTitle);
@@ -95,14 +101,16 @@ const Dashboard = () => {
     },
   ];
 
+  const handleVacanteSuccess = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader />
       
       <div className="container mx-auto px-4 py-8 space-y-8">
-        <QuickActions />
-
-        <ForecastChart />
+        <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
 
         <section>
           <div className="mb-6">
@@ -135,6 +143,8 @@ const Dashboard = () => {
             ))}
           </div>
         </section>
+
+        <ForecastChart />
 
         <section className="grid gap-4 md:grid-cols-2">
           <Card className="shadow-md">
@@ -197,7 +207,26 @@ const Dashboard = () => {
           </Card>
         </section>
 
+        <VacantesTable 
+          onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
+          refreshTrigger={refreshTrigger}
+        />
       </div>
+
+      <VacanteForm
+        open={vacanteFormOpen}
+        onOpenChange={setVacanteFormOpen}
+        onSuccess={handleVacanteSuccess}
+      />
+
+      {selectedVacante && (
+        <VacanteDetailModal
+          open={!!selectedVacante}
+          onOpenChange={(open) => !open && setSelectedVacante(null)}
+          vacante={selectedVacante}
+          onSuccess={handleVacanteSuccess}
+        />
+      )}
 
       <KPIDetailModal
         open={modalOpen}
