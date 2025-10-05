@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditoria_vacantes: {
+        Row: {
+          created_at: string
+          estatus_anterior: string | null
+          estatus_nuevo: string
+          fecha_cambio: string
+          id: string
+          observaciones: string | null
+          user_id: string
+          vacante_id: string
+        }
+        Insert: {
+          created_at?: string
+          estatus_anterior?: string | null
+          estatus_nuevo: string
+          fecha_cambio?: string
+          id?: string
+          observaciones?: string | null
+          user_id: string
+          vacante_id: string
+        }
+        Update: {
+          created_at?: string
+          estatus_anterior?: string | null
+          estatus_nuevo?: string
+          fecha_cambio?: string
+          id?: string
+          observaciones?: string | null
+          user_id?: string
+          vacante_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_vacantes_vacante_id_fkey"
+            columns: ["vacante_id"]
+            isOneToOne: false
+            referencedRelation: "vacantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidatos: {
         Row: {
           contratado: boolean

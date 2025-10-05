@@ -101,6 +101,12 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
     setLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
+      const estatusAnterior = vacante.estatus;
+      const estatusNuevo = formData.estatus;
+
       const updateData: any = {
         ...formData,
         sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
@@ -117,6 +123,23 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         .eq("id", vacante.id);
 
       if (error) throw error;
+
+      // Registrar auditoría si cambió el estatus
+      if (estatusAnterior !== estatusNuevo) {
+        const { error: auditError } = await supabase
+          .from("auditoria_vacantes")
+          .insert({
+            vacante_id: vacante.id,
+            estatus_anterior: estatusAnterior,
+            estatus_nuevo: estatusNuevo,
+            user_id: user.id,
+            observaciones: `Cambio de estado de ${estatusAnterior} a ${estatusNuevo}`,
+          });
+
+        if (auditError) {
+          console.error("Error al registrar auditoría:", auditError);
+        }
+      }
 
       toast({
         title: "Vacante actualizada",
