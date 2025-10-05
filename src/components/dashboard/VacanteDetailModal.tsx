@@ -27,26 +27,30 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [formData, setFormData] = useState<{
     folio: string;
     titulo_puesto: string;
+    sueldo_bruto_aprobado: string;
     cliente_area_id: string;
     fecha_solicitud: string;
-    fecha_cierre: string;
-    reclutador_id: string;
     estatus: "abierta" | "cerrada" | "cancelada";
-    motivo: "crecimiento" | "reposicion" | "temporal";
+    reclutador_id: string;
     lugar_trabajo: "hibrido" | "remoto" | "presencial";
-    sueldo_bruto_aprobado: string;
+    motivo: "baja_personal" | "incapacidad" | "crecimiento_negocio" | "nuevo_puesto";
+    a_quien_sustituye: string;
+    perfil_requerido: string;
+    fecha_cierre: string;
     observaciones: string;
   }>({
     folio: "",
     titulo_puesto: "",
+    sueldo_bruto_aprobado: "",
     cliente_area_id: "",
     fecha_solicitud: "",
-    fecha_cierre: "",
-    reclutador_id: "",
     estatus: "abierta",
-    motivo: "crecimiento",
+    reclutador_id: "",
     lugar_trabajo: "hibrido",
-    sueldo_bruto_aprobado: "",
+    motivo: "crecimiento_negocio",
+    a_quien_sustituye: "",
+    perfil_requerido: "",
+    fecha_cierre: "",
     observaciones: "",
   });
 
@@ -57,14 +61,16 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       setFormData({
         folio: vacante.folio || "",
         titulo_puesto: vacante.titulo_puesto || "",
+        sueldo_bruto_aprobado: vacante.sueldo_bruto_aprobado?.toString() || "",
         cliente_area_id: vacante.cliente_area_id || "",
         fecha_solicitud: vacante.fecha_solicitud || "",
-        fecha_cierre: vacante.fecha_cierre || "",
-        reclutador_id: vacante.reclutador_id || "",
         estatus: vacante.estatus || "abierta",
-        motivo: vacante.motivo || "crecimiento",
+        reclutador_id: vacante.reclutador_id || "",
         lugar_trabajo: vacante.lugar_trabajo || "hibrido",
-        sueldo_bruto_aprobado: vacante.sueldo_bruto_aprobado?.toString() || "",
+        motivo: vacante.motivo || "crecimiento_negocio",
+        a_quien_sustituye: vacante.a_quien_sustituye || "",
+        perfil_requerido: vacante.perfil_requerido || "",
+        fecha_cierre: vacante.fecha_cierre || "",
         observaciones: vacante.observaciones || "",
       });
       loadClientes();
@@ -200,31 +206,20 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="folio">Folio Único</Label>
-              <Input
-                id="folio"
-                value={formData.folio}
-                onChange={(e) => setFormData({ ...formData, folio: e.target.value })}
-                disabled={isLocked}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="fecha_solicitud">Fecha de Solicitud</Label>
-              <Input
-                id="fecha_solicitud"
-                type="date"
-                value={formData.fecha_solicitud}
-                onChange={(e) => setFormData({ ...formData, fecha_solicitud: e.target.value })}
-                disabled={isLocked}
-              />
-            </div>
+          {/* ID Único - Solo lectura */}
+          <div className="space-y-2">
+            <Label htmlFor="folio">ID Único de Vacante</Label>
+            <Input
+              id="folio"
+              value={formData.folio}
+              disabled
+              className="bg-muted"
+            />
           </div>
 
+          {/* Nombre de la Vacante */}
           <div className="space-y-2">
-            <Label htmlFor="titulo_puesto">Título del Puesto</Label>
+            <Label htmlFor="titulo_puesto">Nombre de la Vacante*</Label>
             <Input
               id="titulo_puesto"
               value={formData.titulo_puesto}
@@ -233,29 +228,75 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             />
           </div>
 
+          {/* Sueldo */}
+          <div className="space-y-2">
+            <Label htmlFor="sueldo">Sueldo</Label>
+            <Input
+              id="sueldo"
+              type="number"
+              value={formData.sueldo_bruto_aprobado}
+              onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
+              disabled={isLocked}
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Cliente / Área */}
+          <div className="space-y-2">
+            <Label htmlFor="cliente">Cliente / Área*</Label>
+            <Select
+              value={formData.cliente_area_id}
+              onValueChange={(value) => setFormData({ ...formData, cliente_area_id: value })}
+              disabled={isLocked}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar cliente" />
+              </SelectTrigger>
+              <SelectContent>
+                {clientes.map((cliente) => (
+                  <SelectItem key={cliente.id} value={cliente.id}>
+                    {cliente.cliente_nombre} - {cliente.area}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Fecha de Registro - Solo lectura */}
+          <div className="space-y-2">
+            <Label htmlFor="fecha_solicitud">Fecha de Registro</Label>
+            <Input
+              id="fecha_solicitud"
+              type="datetime-local"
+              value={formData.fecha_solicitud}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
+            {/* Estatus */}
             <div className="space-y-2">
-              <Label htmlFor="cliente">Cliente/Área</Label>
+              <Label htmlFor="estatus">Estatus*</Label>
               <Select
-                value={formData.cliente_area_id}
-                onValueChange={(value) => setFormData({ ...formData, cliente_area_id: value })}
+                value={formData.estatus}
+                onValueChange={(value: any) => setFormData({ ...formData, estatus: value })}
                 disabled={isLocked}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar cliente" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.cliente_nombre} - {cliente.area}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="abierta">Abierta</SelectItem>
+                  <SelectItem value="cerrada">Cerrada</SelectItem>
+                  <SelectItem value="cancelada">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Reclutador */}
             <div className="space-y-2">
-              <Label htmlFor="reclutador">Reclutador Asignado</Label>
+              <Label htmlFor="reclutador">Reclutador</Label>
               <Select
                 value={formData.reclutador_id}
                 onValueChange={(value) => setFormData({ ...formData, reclutador_id: value })}
@@ -275,45 +316,10 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Lugar de trabajo */}
             <div className="space-y-2">
-              <Label htmlFor="estatus">Estatus</Label>
-              <Select
-                value={formData.estatus}
-                onValueChange={(value: any) => setFormData({ ...formData, estatus: value })}
-                disabled={isLocked}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="abierta">Abierta</SelectItem>
-                  <SelectItem value="cerrada">Cerrada</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="motivo">Motivo</Label>
-              <Select
-                value={formData.motivo}
-                onValueChange={(value: any) => setFormData({ ...formData, motivo: value })}
-                disabled={isLocked}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="crecimiento">Crecimiento</SelectItem>
-                  <SelectItem value="reposicion">Reposición</SelectItem>
-                  <SelectItem value="temporal">Temporal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lugar_trabajo">Modalidad de Trabajo</Label>
+              <Label htmlFor="lugar_trabajo">Lugar de Trabajo*</Label>
               <Select
                 value={formData.lugar_trabajo}
                 onValueChange={(value: any) => setFormData({ ...formData, lugar_trabajo: value })}
@@ -330,30 +336,71 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
               </Select>
             </div>
 
+            {/* Motivo que origina la vacante */}
             <div className="space-y-2">
-              <Label htmlFor="sueldo">Sueldo Bruto Aprobado</Label>
-              <Input
-                id="sueldo"
-                type="number"
-                value={formData.sueldo_bruto_aprobado}
-                onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
+              <Label htmlFor="motivo">Motivo que origina la vacante*</Label>
+              <Select
+                value={formData.motivo}
+                onValueChange={(value: any) => setFormData({ ...formData, motivo: value })}
                 disabled={isLocked}
-              />
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baja_personal">Baja de personal</SelectItem>
+                  <SelectItem value="incapacidad">Incapacidad</SelectItem>
+                  <SelectItem value="crecimiento_negocio">Crecimiento de negocio</SelectItem>
+                  <SelectItem value="nuevo_puesto">Nuevo puesto</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          {formData.fecha_cierre && (
+          {/* Campo condicional: A quien sustituye */}
+          {(formData.motivo === "baja_personal" || formData.motivo === "incapacidad") && (
             <div className="space-y-2">
-              <Label htmlFor="fecha_cierre">Fecha de Cierre</Label>
+              <Label htmlFor="a_quien_sustituye">¿A quién sustituye?</Label>
               <Input
-                id="fecha_cierre"
-                type="date"
-                value={formData.fecha_cierre}
-                disabled
+                id="a_quien_sustituye"
+                value={formData.a_quien_sustituye}
+                onChange={(e) => setFormData({ ...formData, a_quien_sustituye: e.target.value })}
+                disabled={isLocked}
+                placeholder="Nombre de la persona a sustituir"
               />
             </div>
           )}
 
+          {/* Perfil requerido */}
+          <div className="space-y-2">
+            <Label htmlFor="perfil_requerido">Perfil Requerido</Label>
+            <Textarea
+              id="perfil_requerido"
+              value={formData.perfil_requerido}
+              onChange={(e) => setFormData({ ...formData, perfil_requerido: e.target.value })}
+              rows={3}
+              disabled={isLocked}
+              placeholder="Resumen del perfil requerido para la vacante..."
+            />
+          </div>
+
+          {/* Timestamp condicional de cierre */}
+          <div className="space-y-2">
+            <Label htmlFor="fecha_cierre">Fecha de Cierre</Label>
+            <Input
+              id="fecha_cierre"
+              type="text"
+              value={
+                formData.estatus === "abierta" 
+                  ? "En proceso" 
+                  : formData.fecha_cierre || "Sin fecha"
+              }
+              disabled
+              className="bg-muted"
+            />
+          </div>
+
+          {/* Observaciones */}
           <div className="space-y-2">
             <Label htmlFor="observaciones">Observaciones</Label>
             <Textarea

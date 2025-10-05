@@ -26,13 +26,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   
   const [formData, setFormData] = useState({
     titulo_puesto: "",
+    sueldo_bruto_aprobado: "",
     cliente_area_id: "",
     fecha_solicitud: new Date().toISOString().split('T')[0],
-    reclutador_id: "",
     estatus: "abierta" as const,
-    motivo: "crecimiento" as const,
+    reclutador_id: "",
     lugar_trabajo: "hibrido" as const,
-    sueldo_bruto_aprobado: "",
+    motivo: "crecimiento_negocio" as "baja_personal" | "incapacidad" | "crecimiento_negocio" | "nuevo_puesto",
+    a_quien_sustituye: "",
+    perfil_requerido: "",
     observaciones: "",
   });
 
@@ -80,13 +82,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
 
       const { error } = await supabase.from("vacantes").insert([{
         titulo_puesto: formData.titulo_puesto,
+        sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
         cliente_area_id: formData.cliente_area_id,
         fecha_solicitud: formData.fecha_solicitud,
-        reclutador_id: formData.reclutador_id || null,
         estatus: formData.estatus,
-        motivo: formData.motivo,
+        reclutador_id: formData.reclutador_id || null,
         lugar_trabajo: formData.lugar_trabajo,
-        sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
+        motivo: formData.motivo,
+        a_quien_sustituye: (formData.motivo === "baja_personal" || formData.motivo === "incapacidad") ? formData.a_quien_sustituye : null,
+        perfil_requerido: formData.perfil_requerido || null,
         observaciones: formData.observaciones || null,
         user_id: user.id,
         folio: "", // El trigger lo generará automáticamente
@@ -180,13 +184,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   const resetForm = () => {
     setFormData({
       titulo_puesto: "",
+      sueldo_bruto_aprobado: "",
       cliente_area_id: "",
       fecha_solicitud: new Date().toISOString().split('T')[0],
-      reclutador_id: "",
       estatus: "abierta",
-      motivo: "crecimiento",
+      reclutador_id: "",
       lugar_trabajo: "hibrido",
-      sueldo_bruto_aprobado: "",
+      motivo: "crecimiento_negocio",
+      a_quien_sustituye: "",
+      perfil_requerido: "",
       observaciones: "",
     });
   };
@@ -201,24 +207,24 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="fecha_solicitud">Fecha de Solicitud*</Label>
-            <Input
-              id="fecha_solicitud"
-              type="date"
-              value={formData.fecha_solicitud}
-              onChange={(e) => setFormData({ ...formData, fecha_solicitud: e.target.value })}
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="titulo_puesto">Título del Puesto*</Label>
+            <Label htmlFor="titulo_puesto">Nombre de la Vacante*</Label>
             <Input
               id="titulo_puesto"
               value={formData.titulo_puesto}
               onChange={(e) => setFormData({ ...formData, titulo_puesto: e.target.value })}
               placeholder="Desarrollador Senior Full Stack"
               required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sueldo">Sueldo</Label>
+            <Input
+              id="sueldo"
+              type="number"
+              value={formData.sueldo_bruto_aprobado}
+              onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
+              placeholder="0.00"
             />
           </div>
 
@@ -342,27 +348,20 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="fecha_solicitud">Fecha de Registro*</Label>
+            <Input
+              id="fecha_solicitud"
+              type="date"
+              value={formData.fecha_solicitud}
+              onChange={(e) => setFormData({ ...formData, fecha_solicitud: e.target.value })}
+              required
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="motivo">Motivo*</Label>
-              <Select
-                value={formData.motivo}
-                onValueChange={(value: any) => setFormData({ ...formData, motivo: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="crecimiento">Crecimiento</SelectItem>
-                  <SelectItem value="reposicion">Reposición</SelectItem>
-                  <SelectItem value="temporal">Temporal</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="lugar_trabajo">Modalidad de Trabajo*</Label>
+              <Label htmlFor="lugar_trabajo">Lugar de Trabajo*</Label>
               <Select
                 value={formData.lugar_trabajo}
                 onValueChange={(value: any) => setFormData({ ...formData, lugar_trabajo: value })}
@@ -378,16 +377,47 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="motivo">Motivo que origina la vacante*</Label>
+              <Select
+                value={formData.motivo}
+                onValueChange={(value: any) => setFormData({ ...formData, motivo: value })}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baja_personal">Baja de personal</SelectItem>
+                  <SelectItem value="incapacidad">Incapacidad</SelectItem>
+                  <SelectItem value="crecimiento_negocio">Crecimiento de negocio</SelectItem>
+                  <SelectItem value="nuevo_puesto">Nuevo puesto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
+          {(formData.motivo === "baja_personal" || formData.motivo === "incapacidad") && (
+            <div className="space-y-2">
+              <Label htmlFor="a_quien_sustituye">¿A quién sustituye?</Label>
+              <Input
+                id="a_quien_sustituye"
+                value={formData.a_quien_sustituye}
+                onChange={(e) => setFormData({ ...formData, a_quien_sustituye: e.target.value })}
+                placeholder="Nombre de la persona a sustituir"
+              />
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label htmlFor="sueldo">Sueldo Bruto Aprobado</Label>
-            <Input
-              id="sueldo"
-              type="number"
-              value={formData.sueldo_bruto_aprobado}
-              onChange={(e) => setFormData({ ...formData, sueldo_bruto_aprobado: e.target.value })}
-              placeholder="0.00"
+            <Label htmlFor="perfil_requerido">Perfil Requerido</Label>
+            <Textarea
+              id="perfil_requerido"
+              value={formData.perfil_requerido}
+              onChange={(e) => setFormData({ ...formData, perfil_requerido: e.target.value })}
+              placeholder="Resumen del perfil requerido para la vacante..."
+              rows={3}
             />
           </div>
 

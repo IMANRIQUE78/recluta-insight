@@ -394,6 +394,7 @@ export type Database = {
       }
       vacantes: {
         Row: {
+          a_quien_sustituye: string | null
           cliente_area_id: string
           created_at: string
           estatus: Database["public"]["Enums"]["estatus_vacante"]
@@ -404,6 +405,7 @@ export type Database = {
           lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones: string | null
+          perfil_requerido: string | null
           reclutador_id: string | null
           sueldo_bruto_aprobado: number | null
           titulo_puesto: string
@@ -411,6 +413,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          a_quien_sustituye?: string | null
           cliente_area_id: string
           created_at?: string
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
@@ -421,6 +424,7 @@ export type Database = {
           lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
+          perfil_requerido?: string | null
           reclutador_id?: string | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto: string
@@ -428,6 +432,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          a_quien_sustituye?: string | null
           cliente_area_id?: string
           created_at?: string
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
@@ -438,6 +443,7 @@ export type Database = {
           lugar_trabajo?: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo?: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
+          perfil_requerido?: string | null
           reclutador_id?: string | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto?: string
@@ -487,7 +493,14 @@ export type Database = {
         | "onboarding"
       fuente_candidato: "linkedin" | "referido" | "portal" | "base"
       modalidad_trabajo: "hibrido" | "remoto" | "presencial"
-      motivo_vacante: "reposicion" | "crecimiento" | "temporal"
+      motivo_vacante:
+        | "reposicion"
+        | "crecimiento"
+        | "temporal"
+        | "baja_personal"
+        | "incapacidad"
+        | "crecimiento_negocio"
+        | "nuevo_puesto"
       senioridad: "junior" | "senior"
       tamano_empresa: "micro" | "pyme" | "mediana" | "grande"
       tipo_usuario: "dueno_direccion" | "profesional_rrhh"
@@ -631,7 +644,15 @@ export const Constants = {
       ],
       fuente_candidato: ["linkedin", "referido", "portal", "base"],
       modalidad_trabajo: ["hibrido", "remoto", "presencial"],
-      motivo_vacante: ["reposicion", "crecimiento", "temporal"],
+      motivo_vacante: [
+        "reposicion",
+        "crecimiento",
+        "temporal",
+        "baja_personal",
+        "incapacidad",
+        "crecimiento_negocio",
+        "nuevo_puesto",
+      ],
       senioridad: ["junior", "senior"],
       tamano_empresa: ["micro", "pyme", "mediana", "grande"],
       tipo_usuario: ["dueno_direccion", "profesional_rrhh"],
