@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowUp, ArrowDown, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowUp, ArrowDown } from "lucide-react";
 
 interface KPICardProps {
   title: string;
@@ -8,54 +7,48 @@ interface KPICardProps {
   trend?: number;
   unit?: string;
   icon?: React.ReactNode;
-  onClick?: () => void;
+  onDoubleClick?: () => void;
 }
 
-export const KPICard = ({ title, value, trend, unit = "", icon, onClick }: KPICardProps) => {
+export const KPICard = ({ title, value, trend, unit = "", icon, onDoubleClick }: KPICardProps) => {
   const getTrendIcon = () => {
     if (!trend) return null;
-    if (trend > 0) return <ArrowUp className="h-4 w-4 text-success" />;
-    if (trend < 0) return <ArrowDown className="h-4 w-4 text-destructive" />;
-    return <TrendingUp className="h-4 w-4 text-muted-foreground" />;
+    if (trend > 0) return <ArrowUp className="h-4 w-4" />;
+    if (trend < 0) return <ArrowDown className="h-4 w-4" />;
+    return null;
   };
 
   const getTrendColor = () => {
     if (!trend) return "";
     if (trend > 0) return "text-success";
     if (trend < 0) return "text-destructive";
-    return "text-muted-foreground";
+    return "";
   };
 
   return (
-    <Card className="hover:shadow-lg transition-shadow duration-300 cursor-pointer group" onClick={onClick}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          <div className="text-3xl font-bold">
-            {value}
-            {unit && <span className="text-lg ml-1 text-muted-foreground">{unit}</span>}
-          </div>
-          {trend !== undefined && (
-            <div className={`flex items-center gap-1 text-sm ${getTrendColor()}`}>
-              {getTrendIcon()}
-              <span>{Math.abs(trend)}% vs mes anterior</span>
-            </div>
-          )}
-          {onClick && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="w-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              Ver detalles
-            </Button>
-          )}
+    <Card 
+      className="hover:shadow-elegant transition-all duration-300 cursor-pointer border-border/50" 
+      onDoubleClick={onDoubleClick}
+    >
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            {title}
+          </CardTitle>
+          {icon && <div className="text-muted-foreground opacity-60">{icon}</div>}
         </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="text-3xl font-bold tracking-tight">
+          {value}
+          {unit && <span className="text-lg ml-1 text-muted-foreground font-normal">{unit}</span>}
+        </div>
+        {trend !== undefined && (
+          <div className={`flex items-center gap-1.5 text-sm font-medium ${getTrendColor()} bg-muted/30 px-3 py-1.5 rounded-md w-fit`}>
+            {getTrendIcon()}
+            <span>{Math.abs(trend)}% vs mes anterior</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,6 +1,9 @@
+import { useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
+import { ForecastChart } from "@/components/dashboard/ForecastChart";
+import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { 
   Clock, 
   TrendingUp, 
@@ -14,6 +17,28 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Dashboard = () => {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedKPI, setSelectedKPI] = useState<string>("");
+
+  const handleKPIDoubleClick = (kpiTitle: string) => {
+    setSelectedKPI(kpiTitle);
+    setModalOpen(true);
+  };
+
+  const mockDetailData = [
+    { folio: "VAC-001", puesto: "Desarrollador Senior", dias: 28, cliente: "TechCorp", estatus: "Cerrada" },
+    { folio: "VAC-002", puesto: "Gerente de Ventas", dias: 35, cliente: "RetailMax", estatus: "Cerrada" },
+    { folio: "VAC-003", puesto: "Analista de Datos", dias: 21, cliente: "DataSolutions", estatus: "Cerrada" },
+  ];
+
+  const detailColumns = [
+    { key: "folio", label: "Folio" },
+    { key: "puesto", label: "Puesto" },
+    { key: "dias", label: "Días" },
+    { key: "cliente", label: "Cliente" },
+    { key: "estatus", label: "Estatus" },
+  ];
+
   // Datos de ejemplo
   const kpis = [
     {
@@ -71,11 +96,13 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-background">
       <DashboardHeader />
       
       <div className="container mx-auto px-4 py-8 space-y-8">
         <QuickActions />
+
+        <ForecastChart />
 
         <section>
           <div className="mb-6">
@@ -84,7 +111,11 @@ const Dashboard = () => {
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {kpis.slice(0, 4).map((kpi, idx) => (
-              <KPICard key={idx} {...kpi} />
+              <KPICard 
+                key={idx} 
+                {...kpi} 
+                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+              />
             ))}
           </div>
         </section>
@@ -96,7 +127,11 @@ const Dashboard = () => {
           </div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {kpis.slice(4, 8).map((kpi, idx) => (
-              <KPICard key={idx} {...kpi} />
+              <KPICard 
+                key={idx} 
+                {...kpi}
+                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+              />
             ))}
           </div>
         </section>
@@ -162,18 +197,16 @@ const Dashboard = () => {
           </Card>
         </section>
 
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle>Pronóstico de Demanda de Personal</CardTitle>
-            <CardDescription>Proyección de vacantes para los próximos 6 meses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center text-muted-foreground">
-              Gráfico de pronóstico (próximamente)
-            </div>
-          </CardContent>
-        </Card>
       </div>
+
+      <KPIDetailModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={`Detalles: ${selectedKPI}`}
+        description="Datos que generan este indicador"
+        data={mockDetailData}
+        columns={detailColumns}
+      />
     </div>
   );
 };
