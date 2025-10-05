@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useKPIs = (refreshTrigger?: number) => {
+export const useKPIs = (
+  refreshTrigger: number, 
+  selectedCliente: string = "todos",
+  selectedReclutador: string = "todos", 
+  selectedEstatus: string = "todos"
+) => {
   const [kpis, setKpis] = useState({
     tiempoPromedioCobertura: 0,
     tasaExitoCierre: 0,
@@ -16,19 +21,30 @@ export const useKPIs = (refreshTrigger?: number) => {
 
   useEffect(() => {
     calculateKPIs();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, selectedCliente, selectedReclutador, selectedEstatus]);
 
   const calculateKPIs = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Obtener todas las vacantes del usuario
-      const { data: vacantes, error: vacantesError } = await supabase
+      // Construir query con filtros
+      let query = supabase
         .from("vacantes")
         .select("*")
         .eq("user_id", user.id);
 
+      if (selectedCliente !== "todos") {
+        query = query.eq("cliente_area_id", selectedCliente);
+      }
+      if (selectedReclutador !== "todos") {
+        query = query.eq("reclutador_id", selectedReclutador);
+      }
+      if (selectedEstatus !== "todos") {
+        query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
+      }
+
+      const { data: vacantes, error: vacantesError } = await query;
       if (vacantesError) throw vacantesError;
 
       const totalVacantes = vacantes?.length || 0;

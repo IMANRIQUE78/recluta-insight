@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { QuickActions } from "@/components/dashboard/QuickActions";
@@ -9,6 +9,7 @@ import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Clock, 
   TrendingUp, 
@@ -20,6 +21,7 @@ import {
   UserCheck
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Dashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,8 +29,40 @@ const Dashboard = () => {
   const [vacanteFormOpen, setVacanteFormOpen] = useState(false);
   const [selectedVacante, setSelectedVacante] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const { kpis: kpiData, loading: kpiLoading } = useKPIs(refreshTrigger);
+  
+  // Filtros globales
+  const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
+  const [reclutadores, setReclutadores] = useState<Array<{ id: string; nombre: string }>>([]);
+  const [selectedCliente, setSelectedCliente] = useState<string>("todos");
+  const [selectedReclutador, setSelectedReclutador] = useState<string>("todos");
+  const [selectedEstatus, setSelectedEstatus] = useState<string>("todos");
+  
+  const { kpis: kpiData, loading: kpiLoading } = useKPIs(refreshTrigger, selectedCliente, selectedReclutador, selectedEstatus);
   const { data: detailData, columns: detailColumns, loading: detailLoading } = useKPIDetails(selectedKPI);
+
+  useEffect(() => {
+    loadFilters();
+  }, []);
+
+  const loadFilters = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data: clientesData } = await supabase
+      .from("clientes_areas")
+      .select("id, cliente_nombre, area")
+      .eq("user_id", user.id)
+      .order("cliente_nombre", { ascending: true });
+
+    const { data: reclutadoresData } = await supabase
+      .from("reclutadores")
+      .select("id, nombre")
+      .eq("user_id", user.id)
+      .order("nombre", { ascending: true });
+
+    if (clientesData) setClientes(clientesData);
+    if (reclutadoresData) setReclutadores(reclutadoresData);
+  };
 
   const handleKPIDoubleClick = (kpiTitle: string) => {
     setSelectedKPI(kpiTitle);
@@ -95,6 +129,66 @@ const Dashboard = () => {
       
       <div className="container mx-auto px-4 py-8 space-y-8">
         <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
+
+        {/* Filtros Globales */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Filtros</CardTitle>
+            <CardDescription>Segmenta los datos por cliente, reclutador o estatus</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cliente/Área</label>
+                <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los clientes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los clientes</SelectItem>
+                    {clientes.map((cliente) => (
+                      <SelectItem key={cliente.id} value={cliente.id}>
+                        {cliente.cliente_nombre} - {cliente.area}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Reclutador Asignado</label>
+                <Select value={selectedReclutador} onValueChange={setSelectedReclutador}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los reclutadores" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los reclutadores</SelectItem>
+                    {reclutadores.map((reclutador) => (
+                      <SelectItem key={reclutador.id} value={reclutador.id}>
+                        {reclutador.nombre}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Estatus</label>
+                <Select value={selectedEstatus} onValueChange={setSelectedEstatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todos los estatus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estatus</SelectItem>
+                    <SelectItem value="abierta">Abierta</SelectItem>
+                    <SelectItem value="cerrada">Cerrada</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <section>
           <div className="mb-6">
