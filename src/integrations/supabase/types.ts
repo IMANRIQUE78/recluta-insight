@@ -364,7 +364,6 @@ export type Database = {
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones: string | null
           reclutador_id: string | null
-          senioridad: Database["public"]["Enums"]["senioridad"]
           sueldo_bruto_aprobado: number | null
           titulo_puesto: string
           updated_at: string
@@ -382,7 +381,6 @@ export type Database = {
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
           reclutador_id?: string | null
-          senioridad: Database["public"]["Enums"]["senioridad"]
           sueldo_bruto_aprobado?: number | null
           titulo_puesto: string
           updated_at?: string
@@ -400,7 +398,6 @@ export type Database = {
           motivo?: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
           reclutador_id?: string | null
-          senioridad?: Database["public"]["Enums"]["senioridad"]
           sueldo_bruto_aprobado?: number | null
           titulo_puesto?: string
           updated_at?: string
