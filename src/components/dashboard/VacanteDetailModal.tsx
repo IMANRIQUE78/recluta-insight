@@ -262,13 +262,20 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             </Select>
           </div>
 
-          {/* Fecha de Registro - Solo lectura */}
+          {/* Fecha de Registro - Solo lectura con timestamp */}
           <div className="space-y-2">
             <Label htmlFor="fecha_solicitud">Fecha de Registro</Label>
             <Input
               id="fecha_solicitud"
-              type="datetime-local"
-              value={formData.fecha_solicitud}
+              type="text"
+              value={formData.fecha_solicitud ? new Date(formData.fecha_solicitud).toLocaleString('es-MX', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+              }) : ""}
               disabled
               className="bg-muted"
             />
@@ -357,16 +364,16 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             </div>
           </div>
 
-          {/* Campo condicional: A quien sustituye */}
+          {/* Campo condicional: A quien reemplaza */}
           {(formData.motivo === "baja_personal" || formData.motivo === "incapacidad") && (
             <div className="space-y-2">
-              <Label htmlFor="a_quien_sustituye">¿A quién sustituye?</Label>
+              <Label htmlFor="a_quien_sustituye">¿A quién reemplaza?</Label>
               <Input
                 id="a_quien_sustituye"
                 value={formData.a_quien_sustituye}
                 onChange={(e) => setFormData({ ...formData, a_quien_sustituye: e.target.value })}
                 disabled={isLocked}
-                placeholder="Nombre de la persona a sustituir"
+                placeholder="Nombre de la persona a reemplazar"
               />
             </div>
           )}

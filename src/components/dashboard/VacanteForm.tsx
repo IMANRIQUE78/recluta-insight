@@ -400,12 +400,12 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
 
           {(formData.motivo === "baja_personal" || formData.motivo === "incapacidad") && (
             <div className="space-y-2">
-              <Label htmlFor="a_quien_sustituye">¿A quién sustituye?</Label>
+              <Label htmlFor="a_quien_sustituye">¿A quién reemplaza?</Label>
               <Input
                 id="a_quien_sustituye"
                 value={formData.a_quien_sustituye}
                 onChange={(e) => setFormData({ ...formData, a_quien_sustituye: e.target.value })}
-                placeholder="Nombre de la persona a sustituir"
+                placeholder="Nombre de la persona a reemplazar"
               />
             </div>
           )}
