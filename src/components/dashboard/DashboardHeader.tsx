@@ -1,4 +1,4 @@
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +51,15 @@ export const DashboardHeader = ({
             </div>
             
             <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/marketplace")}
+                className="flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                Marketplace
+              </Button>
+
               <Button variant="outline" size="icon">
                 <User className="h-4 w-4" />
               </Button>

@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, Globe } from "lucide-react";
+import { PublishToMarketplaceDialog } from "@/components/marketplace/PublishToMarketplaceDialog";
 
 interface VacanteDetailModalProps {
   open: boolean;
@@ -23,6 +24,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [editing, setEditing] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
   const [reclutadores, setReclutadores] = useState<any[]>([]);
+  const [showPublishDialog, setShowPublishDialog] = useState(false);
   
   const [formData, setFormData] = useState<{
     folio: string;
@@ -419,26 +421,48 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
+          <div className="flex justify-between items-center gap-3 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                setEditing(false);
-              }}
+              onClick={() => setShowPublishDialog(true)}
+              className="flex items-center gap-2"
             >
-              Cerrar
+              <Globe className="h-4 w-4" />
+              Publicar en Marketplace
             </Button>
-            {!isLocked && (
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar Cambios
+            
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  onOpenChange(false);
+                  setEditing(false);
+                }}
+              >
+                Cerrar
               </Button>
-            )}
+              {!isLocked && (
+                <Button type="submit" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Guardar Cambios
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </DialogContent>
+
+      <PublishToMarketplaceDialog
+        open={showPublishDialog}
+        onOpenChange={setShowPublishDialog}
+        vacante={vacante}
+        onSuccess={() => {
+          setShowPublishDialog(false);
+          onSuccess();
+        }}
+      />
     </Dialog>
   );
 };

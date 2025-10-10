@@ -253,6 +253,97 @@ export type Database = {
         }
         Relationships: []
       }
+      postulaciones: {
+        Row: {
+          candidato_user_id: string
+          created_at: string
+          estado: string
+          fecha_postulacion: string
+          id: string
+          publicacion_id: string
+        }
+        Insert: {
+          candidato_user_id: string
+          created_at?: string
+          estado?: string
+          fecha_postulacion?: string
+          id?: string
+          publicacion_id: string
+        }
+        Update: {
+          candidato_user_id?: string
+          created_at?: string
+          estado?: string
+          fecha_postulacion?: string
+          id?: string
+          publicacion_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "postulaciones_publicacion_id_fkey"
+            columns: ["publicacion_id"]
+            isOneToOne: false
+            referencedRelation: "publicaciones_marketplace"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publicaciones_marketplace: {
+        Row: {
+          cliente_area: string | null
+          created_at: string
+          fecha_publicacion: string
+          id: string
+          lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
+          observaciones: string | null
+          perfil_requerido: string | null
+          publicada: boolean
+          sueldo_bruto_aprobado: number | null
+          titulo_puesto: string
+          updated_at: string
+          user_id: string
+          vacante_id: string
+        }
+        Insert: {
+          cliente_area?: string | null
+          created_at?: string
+          fecha_publicacion?: string
+          id?: string
+          lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
+          observaciones?: string | null
+          perfil_requerido?: string | null
+          publicada?: boolean
+          sueldo_bruto_aprobado?: number | null
+          titulo_puesto: string
+          updated_at?: string
+          user_id: string
+          vacante_id: string
+        }
+        Update: {
+          cliente_area?: string | null
+          created_at?: string
+          fecha_publicacion?: string
+          id?: string
+          lugar_trabajo?: Database["public"]["Enums"]["modalidad_trabajo"]
+          observaciones?: string | null
+          perfil_requerido?: string | null
+          publicada?: boolean
+          sueldo_bruto_aprobado?: number | null
+          titulo_puesto?: string
+          updated_at?: string
+          user_id?: string
+          vacante_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publicaciones_marketplace_vacante_id_fkey"
+            columns: ["vacante_id"]
+            isOneToOne: true
+            referencedRelation: "vacantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reclutadores: {
         Row: {
           correo: string
