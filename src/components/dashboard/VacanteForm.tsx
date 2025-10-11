@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Check, ChevronsUpDown } from "lucide-react";
+import { Loader2, Check, ChevronsUpDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VacanteFormProps {
@@ -181,6 +181,14 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
     }
   };
 
+  const handleDeleteCliente = (clienteId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setClientes(clientes.filter(c => c.id !== clienteId));
+    if (formData.cliente_area_id === clienteId) {
+      setFormData({ ...formData, cliente_area_id: "" });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       titulo_puesto: "",
@@ -271,14 +279,25 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                               setFormData({ ...formData, cliente_area_id: cliente.id });
                               setOpenClienteCombo(false);
                             }}
+                            className="flex items-center justify-between"
                           >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formData.cliente_area_id === cliente.id ? "opacity-100" : "opacity-0"
-                              )}
-                            />
-                            {cliente.cliente_nombre} - {cliente.area}
+                            <div className="flex items-center flex-1">
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  formData.cliente_area_id === cliente.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {cliente.cliente_nombre} - {cliente.area}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 hover:bg-destructive hover:text-destructive-foreground"
+                              onClick={(e) => handleDeleteCliente(cliente.id, e)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </CommandItem>
                         ))}
                       </CommandGroup>
