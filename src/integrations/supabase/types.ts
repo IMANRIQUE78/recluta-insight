@@ -208,13 +208,18 @@ export type Database = {
       perfil_usuario: {
         Row: {
           created_at: string
+          descripcion_empresa: string | null
           frecuencia_actualizacion: string
           horizonte_planeacion: number
           id: string
           metricas_clave: string[] | null
           miden_indicadores: boolean
+          mostrar_empresa_publica: boolean
+          nombre_empresa: string | null
+          nombre_usuario: string | null
           pais: string
           sector: string | null
+          sitio_web: string | null
           tamano_empresa: Database["public"]["Enums"]["tamano_empresa"]
           tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
           updated_at: string
@@ -223,13 +228,18 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          descripcion_empresa?: string | null
           frecuencia_actualizacion?: string
           horizonte_planeacion?: number
           id?: string
           metricas_clave?: string[] | null
           miden_indicadores?: boolean
+          mostrar_empresa_publica?: boolean
+          nombre_empresa?: string | null
+          nombre_usuario?: string | null
           pais?: string
           sector?: string | null
+          sitio_web?: string | null
           tamano_empresa: Database["public"]["Enums"]["tamano_empresa"]
           tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
           updated_at?: string
@@ -238,13 +248,18 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          descripcion_empresa?: string | null
           frecuencia_actualizacion?: string
           horizonte_planeacion?: number
           id?: string
           metricas_clave?: string[] | null
           miden_indicadores?: boolean
+          mostrar_empresa_publica?: boolean
+          nombre_empresa?: string | null
+          nombre_usuario?: string | null
           pais?: string
           sector?: string | null
+          sitio_web?: string | null
           tamano_empresa?: Database["public"]["Enums"]["tamano_empresa"]
           tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
           updated_at?: string

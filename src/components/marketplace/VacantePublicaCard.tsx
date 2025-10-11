@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, DollarSign } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VacantePublicaCardProps {
   publicacion: any;
@@ -8,6 +10,28 @@ interface VacantePublicaCardProps {
 }
 
 export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardProps) => {
+  const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
+
+  useEffect(() => {
+    const loadNombreEmpresa = async () => {
+      const { data } = await supabase
+        .from("perfil_usuario")
+        .select("nombre_empresa, mostrar_empresa_publica")
+        .eq("user_id", publicacion.user_id)
+        .maybeSingle();
+
+      if (data) {
+        setNombreEmpresa(
+          data.mostrar_empresa_publica && data.nombre_empresa 
+            ? data.nombre_empresa 
+            : "Confidencial"
+        );
+      }
+    };
+
+    loadNombreEmpresa();
+  }, [publicacion.user_id]);
+
   const formatSalary = (salary: number | null) => {
     if (!salary) return null;
     return new Intl.NumberFormat('es-MX', {
@@ -34,12 +58,10 @@ export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardP
       <CardHeader>
         <CardTitle className="text-xl">{publicacion.titulo_puesto}</CardTitle>
         <div className="flex items-center gap-3 mt-1">
-          {publicacion.cliente_area && (
-            <CardDescription className="flex items-center gap-1">
-              <Briefcase className="h-4 w-4" />
-              {publicacion.cliente_area}
-            </CardDescription>
-          )}
+          <CardDescription className="flex items-center gap-1">
+            <Briefcase className="h-4 w-4" />
+            {nombreEmpresa}
+          </CardDescription>
           {publicacion.ubicacion && (
             <CardDescription className="flex items-center gap-1">
               <MapPin className="h-4 w-4" />

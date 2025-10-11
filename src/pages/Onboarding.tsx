@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -21,8 +22,28 @@ const kpisOptions = [
   "Fuente efectiva"
 ];
 
+const sectoresLatam = [
+  "Agroindustria",
+  "Tecnología",
+  "Manufactura",
+  "Servicios Financieros",
+  "Retail",
+  "Salud",
+  "Educación",
+  "Construcción",
+  "Energía",
+  "Minería",
+  "Turismo y Hospitalidad",
+  "Telecomunicaciones",
+  "Transporte y Logística",
+  "Bienes Raíces",
+  "Consultoría"
+];
+
 const Onboarding = () => {
   const [step, setStep] = useState(1);
+  const [nombreUsuario, setNombreUsuario] = useState("");
+  const [nombreEmpresa, setNombreEmpresa] = useState("");
   const [tipoUsuario, setTipoUsuario] = useState<string>("");
   const [sector, setSector] = useState("");
   const [pais, setPais] = useState("México");
@@ -32,6 +53,7 @@ const Onboarding = () => {
   const [horizonte, setHorizonte] = useState("6");
   const [metricasClave, setMetricasClave] = useState<string[]>([]);
   const [frecuencia, setFrecuencia] = useState("mensual");
+  const [mostrarEmpresaPublica, setMostrarEmpresaPublica] = useState(true);
   
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -52,6 +74,8 @@ const Onboarding = () => {
 
     const { error } = await supabase.from("perfil_usuario").insert({
       user_id: user.id,
+      nombre_usuario: nombreUsuario,
+      nombre_empresa: nombreEmpresa,
       tipo_usuario: tipoUsuario as any,
       sector,
       pais,
@@ -61,6 +85,7 @@ const Onboarding = () => {
       horizonte_planeacion: parseInt(horizonte),
       metricas_clave: metricasClave,
       frecuencia_actualizacion: frecuencia,
+      mostrar_empresa_publica: mostrarEmpresaPublica,
     });
 
     if (error) {
@@ -85,6 +110,26 @@ const Onboarding = () => {
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
               <div className="space-y-3">
+                <Label htmlFor="nombre_usuario" className="text-base font-semibold">Nombre Completo*</Label>
+                <Input
+                  id="nombre_usuario"
+                  value={nombreUsuario}
+                  onChange={(e) => setNombreUsuario(e.target.value)}
+                  placeholder="Tu nombre completo"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label htmlFor="nombre_empresa" className="text-base font-semibold">Nombre de la Empresa*</Label>
+                <Input
+                  id="nombre_empresa"
+                  value={nombreEmpresa}
+                  onChange={(e) => setNombreEmpresa(e.target.value)}
+                  placeholder="Nombre de tu empresa"
+                />
+              </div>
+
+              <div className="space-y-3">
                 <Label className="text-base font-semibold">Tipo de Usuario</Label>
                 <RadioGroup value={tipoUsuario} onValueChange={setTipoUsuario}>
                   <div className="flex items-center space-x-2">
@@ -99,19 +144,17 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="sector" className="text-base font-semibold">Sector</Label>
+                <Label htmlFor="sector" className="text-base font-semibold">Sector*</Label>
                 <Select value={sector} onValueChange={setSector}>
                   <SelectTrigger id="sector">
                     <SelectValue placeholder="Selecciona un sector" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="tecnologia">Tecnología</SelectItem>
-                    <SelectItem value="manufactura">Manufactura</SelectItem>
-                    <SelectItem value="servicios">Servicios</SelectItem>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="salud">Salud</SelectItem>
-                    <SelectItem value="educacion">Educación</SelectItem>
-                    <SelectItem value="otro">Otro</SelectItem>
+                    {sectoresLatam.map((sec) => (
+                      <SelectItem key={sec} value={sec}>
+                        {sec}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -185,6 +228,22 @@ const Onboarding = () => {
               </div>
 
               <div className="space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="mostrar_empresa"
+                    checked={mostrarEmpresaPublica}
+                    onCheckedChange={(checked) => setMostrarEmpresaPublica(checked as boolean)}
+                  />
+                  <Label htmlFor="mostrar_empresa" className="cursor-pointer">
+                    Mostrar nombre de empresa en vacantes públicas
+                  </Label>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">
+                  Si desactivas esta opción, tus vacantes mostrarán "Confidencial"
+                </p>
+              </div>
+
+              <div className="space-y-3">
                 <Label className="text-base font-semibold">Horizonte de Planeación</Label>
                 <RadioGroup value={horizonte} onValueChange={setHorizonte}>
                   <div className="flex items-center space-x-2">
@@ -253,7 +312,7 @@ const Onboarding = () => {
                 onClick={() => setStep(step + 1)} 
                 className="ml-auto"
                 disabled={
-                  (step === 1 && (!tipoUsuario || !sector)) ||
+                  (step === 1 && (!nombreUsuario || !nombreEmpresa || !tipoUsuario || !sector)) ||
                   (step === 2 && !tamanoEmpresa)
                 }
               >

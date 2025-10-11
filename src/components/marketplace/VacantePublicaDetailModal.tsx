@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { MapPin, Briefcase, DollarSign, FileText, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface VacantePublicaDetailModalProps {
   open: boolean;
@@ -17,6 +19,29 @@ export const VacantePublicaDetailModal = ({
   publicacion 
 }: VacantePublicaDetailModalProps) => {
   const { user } = useAuth();
+  const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
+
+  useEffect(() => {
+    if (publicacion && open) {
+      const loadNombreEmpresa = async () => {
+        const { data } = await supabase
+          .from("perfil_usuario")
+          .select("nombre_empresa, mostrar_empresa_publica")
+          .eq("user_id", publicacion.user_id)
+          .maybeSingle();
+
+        if (data) {
+          setNombreEmpresa(
+            data.mostrar_empresa_publica && data.nombre_empresa 
+              ? data.nombre_empresa 
+              : "Confidencial"
+          );
+        }
+      };
+
+      loadNombreEmpresa();
+    }
+  }, [publicacion, open]);
 
   if (!publicacion) return null;
 
@@ -44,12 +69,10 @@ export const VacantePublicaDetailModal = ({
         <DialogHeader>
           <DialogTitle className="text-2xl">{publicacion.titulo_puesto}</DialogTitle>
           <div className="flex items-center gap-3 mt-2">
-            {publicacion.cliente_area && (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Briefcase className="h-4 w-4" />
-                <span>{publicacion.cliente_area}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Briefcase className="h-4 w-4" />
+              <span>{nombreEmpresa}</span>
+            </div>
             {publicacion.ubicacion && (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
