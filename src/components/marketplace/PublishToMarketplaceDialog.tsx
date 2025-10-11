@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Globe } from "lucide-react";
@@ -28,9 +29,11 @@ export const PublishToMarketplaceDialog = ({
   const [selectedFields, setSelectedFields] = useState({
     sueldo_bruto_aprobado: true,
     cliente_area: false,
+    ubicacion: false,
     perfil_requerido: true,
     observaciones: false,
   });
+  const [ubicacion, setUbicacion] = useState("");
 
   useEffect(() => {
     if (open && vacante) {
@@ -66,6 +69,7 @@ export const PublishToMarketplaceDialog = ({
         titulo_puesto: vacante.titulo_puesto,
         sueldo_bruto_aprobado: selectedFields.sueldo_bruto_aprobado ? vacante.sueldo_bruto_aprobado : null,
         cliente_area: selectedFields.cliente_area ? vacante.clientes_areas?.cliente_nombre : null,
+        ubicacion: selectedFields.ubicacion ? ubicacion : null,
         lugar_trabajo: vacante.lugar_trabajo,
         perfil_requerido: selectedFields.perfil_requerido ? vacante.perfil_requerido : null,
         observaciones: selectedFields.observaciones ? vacante.observaciones : null,
@@ -173,6 +177,27 @@ export const PublishToMarketplaceDialog = ({
                   }
                 />
                 <Label htmlFor="cliente" className="cursor-pointer">Cliente/Área</Label>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ubicacion"
+                    checked={selectedFields.ubicacion}
+                    onCheckedChange={(checked) =>
+                      setSelectedFields({ ...selectedFields, ubicacion: checked as boolean })
+                    }
+                  />
+                  <Label htmlFor="ubicacion" className="cursor-pointer">Ubicación/Ciudad</Label>
+                </div>
+                {selectedFields.ubicacion && (
+                  <Input
+                    placeholder="Ej: Ciudad de México, CDMX"
+                    value={ubicacion}
+                    onChange={(e) => setUbicacion(e.target.value)}
+                    className="ml-6"
+                  />
+                )}
               </div>
 
               <div className="flex items-center space-x-2">

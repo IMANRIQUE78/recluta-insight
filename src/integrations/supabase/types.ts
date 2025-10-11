@@ -300,6 +300,7 @@ export type Database = {
           publicada: boolean
           sueldo_bruto_aprobado: number | null
           titulo_puesto: string
+          ubicacion: string | null
           updated_at: string
           user_id: string
           vacante_id: string
@@ -315,6 +316,7 @@ export type Database = {
           publicada?: boolean
           sueldo_bruto_aprobado?: number | null
           titulo_puesto: string
+          ubicacion?: string | null
           updated_at?: string
           user_id: string
           vacante_id: string
@@ -330,6 +332,7 @@ export type Database = {
           publicada?: boolean
           sueldo_bruto_aprobado?: number | null
           titulo_puesto?: string
+          ubicacion?: string | null
           updated_at?: string
           user_id?: string
           vacante_id?: string

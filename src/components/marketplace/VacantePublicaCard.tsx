@@ -32,19 +32,24 @@ export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardP
       onClick={onClick}
     >
       <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-xl">{publicacion.titulo_puesto}</CardTitle>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <MapPin className="h-3 w-3" />
-            {getModalidadLabel(publicacion.lugar_trabajo)}
-          </Badge>
+        <CardTitle className="text-xl">{publicacion.titulo_puesto}</CardTitle>
+        <div className="flex items-center gap-3 mt-1">
+          {publicacion.cliente_area && (
+            <CardDescription className="flex items-center gap-1">
+              <Briefcase className="h-4 w-4" />
+              {publicacion.cliente_area}
+            </CardDescription>
+          )}
+          {publicacion.ubicacion && (
+            <CardDescription className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              {publicacion.ubicacion}
+            </CardDescription>
+          )}
         </div>
-        {publicacion.cliente_area && (
-          <CardDescription className="flex items-center gap-1">
-            <Briefcase className="h-4 w-4" />
-            {publicacion.cliente_area}
-          </CardDescription>
-        )}
+        <Badge variant="secondary" className="w-fit">
+          {getModalidadLabel(publicacion.lugar_trabajo)}
+        </Badge>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">

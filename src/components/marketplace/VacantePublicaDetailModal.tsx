@@ -43,6 +43,20 @@ export const VacantePublicaDetailModal = ({
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl">{publicacion.titulo_puesto}</DialogTitle>
+          <div className="flex items-center gap-3 mt-2">
+            {publicacion.cliente_area && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Briefcase className="h-4 w-4" />
+                <span>{publicacion.cliente_area}</span>
+              </div>
+            )}
+            {publicacion.ubicacion && (
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4" />
+                <span>{publicacion.ubicacion}</span>
+              </div>
+            )}
+          </div>
           <DialogDescription>
             Publicado el {new Date(publicacion.fecha_publicacion).toLocaleDateString('es-MX', {
               year: 'numeric',
@@ -55,16 +69,9 @@ export const VacantePublicaDetailModal = ({
         <div className="space-y-6 py-4">
           {/* Badges principales */}
           <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
+            <Badge variant="secondary">
               {getModalidadLabel(publicacion.lugar_trabajo)}
             </Badge>
-            {publicacion.cliente_area && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Briefcase className="h-3 w-3" />
-                {publicacion.cliente_area}
-              </Badge>
-            )}
           </div>
 
           <Separator />
