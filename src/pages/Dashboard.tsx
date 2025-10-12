@@ -7,6 +7,7 @@ import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
+import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,10 +19,12 @@ import {
   Target,
   XCircle,
   Award,
-  UserCheck
+  UserCheck,
+  Trophy
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
@@ -124,9 +127,16 @@ const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const scrollToLeaderboard = () => {
+    const element = document.getElementById("global-leaderboard");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader 
+      <DashboardHeader
         clientes={clientes}
         reclutadores={reclutadores}
         selectedCliente={selectedCliente}
@@ -138,7 +148,17 @@ const Dashboard = () => {
       />
       
       <div className="container mx-auto px-4 py-8 space-y-8">
-        <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
+        <div className="flex items-center justify-between gap-4">
+          <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
+          <Button 
+            variant="outline" 
+            onClick={scrollToLeaderboard}
+            className="flex items-center gap-2"
+          >
+            <Trophy className="h-4 w-4" />
+            Ver Ranking Global
+          </Button>
+        </div>
 
         <section>
           <div className="mb-6">
@@ -210,6 +230,8 @@ const Dashboard = () => {
           onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
           refreshTrigger={refreshTrigger}
         />
+
+        <GlobalLeaderboard />
       </div>
 
       <VacanteForm
