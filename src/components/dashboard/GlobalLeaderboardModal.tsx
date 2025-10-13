@@ -67,66 +67,78 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       setCurrentUserId(user?.id || null);
 
       // Obtener todos los usuarios con perfil
-      const { data: perfiles } = await supabase
+      const { data: perfiles, error: perfilesError } = await supabase
         .from("perfil_usuario")
         .select("user_id, pais, nombre_empresa, nombre_usuario");
 
-      if (!perfiles || perfiles.length === 0) {
+      if (perfilesError) {
+        console.error("Error fetching profiles:", perfilesError);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      const entries: LeaderboardEntry[] = [];
-
-      for (const perfil of perfiles) {
-        // Obtener o crear estadísticas para este usuario
-        const { data: stats } = await supabase
-          .from("estadisticas_reclutador")
-          .select("vacantes_cerradas, promedio_dias_cierre, ranking_score")
-          .eq("user_id", perfil.user_id)
-          .maybeSingle();
-
-        // Si no existen estadísticas, calcularlas
-        if (!stats) {
-          // Llamar a la función para recalcular
-          await supabase.rpc("recalcular_estadisticas_reclutador", {
-            p_user_id: perfil.user_id
-          });
-
-          // Obtener las estadísticas recién calculadas
-          const { data: newStats } = await supabase
-            .from("estadisticas_reclutador")
-            .select("vacantes_cerradas, promedio_dias_cierre, ranking_score")
-            .eq("user_id", perfil.user_id)
-            .single();
-
-          if (newStats) {
-            entries.push({
-              id: perfil.user_id,
-              user_id: perfil.user_id,
-              nombre: perfil.nombre_usuario || "Usuario",
-              pais: perfil.pais || "México",
-              empresa: perfil.nombre_empresa || "Empresa Confidencial",
-              promedio_dias_cierre: Number(newStats.promedio_dias_cierre) || 0,
-              vacantes_cerradas: newStats.vacantes_cerradas || 0,
-              ranking_score: newStats.ranking_score,
-            });
-          }
-        } else {
-          entries.push({
-            id: perfil.user_id,
-            user_id: perfil.user_id,
-            nombre: perfil.nombre_usuario || "Usuario",
-            pais: perfil.pais || "México",
-            empresa: perfil.nombre_empresa || "Empresa Confidencial",
-            promedio_dias_cierre: Number(stats.promedio_dias_cierre) || 0,
-            vacantes_cerradas: stats.vacantes_cerradas || 0,
-            ranking_score: stats.ranking_score,
-          });
-        }
+      if (!perfiles || perfiles.length === 0) {
+        console.log("No profiles found");
+        setLeaderboard([]);
+        setLoading(false);
+        return;
       }
 
+      console.log("Found profiles:", perfiles.length);
+
+      const entries: LeaderboardEntry[] = [];
+
+      // Para cada usuario, calcular sus estadísticas directamente desde vacantes
+      for (const perfil of perfiles) {
+        // Obtener vacantes cerradas del usuario
+        const { data: vacantes, error: vacantesError } = await supabase
+          .from("vacantes")
+          .select("fecha_solicitud, fecha_cierre")
+          .eq("user_id", perfil.user_id)
+          .eq("estatus", "cerrada")
+          .not("fecha_cierre", "is", null);
+
+        if (vacantesError) {
+          console.error(`Error fetching vacantes for user ${perfil.user_id}:`, vacantesError);
+          continue;
+        }
+
+        let promedioDias = 0;
+        let vacantesCerradas = 0;
+
+        if (vacantes && vacantes.length > 0) {
+          vacantesCerradas = vacantes.length;
+          
+          // Calcular promedio de días de cierre
+          let totalDias = 0;
+          vacantes.forEach((v) => {
+            if (v.fecha_cierre && v.fecha_solicitud) {
+              const inicio = new Date(v.fecha_solicitud);
+              const fin = new Date(v.fecha_cierre);
+              const dias = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+              totalDias += dias;
+            }
+          });
+
+          promedioDias = Math.round(totalDias / vacantes.length);
+        }
+
+        console.log(`User ${perfil.nombre_usuario}: ${vacantesCerradas} vacantes, ${promedioDias} días promedio`);
+
+        entries.push({
+          id: perfil.user_id,
+          user_id: perfil.user_id,
+          nombre: perfil.nombre_usuario || "Usuario",
+          pais: perfil.pais || "México",
+          empresa: perfil.nombre_empresa || "Empresa Confidencial",
+          promedio_dias_cierre: promedioDias,
+          vacantes_cerradas: vacantesCerradas,
+          ranking_score: null, // Por ahora null, se calculará en el futuro
+        });
+      }
+
+      console.log("Total entries:", entries.length);
       setLeaderboard(entries);
       sortLeaderboard(entries);
     } catch (error) {
