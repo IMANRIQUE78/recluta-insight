@@ -167,6 +167,39 @@ export type Database = {
           },
         ]
       }
+      estadisticas_reclutador: {
+        Row: {
+          created_at: string
+          id: string
+          promedio_dias_cierre: number
+          ranking_score: number | null
+          ultima_actualizacion: string
+          updated_at: string
+          user_id: string
+          vacantes_cerradas: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          promedio_dias_cierre?: number
+          ranking_score?: number | null
+          ultima_actualizacion?: string
+          updated_at?: string
+          user_id: string
+          vacantes_cerradas?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          promedio_dias_cierre?: number
+          ranking_score?: number | null
+          ultima_actualizacion?: string
+          updated_at?: string
+          user_id?: string
+          vacantes_cerradas?: number
+        }
+        Relationships: []
+      }
       eventos_proceso: {
         Row: {
           created_at: string
@@ -587,6 +620,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recalcular_estadisticas_reclutador: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
