@@ -77,11 +77,11 @@ export const GlobalLeaderboard = () => {
           .eq("user_id", reclutador.user_id)
           .single();
 
-        // Obtener vacantes cerradas del reclutador
+        // Obtener vacantes cerradas del usuario
         const { data: vacantes } = await supabase
           .from("vacantes")
           .select("fecha_solicitud, fecha_cierre")
-          .eq("reclutador_id", reclutador.id)
+          .eq("user_id", reclutador.user_id)
           .eq("estatus", "cerrada")
           .not("fecha_cierre", "is", null);
 
