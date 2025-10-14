@@ -66,81 +66,50 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Obtener todos los usuarios con perfil
-      const { data: perfiles, error: perfilesError } = await supabase
+      // Obtener perfiles con sus estadísticas usando JOIN
+      const { data: entries, error } = await supabase
         .from("perfil_usuario")
-        .select("user_id, pais, nombre_empresa, nombre_usuario");
+        .select(`
+          user_id,
+          nombre_usuario,
+          pais,
+          nombre_empresa,
+          estadisticas_reclutador!inner (
+            vacantes_cerradas,
+            promedio_dias_cierre,
+            ranking_score
+          )
+        `);
 
-      if (perfilesError) {
-        console.error("Error fetching profiles:", perfilesError);
+      if (error) {
+        console.error("Error fetching leaderboard:", error);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      if (!perfiles || perfiles.length === 0) {
-        console.log("No profiles found");
+      if (!entries || entries.length === 0) {
+        console.log("No leaderboard data found");
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      console.log("Found profiles:", perfiles.length);
+      // Mapear los datos al formato esperado
+      const leaderboardData: LeaderboardEntry[] = entries.map((entry: any) => ({
+        id: entry.user_id,
+        user_id: entry.user_id,
+        nombre: entry.nombre_usuario || "Usuario",
+        pais: entry.pais || "México",
+        empresa: entry.nombre_empresa || "Empresa Confidencial",
+        promedio_dias_cierre: entry.estadisticas_reclutador[0]?.promedio_dias_cierre || 0,
+        vacantes_cerradas: entry.estadisticas_reclutador[0]?.vacantes_cerradas || 0,
+        ranking_score: entry.estadisticas_reclutador[0]?.ranking_score || null,
+      }));
 
-      const entries: LeaderboardEntry[] = [];
-
-      // Para cada usuario, calcular sus estadísticas directamente desde vacantes
-      for (const perfil of perfiles) {
-        // Obtener vacantes cerradas del usuario
-        const { data: vacantes, error: vacantesError } = await supabase
-          .from("vacantes")
-          .select("fecha_solicitud, fecha_cierre")
-          .eq("user_id", perfil.user_id)
-          .eq("estatus", "cerrada")
-          .not("fecha_cierre", "is", null);
-
-        if (vacantesError) {
-          console.error(`Error fetching vacantes for user ${perfil.user_id}:`, vacantesError);
-          continue;
-        }
-
-        let promedioDias = 0;
-        let vacantesCerradas = 0;
-
-        if (vacantes && vacantes.length > 0) {
-          vacantesCerradas = vacantes.length;
-          
-          // Calcular promedio de días de cierre
-          let totalDias = 0;
-          vacantes.forEach((v) => {
-            if (v.fecha_cierre && v.fecha_solicitud) {
-              const inicio = new Date(v.fecha_solicitud);
-              const fin = new Date(v.fecha_cierre);
-              const dias = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
-              totalDias += dias;
-            }
-          });
-
-          promedioDias = Math.round(totalDias / vacantes.length);
-        }
-
-        console.log(`User ${perfil.nombre_usuario}: ${vacantesCerradas} vacantes, ${promedioDias} días promedio`);
-
-        entries.push({
-          id: perfil.user_id,
-          user_id: perfil.user_id,
-          nombre: perfil.nombre_usuario || "Usuario",
-          pais: perfil.pais || "México",
-          empresa: perfil.nombre_empresa || "Empresa Confidencial",
-          promedio_dias_cierre: promedioDias,
-          vacantes_cerradas: vacantesCerradas,
-          ranking_score: null, // Por ahora null, se calculará en el futuro
-        });
-      }
-
-      console.log("Total entries:", entries.length);
-      setLeaderboard(entries);
-      sortLeaderboard(entries);
+      console.log("Total entries:", leaderboardData.length);
+      setLeaderboard(leaderboardData);
+      sortLeaderboard(leaderboardData);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
       setLeaderboard([]);
