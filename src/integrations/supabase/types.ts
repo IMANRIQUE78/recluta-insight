@@ -167,6 +167,45 @@ export type Database = {
           },
         ]
       }
+      entrevistas_candidato: {
+        Row: {
+          asistio: boolean | null
+          candidato_user_id: string
+          created_at: string
+          duracion_minutos: number | null
+          fecha_entrevista: string
+          id: string
+          notas: string | null
+          postulacion_id: string
+          tipo_entrevista: string | null
+          updated_at: string
+        }
+        Insert: {
+          asistio?: boolean | null
+          candidato_user_id: string
+          created_at?: string
+          duracion_minutos?: number | null
+          fecha_entrevista: string
+          id?: string
+          notas?: string | null
+          postulacion_id: string
+          tipo_entrevista?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asistio?: boolean | null
+          candidato_user_id?: string
+          created_at?: string
+          duracion_minutos?: number | null
+          fecha_entrevista?: string
+          id?: string
+          notas?: string | null
+          postulacion_id?: string
+          tipo_entrevista?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       estadisticas_reclutador: {
         Row: {
           created_at: string
@@ -238,6 +277,129 @@ export type Database = {
           },
         ]
       }
+      feedback_candidato: {
+        Row: {
+          aspectos_mejora: string[] | null
+          aspectos_positivos: string[] | null
+          candidato_user_id: string
+          comentario: string
+          created_at: string
+          id: string
+          postulacion_id: string
+          puntuacion: number | null
+          reclutador_user_id: string
+        }
+        Insert: {
+          aspectos_mejora?: string[] | null
+          aspectos_positivos?: string[] | null
+          candidato_user_id: string
+          comentario: string
+          created_at?: string
+          id?: string
+          postulacion_id: string
+          puntuacion?: number | null
+          reclutador_user_id: string
+        }
+        Update: {
+          aspectos_mejora?: string[] | null
+          aspectos_positivos?: string[] | null
+          candidato_user_id?: string
+          comentario?: string
+          created_at?: string
+          id?: string
+          postulacion_id?: string
+          puntuacion?: number | null
+          reclutador_user_id?: string
+        }
+        Relationships: []
+      }
+      perfil_candidato: {
+        Row: {
+          anos_experiencia: number | null
+          carrera: string | null
+          created_at: string
+          disponibilidad: string | null
+          email: string
+          empresa_actual: string | null
+          github_url: string | null
+          habilidades_blandas: string[] | null
+          habilidades_tecnicas: string[] | null
+          id: string
+          idiomas: Json | null
+          institucion: string | null
+          linkedin_url: string | null
+          modalidad_preferida: string | null
+          nivel_educacion: string | null
+          nivel_seniority: string | null
+          nombre_completo: string
+          portfolio_url: string | null
+          puesto_actual: string | null
+          resumen_profesional: string | null
+          salario_esperado_max: number | null
+          salario_esperado_min: number | null
+          telefono: string | null
+          ubicacion: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anos_experiencia?: number | null
+          carrera?: string | null
+          created_at?: string
+          disponibilidad?: string | null
+          email: string
+          empresa_actual?: string | null
+          github_url?: string | null
+          habilidades_blandas?: string[] | null
+          habilidades_tecnicas?: string[] | null
+          id?: string
+          idiomas?: Json | null
+          institucion?: string | null
+          linkedin_url?: string | null
+          modalidad_preferida?: string | null
+          nivel_educacion?: string | null
+          nivel_seniority?: string | null
+          nombre_completo: string
+          portfolio_url?: string | null
+          puesto_actual?: string | null
+          resumen_profesional?: string | null
+          salario_esperado_max?: number | null
+          salario_esperado_min?: number | null
+          telefono?: string | null
+          ubicacion?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anos_experiencia?: number | null
+          carrera?: string | null
+          created_at?: string
+          disponibilidad?: string | null
+          email?: string
+          empresa_actual?: string | null
+          github_url?: string | null
+          habilidades_blandas?: string[] | null
+          habilidades_tecnicas?: string[] | null
+          id?: string
+          idiomas?: Json | null
+          institucion?: string | null
+          linkedin_url?: string | null
+          modalidad_preferida?: string | null
+          nivel_educacion?: string | null
+          nivel_seniority?: string | null
+          nombre_completo?: string
+          portfolio_url?: string | null
+          puesto_actual?: string | null
+          resumen_profesional?: string | null
+          salario_esperado_max?: number | null
+          salario_esperado_min?: number | null
+          telefono?: string | null
+          ubicacion?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       perfil_usuario: {
         Row: {
           created_at: string
@@ -306,24 +468,33 @@ export type Database = {
           candidato_user_id: string
           created_at: string
           estado: string
+          etapa: string | null
+          fecha_actualizacion: string | null
           fecha_postulacion: string
           id: string
+          notas_reclutador: string | null
           publicacion_id: string
         }
         Insert: {
           candidato_user_id: string
           created_at?: string
           estado?: string
+          etapa?: string | null
+          fecha_actualizacion?: string | null
           fecha_postulacion?: string
           id?: string
+          notas_reclutador?: string | null
           publicacion_id: string
         }
         Update: {
           candidato_user_id?: string
           created_at?: string
           estado?: string
+          etapa?: string | null
+          fecha_actualizacion?: string | null
           fecha_postulacion?: string
           id?: string
+          notas_reclutador?: string | null
           publicacion_id?: string
         }
         Relationships: [

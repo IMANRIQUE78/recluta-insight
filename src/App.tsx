@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
+import CandidateDashboard from "./pages/CandidateDashboard";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +41,11 @@ const App = () => (
         <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/candidate-dashboard" element={
+            <ProtectedRoute>
+              <CandidateDashboard />
+            </ProtectedRoute>
+          } />
           <Route path="/onboarding" element={
             <ProtectedRoute>
               <Onboarding />
