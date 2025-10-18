@@ -3,9 +3,16 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, Briefcase, DollarSign, FileText, Calendar } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface VacantePublicaDetailModalProps {
   open: boolean;
@@ -20,13 +27,15 @@ export const VacantePublicaDetailModal = ({
 }: VacantePublicaDetailModalProps) => {
   const { user } = useAuth();
   const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
+  const [descripcionEmpresa, setDescripcionEmpresa] = useState<string>("");
+  const [showEmpresaInfo, setShowEmpresaInfo] = useState(false);
 
   useEffect(() => {
     if (publicacion && open) {
       const loadNombreEmpresa = async () => {
         const { data } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -36,6 +45,7 @@ export const VacantePublicaDetailModal = ({
               ? data.nombre_empresa 
               : "Confidencial"
           );
+          setDescripcionEmpresa(data.descripcion_empresa || "No hay descripción disponible");
         }
       };
 
@@ -71,7 +81,12 @@ export const VacantePublicaDetailModal = ({
           <div className="flex items-center gap-3 mt-2">
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Briefcase className="h-4 w-4" />
-              <span>{nombreEmpresa}</span>
+              <button 
+                onClick={() => setShowEmpresaInfo(true)}
+                className="hover:underline hover:text-foreground transition-colors"
+              >
+                {nombreEmpresa}
+              </button>
             </div>
             {publicacion.ubicacion && (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -158,6 +173,26 @@ export const VacantePublicaDetailModal = ({
           </div>
         </div>
       </DialogContent>
+
+      {/* Modal de información de la empresa */}
+      <AlertDialog open={showEmpresaInfo} onOpenChange={setShowEmpresaInfo}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              {nombreEmpresa}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left pt-4">
+              {descripcionEmpresa}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowEmpresaInfo(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 };
