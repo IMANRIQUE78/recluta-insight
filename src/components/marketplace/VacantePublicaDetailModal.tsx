@@ -29,13 +29,16 @@ export const VacantePublicaDetailModal = ({
   const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
   const [descripcionEmpresa, setDescripcionEmpresa] = useState<string>("");
   const [showEmpresaInfo, setShowEmpresaInfo] = useState(false);
+  const [nombreReclutador, setNombreReclutador] = useState<string>("Reclutador");
+  const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
+  const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
 
   useEffect(() => {
     if (publicacion && open) {
       const loadNombreEmpresa = async () => {
         const { data } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -46,6 +49,8 @@ export const VacantePublicaDetailModal = ({
               : "Confidencial"
           );
           setDescripcionEmpresa(data.descripcion_empresa || "No hay descripción disponible");
+          setNombreReclutador(data.nombre_reclutador || "Reclutador");
+          setDescripcionReclutador(data.descripcion_reclutador || "No hay información disponible sobre el reclutador");
         }
       };
 
@@ -86,6 +91,15 @@ export const VacantePublicaDetailModal = ({
                 className="hover:underline hover:text-foreground transition-colors"
               >
                 {nombreEmpresa}
+              </button>
+            </div>
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <span>•</span>
+              <button 
+                onClick={() => setShowReclutadorInfo(true)}
+                className="hover:underline hover:text-foreground transition-colors"
+              >
+                {nombreReclutador}
               </button>
             </div>
             {publicacion.ubicacion && (
@@ -188,6 +202,26 @@ export const VacantePublicaDetailModal = ({
           </AlertDialogHeader>
           <div className="flex justify-end">
             <Button variant="outline" onClick={() => setShowEmpresaInfo(false)}>
+              Cerrar
+            </Button>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de información del reclutador */}
+      <AlertDialog open={showReclutadorInfo} onOpenChange={setShowReclutadorInfo}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5" />
+              {nombreReclutador}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-left pt-4">
+              {descripcionReclutador}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setShowReclutadorInfo(false)}>
               Cerrar
             </Button>
           </div>

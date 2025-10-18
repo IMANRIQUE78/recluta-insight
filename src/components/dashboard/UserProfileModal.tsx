@@ -47,6 +47,8 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
     mostrar_empresa_publica: true,
     sitio_web: "",
     descripcion_empresa: "",
+    nombre_reclutador: "",
+    descripcion_reclutador: "",
   });
 
   useEffect(() => {
@@ -79,6 +81,8 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
           mostrar_empresa_publica: data.mostrar_empresa_publica ?? true,
           sitio_web: data.sitio_web || "",
           descripcion_empresa: data.descripcion_empresa || "",
+          nombre_reclutador: data.nombre_reclutador || "",
+          descripcion_reclutador: data.descripcion_reclutador || "",
         });
       }
     } catch (error: any) {
@@ -234,6 +238,27 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
               onChange={(e) => setFormData({ ...formData, descripcion_empresa: e.target.value })}
               rows={3}
               placeholder="Breve descripción de tu empresa..."
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="nombre_reclutador">Nombre del Reclutador</Label>
+            <Input
+              id="nombre_reclutador"
+              value={formData.nombre_reclutador}
+              onChange={(e) => setFormData({ ...formData, nombre_reclutador: e.target.value })}
+              placeholder="Tu nombre como reclutador"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="descripcion_reclutador">Descripción del Reclutador</Label>
+            <Textarea
+              id="descripcion_reclutador"
+              value={formData.descripcion_reclutador}
+              onChange={(e) => setFormData({ ...formData, descripcion_reclutador: e.target.value })}
+              rows={3}
+              placeholder="Información sobre ti como reclutador..."
             />
           </div>
 
