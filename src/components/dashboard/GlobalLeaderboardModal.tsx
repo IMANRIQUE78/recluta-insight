@@ -66,27 +66,35 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Obtener perfiles con sus estadísticas usando JOIN
-      const { data: entries, error } = await supabase
+      // Obtener todos los perfiles
+      const { data: perfiles, error: perfilesError } = await supabase
         .from("perfil_usuario")
-        .select(`
-          user_id,
-          nombre_usuario,
-          pais,
-          nombre_empresa,
-          estadisticas_reclutador!inner (
-            vacantes_cerradas,
-            promedio_dias_cierre,
-            ranking_score
-          )
-        `);
+        .select("user_id, nombre_usuario, pais, nombre_empresa");
 
-      if (error) {
-        console.error("Error fetching leaderboard:", error);
+      if (perfilesError) {
+        console.error("Error fetching perfiles:", perfilesError);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
+
+      // Obtener todas las estadísticas
+      const { data: estadisticas, error: estadisticasError } = await supabase
+        .from("estadisticas_reclutador")
+        .select("user_id, vacantes_cerradas, promedio_dias_cierre, ranking_score");
+
+      if (estadisticasError) {
+        console.error("Error fetching estadisticas:", estadisticasError);
+      }
+
+      // Combinar los datos manualmente
+      const entries = perfiles?.map(perfil => {
+        const stats = estadisticas?.find(e => e.user_id === perfil.user_id);
+        return {
+          ...perfil,
+          estadisticas: stats || { vacantes_cerradas: 0, promedio_dias_cierre: 0, ranking_score: null }
+        };
+      }) || [];
 
       if (!entries || entries.length === 0) {
         console.log("No leaderboard data found");
@@ -102,9 +110,9 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         nombre: entry.nombre_usuario || "Usuario",
         pais: entry.pais || "México",
         empresa: entry.nombre_empresa || "Empresa Confidencial",
-        promedio_dias_cierre: entry.estadisticas_reclutador[0]?.promedio_dias_cierre || 0,
-        vacantes_cerradas: entry.estadisticas_reclutador[0]?.vacantes_cerradas || 0,
-        ranking_score: entry.estadisticas_reclutador[0]?.ranking_score || null,
+        promedio_dias_cierre: entry.estadisticas?.promedio_dias_cierre || 0,
+        vacantes_cerradas: entry.estadisticas?.vacantes_cerradas || 0,
+        ranking_score: entry.estadisticas?.ranking_score || null,
       }));
 
       console.log("Total entries:", leaderboardData.length);
