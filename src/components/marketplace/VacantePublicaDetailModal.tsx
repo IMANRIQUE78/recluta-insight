@@ -29,7 +29,7 @@ export const VacantePublicaDetailModal = ({
   const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
   const [descripcionEmpresa, setDescripcionEmpresa] = useState<string>("");
   const [showEmpresaInfo, setShowEmpresaInfo] = useState(false);
-  const [nombreReclutador, setNombreReclutador] = useState<string>("Reclutador");
+  const [nombreReclutador, setNombreReclutador] = useState<string>("");
   const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
   const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
 
@@ -38,7 +38,7 @@ export const VacantePublicaDetailModal = ({
       const loadNombreEmpresa = async () => {
         const { data } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -49,7 +49,7 @@ export const VacantePublicaDetailModal = ({
               : "Confidencial"
           );
           setDescripcionEmpresa(data.descripcion_empresa || "No hay descripción disponible");
-          setNombreReclutador(data.nombre_reclutador || "Reclutador");
+          setNombreReclutador(data.nombre_reclutador || data.nombre_usuario || "Reclutador");
           setDescripcionReclutador(data.descripcion_reclutador || "No hay información disponible sobre el reclutador");
         }
       };
