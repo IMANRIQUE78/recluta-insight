@@ -404,6 +404,7 @@ export type Database = {
         Row: {
           created_at: string
           descripcion_empresa: string | null
+          descripcion_reclutador: string | null
           frecuencia_actualizacion: string
           horizonte_planeacion: number
           id: string
@@ -411,6 +412,7 @@ export type Database = {
           miden_indicadores: boolean
           mostrar_empresa_publica: boolean
           nombre_empresa: string | null
+          nombre_reclutador: string | null
           nombre_usuario: string | null
           pais: string
           sector: string | null
@@ -424,6 +426,7 @@ export type Database = {
         Insert: {
           created_at?: string
           descripcion_empresa?: string | null
+          descripcion_reclutador?: string | null
           frecuencia_actualizacion?: string
           horizonte_planeacion?: number
           id?: string
@@ -431,6 +434,7 @@ export type Database = {
           miden_indicadores?: boolean
           mostrar_empresa_publica?: boolean
           nombre_empresa?: string | null
+          nombre_reclutador?: string | null
           nombre_usuario?: string | null
           pais?: string
           sector?: string | null
@@ -444,6 +448,7 @@ export type Database = {
         Update: {
           created_at?: string
           descripcion_empresa?: string | null
+          descripcion_reclutador?: string | null
           frecuencia_actualizacion?: string
           horizonte_planeacion?: number
           id?: string
@@ -451,6 +456,7 @@ export type Database = {
           miden_indicadores?: boolean
           mostrar_empresa_publica?: boolean
           nombre_empresa?: string | null
+          nombre_reclutador?: string | null
           nombre_usuario?: string | null
           pais?: string
           sector?: string | null
