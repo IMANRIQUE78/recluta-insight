@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2, Trophy, CheckCircle } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2, Trophy, CheckCircle, Flag } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,6 +40,7 @@ export const VacantePublicaDetailModal = ({
   const [vacantesCerradas, setVacantesCerradas] = useState<number>(0);
   const [rankingScore, setRankingScore] = useState<number | null>(null);
   const [posicionRanking, setPosicionRanking] = useState<number | null>(null);
+  const [paisReclutador, setPaisReclutador] = useState<string>("");
   const [fechaRegistro, setFechaRegistro] = useState<string>("");
   const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
   const [yaPostulado, setYaPostulado] = useState(false);
@@ -59,7 +60,7 @@ export const VacantePublicaDetailModal = ({
         // Cargar información del perfil del usuario
         const { data: perfilData } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web, created_at")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web, created_at, pais")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -76,6 +77,7 @@ export const VacantePublicaDetailModal = ({
           setNombreReclutador(perfilData.nombre_reclutador || perfilData.nombre_usuario || "Reclutador");
           setDescripcionReclutador(perfilData.descripcion_reclutador || "No hay información disponible sobre el reclutador");
           setFechaRegistro(perfilData.created_at || "");
+          setPaisReclutador(perfilData.pais || "México");
         }
 
         // Cargar estadísticas del reclutador
@@ -367,6 +369,21 @@ export const VacantePublicaDetailModal = ({
               <Briefcase className="h-5 w-5" />
               {nombreReclutador}
             </AlertDialogTitle>
+            <div className="flex items-center gap-3 pt-1">
+              {posicionRanking !== null && (
+                <div className="flex items-center gap-1.5 text-sm">
+                  <Trophy className="h-4 w-4 text-yellow-600" />
+                  <span className="font-semibold">#{posicionRanking}</span>
+                  {rankingScore !== null && (
+                    <span className="text-muted-foreground">({rankingScore.toFixed(1)} pts)</span>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <Flag className="h-4 w-4" />
+                <span>{paisReclutador}</span>
+              </div>
+            </div>
           </AlertDialogHeader>
           
           <div className="space-y-4 pt-2">
@@ -379,7 +396,7 @@ export const VacantePublicaDetailModal = ({
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
                   <CheckCircle className="h-4 w-4" />
@@ -387,19 +404,6 @@ export const VacantePublicaDetailModal = ({
                 </div>
                 <p className="text-2xl font-bold">{vacantesCerradas}</p>
               </div>
-
-              {posicionRanking !== null && rankingScore !== null && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                    <Trophy className="h-4 w-4" />
-                    <span className="text-xs">Posición en Ranking</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold">#{posicionRanking}</p>
-                    <p className="text-sm text-muted-foreground">({rankingScore.toFixed(1)} pts)</p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {fechaRegistro && (
