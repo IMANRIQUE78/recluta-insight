@@ -3,10 +3,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2 } from "lucide-react";
+import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2, Trophy, CheckCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -35,6 +37,9 @@ export const VacantePublicaDetailModal = ({
   const [showEmpresaInfo, setShowEmpresaInfo] = useState(false);
   const [nombreReclutador, setNombreReclutador] = useState<string>("");
   const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
+  const [vacantesCerradas, setVacantesCerradas] = useState<number>(0);
+  const [rankingScore, setRankingScore] = useState<number | null>(null);
+  const [fechaRegistro, setFechaRegistro] = useState<string>("");
   const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
   const [yaPostulado, setYaPostulado] = useState(false);
   const [postulando, setPostulando] = useState(false);
@@ -49,29 +54,43 @@ export const VacantePublicaDetailModal = ({
 
   useEffect(() => {
     if (publicacion && open) {
-      const loadNombreEmpresa = async () => {
-        const { data } = await supabase
+      const loadInfoReclutador = async () => {
+        // Cargar información del perfil del usuario
+        const { data: perfilData } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web, created_at")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
-        if (data) {
+        if (perfilData) {
           setNombreEmpresa(
-            data.mostrar_empresa_publica && data.nombre_empresa 
-              ? data.nombre_empresa 
+            perfilData.mostrar_empresa_publica && perfilData.nombre_empresa 
+              ? perfilData.nombre_empresa 
               : "Confidencial"
           );
-          setDescripcionEmpresa(data.descripcion_empresa || "No hay descripción disponible");
-          setSectorEmpresa(data.sector || "");
-          setTamanoEmpresa(data.tamano_empresa || "");
-          setSitioWebEmpresa(data.sitio_web || "");
-          setNombreReclutador(data.nombre_reclutador || data.nombre_usuario || "Reclutador");
-          setDescripcionReclutador(data.descripcion_reclutador || "No hay información disponible sobre el reclutador");
+          setDescripcionEmpresa(perfilData.descripcion_empresa || "No hay descripción disponible");
+          setSectorEmpresa(perfilData.sector || "");
+          setTamanoEmpresa(perfilData.tamano_empresa || "");
+          setSitioWebEmpresa(perfilData.sitio_web || "");
+          setNombreReclutador(perfilData.nombre_reclutador || perfilData.nombre_usuario || "Reclutador");
+          setDescripcionReclutador(perfilData.descripcion_reclutador || "No hay información disponible sobre el reclutador");
+          setFechaRegistro(perfilData.created_at || "");
+        }
+
+        // Cargar estadísticas del reclutador
+        const { data: estadisticasData } = await supabase
+          .from("estadisticas_reclutador")
+          .select("vacantes_cerradas, ranking_score")
+          .eq("user_id", publicacion.user_id)
+          .maybeSingle();
+
+        if (estadisticasData) {
+          setVacantesCerradas(estadisticasData.vacantes_cerradas || 0);
+          setRankingScore(estadisticasData.ranking_score);
         }
       };
 
-      loadNombreEmpresa();
+      loadInfoReclutador();
     }
   }, [publicacion, open]);
 
@@ -331,17 +350,57 @@ export const VacantePublicaDetailModal = ({
 
       {/* Modal de información del reclutador */}
       <AlertDialog open={showReclutadorInfo} onOpenChange={setShowReclutadorInfo}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Briefcase className="h-5 w-5" />
               {nombreReclutador}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left pt-4">
-              {descripcionReclutador}
-            </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex justify-end">
+          
+          <div className="space-y-4 pt-2">
+            <div>
+              <h4 className="text-sm font-medium mb-1">Descripción</h4>
+              <p className="text-sm text-muted-foreground">
+                {descripcionReclutador}
+              </p>
+            </div>
+
+            <Separator />
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="text-xs">Vacantes Cerradas</span>
+                </div>
+                <p className="text-2xl font-bold">{vacantesCerradas}</p>
+              </div>
+
+              {rankingScore !== null && (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Trophy className="h-4 w-4" />
+                    <span className="text-xs">Ranking</span>
+                  </div>
+                  <p className="text-2xl font-bold">{rankingScore.toFixed(1)}</p>
+                </div>
+              )}
+            </div>
+
+            {fechaRegistro && (
+              <div className="pt-2 border-t">
+                <p className="text-sm text-muted-foreground">
+                  Reclutador en la plataforma desde {new Date(fechaRegistro).getFullYear()}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatDistanceToNow(new Date(fechaRegistro), { addSuffix: true, locale: es })}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2">
             <Button variant="outline" onClick={() => setShowReclutadorInfo(false)}>
               Cerrar
             </Button>
