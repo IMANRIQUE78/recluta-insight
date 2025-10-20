@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { MapPin, Briefcase, DollarSign, FileText, Calendar, Building2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -32,6 +33,16 @@ export const VacantePublicaDetailModal = ({
   const [nombreReclutador, setNombreReclutador] = useState<string>("");
   const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
   const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
+  const [yaPostulado, setYaPostulado] = useState(false);
+  const [postulando, setPostulando] = useState(false);
+  const [tienePerfil, setTienePerfil] = useState(false);
+
+  useEffect(() => {
+    if (publicacion && open && user) {
+      checkPostulacion();
+      checkPerfil();
+    }
+  }, [publicacion, open, user]);
 
   useEffect(() => {
     if (publicacion && open) {
@@ -57,6 +68,63 @@ export const VacantePublicaDetailModal = ({
       loadNombreEmpresa();
     }
   }, [publicacion, open]);
+
+  const checkPerfil = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("perfil_candidato")
+      .select("id")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    
+    setTienePerfil(!!data);
+  };
+
+  const checkPostulacion = async () => {
+    if (!user || !publicacion) return;
+
+    const { data } = await supabase
+      .from("postulaciones")
+      .select("id")
+      .eq("publicacion_id", publicacion.id)
+      .eq("candidato_user_id", user.id)
+      .maybeSingle();
+
+    setYaPostulado(!!data);
+  };
+
+  const handlePostularse = async () => {
+    if (!user || !publicacion) return;
+
+    if (!tienePerfil) {
+      toast.error("Debes completar tu perfil antes de postularte");
+      return;
+    }
+
+    setPostulando(true);
+
+    try {
+      const { error } = await supabase
+        .from("postulaciones")
+        .insert({
+          publicacion_id: publicacion.id,
+          candidato_user_id: user.id,
+          estado: "pendiente",
+          etapa: "recibida"
+        });
+
+      if (error) throw error;
+
+      toast.success("¡Postulación enviada exitosamente!");
+      setYaPostulado(true);
+    } catch (error) {
+      console.error("Error al postularse:", error);
+      toast.error("Error al enviar la postulación");
+    } finally {
+      setPostulando(false);
+    }
+  };
 
   if (!publicacion) return null;
 
@@ -176,9 +244,19 @@ export const VacantePublicaDetailModal = ({
           {/* Botón de postulación */}
           <div className="flex justify-end">
             {user ? (
-              <Button size="lg" disabled>
-                Postularme (Próximamente)
-              </Button>
+              yaPostulado ? (
+                <Button size="lg" disabled>
+                  Ya te postulaste
+                </Button>
+              ) : (
+                <Button 
+                  size="lg" 
+                  onClick={handlePostularse}
+                  disabled={postulando || !tienePerfil}
+                >
+                  {postulando ? "Enviando..." : tienePerfil ? "Postularme" : "Completa tu perfil primero"}
+                </Button>
+              )
             ) : (
               <Button size="lg" variant="outline" onClick={() => window.location.href = '/auth'}>
                 Inicia sesión para postularte
