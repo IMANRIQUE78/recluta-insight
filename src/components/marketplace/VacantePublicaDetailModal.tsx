@@ -39,6 +39,7 @@ export const VacantePublicaDetailModal = ({
   const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
   const [vacantesCerradas, setVacantesCerradas] = useState<number>(0);
   const [rankingScore, setRankingScore] = useState<number | null>(null);
+  const [posicionRanking, setPosicionRanking] = useState<number | null>(null);
   const [fechaRegistro, setFechaRegistro] = useState<string>("");
   const [showReclutadorInfo, setShowReclutadorInfo] = useState(false);
   const [yaPostulado, setYaPostulado] = useState(false);
@@ -87,6 +88,16 @@ export const VacantePublicaDetailModal = ({
         if (estadisticasData) {
           setVacantesCerradas(estadisticasData.vacantes_cerradas || 0);
           setRankingScore(estadisticasData.ranking_score);
+
+          // Calcular posición en el ranking
+          if (estadisticasData.ranking_score !== null) {
+            const { count } = await supabase
+              .from("estadisticas_reclutador")
+              .select("*", { count: 'exact', head: true })
+              .gt("ranking_score", estadisticasData.ranking_score);
+            
+            setPosicionRanking((count || 0) + 1);
+          }
         }
       };
 
@@ -377,13 +388,16 @@ export const VacantePublicaDetailModal = ({
                 <p className="text-2xl font-bold">{vacantesCerradas}</p>
               </div>
 
-              {rankingScore !== null && (
+              {posicionRanking !== null && rankingScore !== null && (
                 <div className="space-y-1">
                   <div className="flex items-center gap-1.5 text-muted-foreground">
                     <Trophy className="h-4 w-4" />
-                    <span className="text-xs">Ranking</span>
+                    <span className="text-xs">Posición en Ranking</span>
                   </div>
-                  <p className="text-2xl font-bold">{rankingScore.toFixed(1)}</p>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-2xl font-bold">#{posicionRanking}</p>
+                    <p className="text-sm text-muted-foreground">({rankingScore.toFixed(1)} pts)</p>
+                  </div>
                 </div>
               )}
             </div>
