@@ -29,6 +29,9 @@ export const VacantePublicaDetailModal = ({
   const { user } = useAuth();
   const [nombreEmpresa, setNombreEmpresa] = useState<string>("Confidencial");
   const [descripcionEmpresa, setDescripcionEmpresa] = useState<string>("");
+  const [sectorEmpresa, setSectorEmpresa] = useState<string>("");
+  const [tamanoEmpresa, setTamanoEmpresa] = useState<string>("");
+  const [sitioWebEmpresa, setSitioWebEmpresa] = useState<string>("");
   const [showEmpresaInfo, setShowEmpresaInfo] = useState(false);
   const [nombreReclutador, setNombreReclutador] = useState<string>("");
   const [descripcionReclutador, setDescripcionReclutador] = useState<string>("");
@@ -49,7 +52,7 @@ export const VacantePublicaDetailModal = ({
       const loadNombreEmpresa = async () => {
         const { data } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -60,6 +63,9 @@ export const VacantePublicaDetailModal = ({
               : "Confidencial"
           );
           setDescripcionEmpresa(data.descripcion_empresa || "No hay descripción disponible");
+          setSectorEmpresa(data.sector || "");
+          setTamanoEmpresa(data.tamano_empresa || "");
+          setSitioWebEmpresa(data.sitio_web || "");
           setNombreReclutador(data.nombre_reclutador || data.nombre_usuario || "Reclutador");
           setDescripcionReclutador(data.descripcion_reclutador || "No hay información disponible sobre el reclutador");
         }
@@ -268,17 +274,54 @@ export const VacantePublicaDetailModal = ({
 
       {/* Modal de información de la empresa */}
       <AlertDialog open={showEmpresaInfo} onOpenChange={setShowEmpresaInfo}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
               {nombreEmpresa}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-left pt-4">
-              {descripcionEmpresa}
-            </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="flex justify-end">
+          
+          <div className="space-y-4 pt-2">
+            <div>
+              <h4 className="text-sm font-medium mb-1">Descripción</h4>
+              <p className="text-sm text-muted-foreground">
+                {descripcionEmpresa}
+              </p>
+            </div>
+
+            {sectorEmpresa && (
+              <div>
+                <h4 className="text-sm font-medium mb-1">Sector</h4>
+                <p className="text-sm text-muted-foreground">{sectorEmpresa}</p>
+              </div>
+            )}
+
+            {tamanoEmpresa && (
+              <div>
+                <h4 className="text-sm font-medium mb-1">Tamaño de la Empresa</h4>
+                <p className="text-sm text-muted-foreground capitalize">
+                  {tamanoEmpresa.replace('_', ' ')}
+                </p>
+              </div>
+            )}
+
+            {sitioWebEmpresa && (
+              <div>
+                <h4 className="text-sm font-medium mb-1">Sitio Web</h4>
+                <a 
+                  href={sitioWebEmpresa.startsWith('http') ? sitioWebEmpresa : `https://${sitioWebEmpresa}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary hover:underline"
+                >
+                  {sitioWebEmpresa}
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2">
             <Button variant="outline" onClick={() => setShowEmpresaInfo(false)}>
               Cerrar
             </Button>
