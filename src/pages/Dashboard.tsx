@@ -8,6 +8,7 @@ import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
+import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -230,6 +231,8 @@ const Dashboard = () => {
           onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
           refreshTrigger={refreshTrigger}
         />
+
+        <PostulacionesRecibidas />
 
         <GlobalLeaderboard />
       </div>
