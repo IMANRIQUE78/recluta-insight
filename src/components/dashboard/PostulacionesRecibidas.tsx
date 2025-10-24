@@ -5,8 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Eye, Mail, Phone, Briefcase, GraduationCap } from "lucide-react";
+import { Eye, Mail, Phone, Briefcase, GraduationCap, Edit2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Postulacion {
@@ -58,10 +60,69 @@ export const PostulacionesRecibidas = () => {
   const [selectedPostulacion, setSelectedPostulacion] = useState<Postulacion | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [etapaFilter, setEtapaFilter] = useState<string>("todas");
+  const [editingPostulacion, setEditingPostulacion] = useState<string | null>(null);
+  const [notasTemp, setNotasTemp] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     loadPostulaciones();
   }, []);
+
+  const handleEtapaChange = async (postulacionId: string, newEtapa: string) => {
+    try {
+      const { error } = await supabase
+        .from("postulaciones")
+        .update({ 
+          etapa: newEtapa,
+          fecha_actualizacion: new Date().toISOString()
+        })
+        .eq("id", postulacionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Etapa actualizada",
+        description: "La etapa se actualizó correctamente",
+      });
+      loadPostulaciones();
+    } catch (error: any) {
+      toast({
+        title: "Error al actualizar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleNotasChange = (postulacionId: string, notas: string) => {
+    setNotasTemp({ ...notasTemp, [postulacionId]: notas });
+  };
+
+  const handleSaveNotas = async (postulacionId: string) => {
+    try {
+      const { error } = await supabase
+        .from("postulaciones")
+        .update({ 
+          notas_reclutador: notasTemp[postulacionId] || "",
+          fecha_actualizacion: new Date().toISOString()
+        })
+        .eq("id", postulacionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Notas guardadas",
+        description: "Las notas se guardaron correctamente",
+      });
+      setEditingPostulacion(null);
+      loadPostulaciones();
+    } catch (error: any) {
+      toast({
+        title: "Error al guardar",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
 
   const loadPostulaciones = async () => {
     try {
@@ -184,10 +245,11 @@ export const PostulacionesRecibidas = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Candidato</TableHead>
+                      <TableHead>Contacto</TableHead>
                       <TableHead>Vacante</TableHead>
-                      <TableHead>Experiencia</TableHead>
                       <TableHead>Fecha</TableHead>
                       <TableHead>Etapa</TableHead>
+                      <TableHead>Notas Reclutador</TableHead>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -199,24 +261,97 @@ export const PostulacionesRecibidas = () => {
                             <span className="font-medium">
                               {postulacion.perfil?.nombre_completo || "Sin perfil"}
                             </span>
-                            <span className="text-xs text-muted-foreground">
-                              {postulacion.perfil?.email}
-                            </span>
+                            {postulacion.perfil?.anos_experiencia && (
+                              <span className="text-xs text-muted-foreground">
+                                {postulacion.perfil.anos_experiencia} años exp.
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1 text-sm">
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <Mail className="h-3 w-3" />
+                              {postulacion.perfil?.email || "N/A"}
+                            </div>
+                            {postulacion.perfil?.telefono && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {postulacion.perfil.telefono}
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>{postulacion.publicacion.titulo_puesto}</TableCell>
                         <TableCell>
-                          {postulacion.perfil?.anos_experiencia 
-                            ? `${postulacion.perfil.anos_experiencia} años` 
-                            : "N/A"}
-                        </TableCell>
-                        <TableCell>
                           {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-MX')}
                         </TableCell>
                         <TableCell>
-                          <Badge className={etapaColors[postulacion.etapa]}>
-                            {etapaLabels[postulacion.etapa]}
-                          </Badge>
+                          <Select
+                            value={postulacion.etapa}
+                            onValueChange={(value) => handleEtapaChange(postulacion.id, value)}
+                          >
+                            <SelectTrigger className="w-[140px] bg-background">
+                              <SelectValue>
+                                <Badge className={etapaColors[postulacion.etapa]}>
+                                  {etapaLabels[postulacion.etapa]}
+                                </Badge>
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="bg-background z-50">
+                              {Object.entries(etapaLabels).map(([key, label]) => (
+                                <SelectItem key={key} value={key}>
+                                  <Badge className={etapaColors[key]}>
+                                    {label}
+                                  </Badge>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell className="max-w-xs">
+                          {editingPostulacion === postulacion.id ? (
+                            <div className="space-y-2">
+                              <Textarea
+                                value={notasTemp[postulacion.id] ?? postulacion.notas_reclutador ?? ""}
+                                onChange={(e) => handleNotasChange(postulacion.id, e.target.value)}
+                                placeholder="Añadir notas privadas sobre el candidato..."
+                                className="min-h-[80px]"
+                              />
+                              <div className="flex gap-2">
+                                <Button size="sm" onClick={() => handleSaveNotas(postulacion.id)}>
+                                  Guardar
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => setEditingPostulacion(null)}
+                                >
+                                  Cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-2">
+                              <p className="text-sm text-muted-foreground flex-1 line-clamp-2">
+                                {postulacion.notas_reclutador || "Sin notas"}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  setEditingPostulacion(postulacion.id);
+                                  setNotasTemp({ 
+                                    ...notasTemp, 
+                                    [postulacion.id]: postulacion.notas_reclutador || "" 
+                                  });
+                                }}
+                              >
+                                <Edit2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Button
