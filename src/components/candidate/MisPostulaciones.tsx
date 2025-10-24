@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, DollarSign, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VacantePublicaDetailModal } from "@/components/marketplace/VacantePublicaDetailModal";
+import { EntrevistaPropuestaCard } from "./EntrevistaPropuestaCard";
 
 interface Postulacion {
   id: string;
@@ -43,12 +44,14 @@ const etapaColors: Record<string, string> = {
 
 export const MisPostulaciones = () => {
   const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
+  const [entrevistas, setEntrevistas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPublicacion, setSelectedPublicacion] = useState<any>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   useEffect(() => {
     loadPostulaciones();
+    loadEntrevistas();
   }, []);
 
   const loadPostulaciones = async () => {
@@ -86,6 +89,37 @@ export const MisPostulaciones = () => {
       console.error("Error loading postulaciones:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadEntrevistas = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data, error } = await supabase
+        .from("entrevistas_candidato")
+        .select(`
+          *,
+          postulaciones (
+            publicaciones_marketplace (
+              titulo_puesto,
+              vacantes (
+                perfil_usuario (
+                  nombre_empresa
+                )
+              )
+            )
+          )
+        `)
+        .eq("candidato_user_id", session.user.id)
+        .order("fecha_entrevista", { ascending: true });
+
+      if (error) throw error;
+
+      setEntrevistas(data || []);
+    } catch (error) {
+      console.error("Error loading entrevistas:", error);
     }
   };
 
@@ -128,8 +162,28 @@ export const MisPostulaciones = () => {
   }
 
   return (
-    <div className="space-y-4">
-      {postulaciones.map((postulacion) => (
+    <div className="space-y-6">
+      {/* Sección de Entrevistas */}
+      {entrevistas.length > 0 && (
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Propuestas de Entrevista</h2>
+          <div className="grid gap-4">
+            {entrevistas.map((entrevista) => (
+              <EntrevistaPropuestaCard
+                key={entrevista.id}
+                entrevista={entrevista}
+                onUpdate={loadEntrevistas}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Sección de Postulaciones */}
+      <div>
+        <h2 className="text-2xl font-bold mb-4">Mis Postulaciones</h2>
+        <div className="space-y-4">
+          {postulaciones.map((postulacion) => (
         <Card key={postulacion.id} className="hover:shadow-md transition-shadow">
           <CardHeader>
             <div className="flex justify-between items-start">
@@ -195,6 +249,9 @@ export const MisPostulaciones = () => {
           </CardContent>
         </Card>
       ))}
+
+        </div>
+      </div>
 
       {selectedPublicacion && (
         <VacantePublicaDetailModal

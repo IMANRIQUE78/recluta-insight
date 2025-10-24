@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/components/ui/use-toast";
 import { Eye, Mail, Phone, Briefcase, GraduationCap, Edit2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
 
 interface Postulacion {
   id: string;
@@ -62,12 +63,34 @@ export const PostulacionesRecibidas = () => {
   const [etapaFilter, setEtapaFilter] = useState<string>("todas");
   const [editingPostulacion, setEditingPostulacion] = useState<string | null>(null);
   const [notasTemp, setNotasTemp] = useState<{ [key: string]: string }>({});
+  const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
+  const [agendarPostulacion, setAgendarPostulacion] = useState<{
+    id: string;
+    candidato_user_id: string;
+    candidato_nombre: string;
+  } | null>(null);
 
   useEffect(() => {
     loadPostulaciones();
   }, []);
 
-  const handleEtapaChange = async (postulacionId: string, newEtapa: string) => {
+  const handleEtapaChange = async (
+    postulacionId: string, 
+    newEtapa: string, 
+    candidatoUserId: string,
+    candidatoNombre: string
+  ) => {
+    // Si la nueva etapa es "entrevista", abrir el diálogo de agendamiento
+    if (newEtapa === "entrevista") {
+      setAgendarPostulacion({
+        id: postulacionId,
+        candidato_user_id: candidatoUserId,
+        candidato_nombre: candidatoNombre,
+      });
+      setAgendarDialogOpen(true);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("postulaciones")
@@ -90,6 +113,27 @@ export const PostulacionesRecibidas = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleAgendarSuccess = async () => {
+    // Actualizar la etapa a "entrevista" después de agendar
+    if (agendarPostulacion) {
+      try {
+        const { error } = await supabase
+          .from("postulaciones")
+          .update({ 
+            etapa: "entrevista",
+            fecha_actualizacion: new Date().toISOString()
+          })
+          .eq("id", agendarPostulacion.id);
+
+        if (error) throw error;
+
+        loadPostulaciones();
+      } catch (error: any) {
+        console.error("Error al actualizar etapa:", error);
+      }
     }
   };
 
@@ -289,7 +333,12 @@ export const PostulacionesRecibidas = () => {
                         <TableCell>
                           <Select
                             value={postulacion.etapa}
-                            onValueChange={(value) => handleEtapaChange(postulacion.id, value)}
+                            onValueChange={(value) => handleEtapaChange(
+                              postulacion.id, 
+                              value,
+                              postulacion.candidato_user_id,
+                              postulacion.perfil?.nombre_completo || "Candidato"
+                            )}
                           >
                             <SelectTrigger className="w-[140px] bg-background">
                               <SelectValue>
@@ -440,13 +489,14 @@ export const PostulacionesRecibidas = () => {
                   </div>
                 )}
 
-                {selectedPostulacion.perfil.habilidades_tecnicas && 
-                 selectedPostulacion.perfil.habilidades_tecnicas.length > 0 && (
+                {selectedPostulacion.perfil.habilidades_tecnicas && selectedPostulacion.perfil.habilidades_tecnicas.length > 0 && (
                   <div>
                     <h3 className="font-semibold mb-2">Habilidades Técnicas</h3>
                     <div className="flex flex-wrap gap-2">
-                      {selectedPostulacion.perfil.habilidades_tecnicas.map((skill, idx) => (
-                        <Badge key={idx} variant="secondary">{skill}</Badge>
+                      {selectedPostulacion.perfil.habilidades_tecnicas.map((skill, index) => (
+                        <Badge key={index} variant="secondary">
+                          {skill}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -455,30 +505,12 @@ export const PostulacionesRecibidas = () => {
                 {selectedPostulacion.perfil.nivel_educacion && (
                   <div>
                     <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <GraduationCap className="h-5 w-5" />
+                      <GraduationCap className="h-4 w-4" />
                       Educación
                     </h3>
                     <p className="text-sm">{selectedPostulacion.perfil.nivel_educacion}</p>
                   </div>
                 )}
-
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-2">Estado de la Postulación</h3>
-                  <div className="flex items-center gap-4">
-                    <Badge className={etapaColors[selectedPostulacion.etapa]}>
-                      {etapaLabels[selectedPostulacion.etapa]}
-                    </Badge>
-                    <span className="text-sm text-muted-foreground">
-                      Postulado el {new Date(selectedPostulacion.fecha_postulacion).toLocaleDateString('es-MX')}
-                    </span>
-                  </div>
-                  {selectedPostulacion.notas_reclutador && (
-                    <div className="mt-3 p-3 bg-muted rounded-md">
-                      <p className="text-sm font-semibold mb-1">Notas:</p>
-                      <p className="text-sm">{selectedPostulacion.notas_reclutador}</p>
-                    </div>
-                  )}
-                </div>
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -487,6 +519,17 @@ export const PostulacionesRecibidas = () => {
             )}
           </DialogContent>
         </Dialog>
+      )}
+
+      {agendarPostulacion && (
+        <AgendarEntrevistaDialog
+          open={agendarDialogOpen}
+          onOpenChange={setAgendarDialogOpen}
+          postulacionId={agendarPostulacion.id}
+          candidatoUserId={agendarPostulacion.candidato_user_id}
+          candidatoNombre={agendarPostulacion.candidato_nombre}
+          onSuccess={handleAgendarSuccess}
+        />
       )}
     </>
   );

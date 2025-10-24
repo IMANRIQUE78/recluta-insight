@@ -172,11 +172,15 @@ export type Database = {
           asistio: boolean | null
           candidato_user_id: string
           created_at: string
+          detalles_reunion: string | null
           duracion_minutos: number | null
+          estado: string
           fecha_entrevista: string
           id: string
+          motivo_rechazo: string | null
           notas: string | null
           postulacion_id: string
+          reclutador_user_id: string | null
           tipo_entrevista: string | null
           updated_at: string
         }
@@ -184,11 +188,15 @@ export type Database = {
           asistio?: boolean | null
           candidato_user_id: string
           created_at?: string
+          detalles_reunion?: string | null
           duracion_minutos?: number | null
+          estado?: string
           fecha_entrevista: string
           id?: string
+          motivo_rechazo?: string | null
           notas?: string | null
           postulacion_id: string
+          reclutador_user_id?: string | null
           tipo_entrevista?: string | null
           updated_at?: string
         }
@@ -196,11 +204,15 @@ export type Database = {
           asistio?: boolean | null
           candidato_user_id?: string
           created_at?: string
+          detalles_reunion?: string | null
           duracion_minutos?: number | null
+          estado?: string
           fecha_entrevista?: string
           id?: string
+          motivo_rechazo?: string | null
           notas?: string | null
           postulacion_id?: string
+          reclutador_user_id?: string | null
           tipo_entrevista?: string | null
           updated_at?: string
         }
