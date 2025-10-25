@@ -19,16 +19,8 @@ interface EntrevistaPropuesta {
   notas: string;
   estado: string;
   detalles_reunion?: string;
-  postulaciones: {
-    publicaciones_marketplace: {
-      titulo_puesto: string;
-      vacantes: {
-        perfil_usuario: {
-          nombre_empresa: string;
-        };
-      };
-    };
-  };
+  titulo_puesto: string;
+  empresa: string;
 }
 
 interface EntrevistaPropuestaCardProps {
@@ -190,10 +182,10 @@ export function EntrevistaPropuestaCard({ entrevista, onUpdate }: EntrevistaProp
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="text-lg">
-              {entrevista.postulaciones.publicaciones_marketplace.titulo_puesto}
+              {entrevista.titulo_puesto}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {entrevista.postulaciones.publicaciones_marketplace.vacantes.perfil_usuario.nombre_empresa}
+              {entrevista.empresa}
             </p>
           </div>
           {getEstadoBadge()}
