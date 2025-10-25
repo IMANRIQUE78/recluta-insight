@@ -216,7 +216,15 @@ export type Database = {
           tipo_entrevista?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "entrevistas_candidato_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "postulaciones"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       estadisticas_reclutador: {
         Row: {
