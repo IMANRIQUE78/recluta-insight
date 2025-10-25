@@ -101,23 +101,41 @@ export const MisPostulaciones = () => {
         .from("entrevistas_candidato")
         .select(`
           *,
-          postulaciones (
-            publicaciones_marketplace (
+          postulacion:postulaciones!inner (
+            id,
+            publicacion:publicaciones_marketplace!inner (
+              id,
               titulo_puesto,
-              vacantes (
-                perfil_usuario (
-                  nombre_empresa
-                )
-              )
+              user_id
             )
           )
         `)
         .eq("candidato_user_id", session.user.id)
         .order("fecha_entrevista", { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading entrevistas:", error);
+        return;
+      }
 
-      setEntrevistas(data || []);
+      // Ahora obtenemos los nombres de empresa de los reclutadores
+      const entrevistasConEmpresa = await Promise.all(
+        (data || []).map(async (entrevista) => {
+          const { data: perfil } = await supabase
+            .from("perfil_usuario")
+            .select("nombre_empresa")
+            .eq("user_id", entrevista.postulacion.publicacion.user_id)
+            .single();
+          
+          return {
+            ...entrevista,
+            empresa: perfil?.nombre_empresa || "Empresa",
+            titulo_puesto: entrevista.postulacion.publicacion.titulo_puesto
+          };
+        })
+      );
+
+      setEntrevistas(entrevistasConEmpresa);
     } catch (error) {
       console.error("Error loading entrevistas:", error);
     }
