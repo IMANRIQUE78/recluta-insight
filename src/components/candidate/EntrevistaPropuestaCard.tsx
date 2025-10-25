@@ -112,6 +112,7 @@ export function EntrevistaPropuestaCard({ entrevista, onUpdate }: EntrevistaProp
       });
     } finally {
       setIsResponding(false);
+      setMotivoRechazo("");
     }
   };
 
@@ -235,27 +236,27 @@ export function EntrevistaPropuestaCard({ entrevista, onUpdate }: EntrevistaProp
         {entrevista.estado === "propuesta" && (
           <div className="space-y-3 pt-3 border-t">
             <Label>¿Aceptas esta propuesta?</Label>
-            <div className="flex gap-2">
-              <Button 
-                onClick={handleAceptar} 
-                disabled={isResponding}
-                className="flex-1"
-              >
-                <Check className="h-4 w-4 mr-2" />
-                Aceptar
-              </Button>
-              <Button 
-                variant="destructive" 
-                onClick={() => setIsResponding(true)}
-                disabled={isResponding}
-                className="flex-1"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Rechazar
-              </Button>
-            </div>
-
-            {isResponding && (
+            {!isResponding ? (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleAceptar} 
+                  disabled={isResponding}
+                  className="flex-1"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Aceptar
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => setIsResponding(true)}
+                  disabled={isResponding}
+                  className="flex-1"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Rechazar
+                </Button>
+              </div>
+            ) : (
               <div className="space-y-2">
                 <Label>Motivo del rechazo</Label>
                 <Textarea
@@ -280,33 +281,20 @@ export function EntrevistaPropuestaCard({ entrevista, onUpdate }: EntrevistaProp
           </div>
         )}
 
-        {entrevista.estado === "aceptada" && !showDetallesForm && (
+        {entrevista.estado === "aceptada" && !showDetallesForm && !entrevista.detalles_reunion && (
           <div className="space-y-2 pt-3 border-t">
             <Label>Coordinar detalles:</Label>
+            <p className="text-sm text-muted-foreground mb-2">
+              Agrega los detalles de cómo se llevará a cabo la entrevista
+            </p>
             <div className="flex flex-col gap-2">
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => handleEnviarDetalles("correo")}
-              >
-                <Mail className="h-4 w-4 mr-2" />
-                Enviar por correo
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleEnviarDetalles("mensaje")}
+                onClick={() => setShowDetallesForm(true)}
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
-                Enviar mensaje
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => handleEnviarDetalles("zoom")}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Generar enlace Zoom
+                Agregar detalles de la reunión
               </Button>
             </div>
           </div>
