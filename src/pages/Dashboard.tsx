@@ -9,6 +9,8 @@ import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
+import { ProximasEntrevistasCard } from "@/components/dashboard/ProximasEntrevistasCard";
+import { EntrevistasCompletadasCard } from "@/components/dashboard/EntrevistasCompletadasCard";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,6 +233,11 @@ const Dashboard = () => {
           onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
           refreshTrigger={refreshTrigger}
         />
+
+        <section className="grid gap-4 md:grid-cols-2">
+          <ProximasEntrevistasCard />
+          <EntrevistasCompletadasCard />
+        </section>
 
         <PostulacionesRecibidas />
 

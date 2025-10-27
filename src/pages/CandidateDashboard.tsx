@@ -9,6 +9,8 @@ import { CandidateProfileModal } from "@/components/candidate/CandidateProfileMo
 import { CandidateStats } from "@/components/candidate/CandidateStats";
 import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
+import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
+import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
 
 export default function CandidateDashboard() {
   const navigate = useNavigate();
@@ -109,7 +111,13 @@ export default function CandidateDashboard() {
           </TabsList>
 
           <TabsContent value="postulaciones">
-            <MisPostulaciones />
+            <div className="space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                <ProximasEntrevistasCandidato />
+                <MisFeedbacks />
+              </div>
+              <MisPostulaciones />
+            </div>
           </TabsContent>
 
           <TabsContent value="marketplace">
