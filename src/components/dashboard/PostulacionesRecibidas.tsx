@@ -4,13 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
-import { Eye, Mail, Phone, Briefcase, GraduationCap, Edit2 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Eye, Calendar } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
+import { PostulacionDetailDialog } from "./PostulacionDetailDialog";
 
 interface Postulacion {
   id: string;
@@ -61,8 +59,6 @@ export const PostulacionesRecibidas = () => {
   const [selectedPostulacion, setSelectedPostulacion] = useState<Postulacion | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [etapaFilter, setEtapaFilter] = useState<string>("todas");
-  const [editingPostulacion, setEditingPostulacion] = useState<string | null>(null);
-  const [notasTemp, setNotasTemp] = useState<{ [key: string]: string }>({});
   const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
   const [agendarPostulacion, setAgendarPostulacion] = useState<{
     id: string;
@@ -137,16 +133,12 @@ export const PostulacionesRecibidas = () => {
     }
   };
 
-  const handleNotasChange = (postulacionId: string, notas: string) => {
-    setNotasTemp({ ...notasTemp, [postulacionId]: notas });
-  };
-
-  const handleSaveNotas = async (postulacionId: string) => {
+  const handleEtapaChangeFromDetail = async (postulacionId: string, newEtapa: string) => {
     try {
       const { error } = await supabase
         .from("postulaciones")
         .update({ 
-          notas_reclutador: notasTemp[postulacionId] || "",
+          etapa: newEtapa,
           fecha_actualizacion: new Date().toISOString()
         })
         .eq("id", postulacionId);
@@ -154,14 +146,13 @@ export const PostulacionesRecibidas = () => {
       if (error) throw error;
 
       toast({
-        title: "Notas guardadas",
-        description: "Las notas se guardaron correctamente",
+        title: "Etapa actualizada",
+        description: "La etapa se actualizó correctamente",
       });
-      setEditingPostulacion(null);
       loadPostulaciones();
     } catch (error: any) {
       toast({
-        title: "Error al guardar",
+        title: "Error al actualizar",
         description: error.message,
         variant: "destructive",
       });
@@ -289,128 +280,66 @@ export const PostulacionesRecibidas = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Candidato</TableHead>
-                      <TableHead>Contacto</TableHead>
                       <TableHead>Vacante</TableHead>
-                      <TableHead>Fecha</TableHead>
+                      <TableHead>Fecha Postulación</TableHead>
                       <TableHead>Etapa</TableHead>
-                      <TableHead>Notas Reclutador</TableHead>
-                      <TableHead>Acciones</TableHead>
+                      <TableHead className="text-center">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPostulaciones.map((postulacion) => (
-                      <TableRow key={postulacion.id}>
+                      <TableRow key={postulacion.id} className="hover:bg-muted/50">
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
                               {postulacion.perfil?.nombre_completo || "Sin perfil"}
                             </span>
-                            {postulacion.perfil?.anos_experiencia && (
-                              <span className="text-xs text-muted-foreground">
-                                {postulacion.perfil.anos_experiencia} años exp.
-                              </span>
-                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {postulacion.perfil?.puesto_actual || "Sin puesto actual"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {postulacion.publicacion.titulo_puesto}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-MX')}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex flex-col gap-1 text-sm">
-                            <div className="flex items-center gap-1 text-muted-foreground">
-                              <Mail className="h-3 w-3" />
-                              {postulacion.perfil?.email || "N/A"}
-                            </div>
-                            {postulacion.perfil?.telefono && (
-                              <div className="flex items-center gap-1 text-muted-foreground">
-                                <Phone className="h-3 w-3" />
-                                {postulacion.perfil.telefono}
-                              </div>
-                            )}
-                          </div>
+                          <Badge className={etapaColors[postulacion.etapa]}>
+                            {etapaLabels[postulacion.etapa]}
+                          </Badge>
                         </TableCell>
-                        <TableCell>{postulacion.publicacion.titulo_puesto}</TableCell>
-                        <TableCell>
-                          {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-MX')}
-                        </TableCell>
-                        <TableCell>
-                          <Select
-                            value={postulacion.etapa}
-                            onValueChange={(value) => handleEtapaChange(
-                              postulacion.id, 
-                              value,
-                              postulacion.candidato_user_id,
-                              postulacion.perfil?.nombre_completo || "Candidato"
-                            )}
-                          >
-                            <SelectTrigger className="w-[140px] bg-background">
-                              <SelectValue>
-                                <Badge className={etapaColors[postulacion.etapa]}>
-                                  {etapaLabels[postulacion.etapa]}
-                                </Badge>
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent className="bg-background z-50">
-                              {Object.entries(etapaLabels).map(([key, label]) => (
-                                <SelectItem key={key} value={key}>
-                                  <Badge className={etapaColors[key]}>
-                                    {label}
-                                  </Badge>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="max-w-xs">
-                          {editingPostulacion === postulacion.id ? (
-                            <div className="space-y-2">
-                              <Textarea
-                                value={notasTemp[postulacion.id] ?? postulacion.notas_reclutador ?? ""}
-                                onChange={(e) => handleNotasChange(postulacion.id, e.target.value)}
-                                placeholder="Añadir notas privadas sobre el candidato..."
-                                className="min-h-[80px]"
-                              />
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={() => handleSaveNotas(postulacion.id)}>
-                                  Guardar
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline" 
-                                  onClick={() => setEditingPostulacion(null)}
-                                >
-                                  Cancelar
-                                </Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-start gap-2">
-                              <p className="text-sm text-muted-foreground flex-1 line-clamp-2">
-                                {postulacion.notas_reclutador || "Sin notas"}
-                              </p>
+                        <TableCell className="text-center">
+                          <div className="flex gap-2 justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleVerDetalle(postulacion)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              Ver Detalles
+                            </Button>
+                            {postulacion.etapa === "recibida" && (
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                className="h-7 w-7 p-0"
                                 onClick={() => {
-                                  setEditingPostulacion(postulacion.id);
-                                  setNotasTemp({ 
-                                    ...notasTemp, 
-                                    [postulacion.id]: postulacion.notas_reclutador || "" 
+                                  setAgendarPostulacion({
+                                    id: postulacion.id,
+                                    candidato_user_id: postulacion.candidato_user_id,
+                                    candidato_nombre: postulacion.perfil?.nombre_completo || "Candidato",
                                   });
+                                  setAgendarDialogOpen(true);
                                 }}
                               >
-                                <Edit2 className="h-3 w-3" />
+                                <Calendar className="h-4 w-4 mr-2" />
+                                Agendar Entrevista
                               </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleVerDetalle(postulacion)}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Ver Perfil
-                          </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -423,102 +352,12 @@ export const PostulacionesRecibidas = () => {
       </Card>
 
       {selectedPostulacion && (
-        <Dialog open={detailModalOpen} onOpenChange={setDetailModalOpen}>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                Perfil del Candidato - {selectedPostulacion.publicacion.titulo_puesto}
-              </DialogTitle>
-            </DialogHeader>
-            
-            {selectedPostulacion.perfil ? (
-              <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Información de Contacto</h3>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <span>{selectedPostulacion.perfil.email}</span>
-                      </div>
-                      {selectedPostulacion.perfil.telefono && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span>{selectedPostulacion.perfil.telefono}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold mb-2">Experiencia</h3>
-                    <div className="space-y-2 text-sm">
-                      {selectedPostulacion.perfil.puesto_actual && (
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="h-4 w-4 text-muted-foreground" />
-                          <span>{selectedPostulacion.perfil.puesto_actual}</span>
-                        </div>
-                      )}
-                      {selectedPostulacion.perfil.empresa_actual && (
-                        <div className="text-muted-foreground">
-                          {selectedPostulacion.perfil.empresa_actual}
-                        </div>
-                      )}
-                      <div>
-                        <Badge variant="secondary">
-                          {selectedPostulacion.perfil.anos_experiencia || 0} años de experiencia
-                        </Badge>
-                      </div>
-                      {selectedPostulacion.perfil.nivel_seniority && (
-                        <div>
-                          <Badge variant="outline">
-                            {selectedPostulacion.perfil.nivel_seniority}
-                          </Badge>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {selectedPostulacion.perfil.resumen_profesional && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Resumen Profesional</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPostulacion.perfil.resumen_profesional}
-                    </p>
-                  </div>
-                )}
-
-                {selectedPostulacion.perfil.habilidades_tecnicas && selectedPostulacion.perfil.habilidades_tecnicas.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Habilidades Técnicas</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedPostulacion.perfil.habilidades_tecnicas.map((skill, index) => (
-                        <Badge key={index} variant="secondary">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedPostulacion.perfil.nivel_educacion && (
-                  <div>
-                    <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <GraduationCap className="h-4 w-4" />
-                      Educación
-                    </h3>
-                    <p className="text-sm">{selectedPostulacion.perfil.nivel_educacion}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                El candidato no ha completado su perfil
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        <PostulacionDetailDialog
+          open={detailModalOpen}
+          onOpenChange={setDetailModalOpen}
+          postulacion={selectedPostulacion}
+          onEtapaChange={(newEtapa) => handleEtapaChangeFromDetail(selectedPostulacion.id, newEtapa)}
+        />
       )}
 
       {agendarPostulacion && (
