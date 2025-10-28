@@ -4,8 +4,11 @@ import { VacantePublicaCard } from "@/components/marketplace/VacantePublicaCard"
 import { VacantePublicaDetailModal } from "@/components/marketplace/VacantePublicaDetailModal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Briefcase } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Search, Briefcase, SlidersHorizontal, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -14,23 +17,65 @@ const Marketplace = () => {
   const [selectedPublicacion, setSelectedPublicacion] = useState<any | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  
+  // Filtros
+  const [modalidadFilter, setModalidadFilter] = useState<string>("todas");
+  const [ubicacionFilter, setUbicacionFilter] = useState<string>("todas");
+  const [salarioMin, setSalarioMin] = useState<string>("");
+  const [salarioMax, setSalarioMax] = useState<string>("");
+  
+  // Para opciones de ubicación disponibles
+  const [ubicacionesDisponibles, setUbicacionesDisponibles] = useState<string[]>([]);
 
   useEffect(() => {
     loadPublicaciones();
   }, []);
 
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredPublicaciones(publicaciones);
-    } else {
-      const filtered = publicaciones.filter((pub) =>
+    applyFilters();
+  }, [searchTerm, publicaciones, modalidadFilter, ubicacionFilter, salarioMin, salarioMax]);
+
+  const applyFilters = () => {
+    let filtered = [...publicaciones];
+
+    // Filtro de búsqueda por texto
+    if (searchTerm.trim() !== "") {
+      filtered = filtered.filter((pub) =>
         pub.titulo_puesto.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pub.cliente_area?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pub.perfil_requerido?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredPublicaciones(filtered);
     }
-  }, [searchTerm, publicaciones]);
+
+    // Filtro de modalidad
+    if (modalidadFilter !== "todas") {
+      filtered = filtered.filter((pub) => pub.lugar_trabajo === modalidadFilter);
+    }
+
+    // Filtro de ubicación
+    if (ubicacionFilter !== "todas") {
+      filtered = filtered.filter((pub) => pub.ubicacion === ubicacionFilter);
+    }
+
+    // Filtro de salario mínimo
+    if (salarioMin) {
+      const minSalary = parseFloat(salarioMin);
+      filtered = filtered.filter((pub) => 
+        pub.sueldo_bruto_aprobado && pub.sueldo_bruto_aprobado >= minSalary
+      );
+    }
+
+    // Filtro de salario máximo
+    if (salarioMax) {
+      const maxSalary = parseFloat(salarioMax);
+      filtered = filtered.filter((pub) => 
+        pub.sueldo_bruto_aprobado && pub.sueldo_bruto_aprobado <= maxSalary
+      );
+    }
+
+    setFilteredPublicaciones(filtered);
+  };
 
   const loadPublicaciones = async () => {
     setLoading(true);
@@ -43,8 +88,28 @@ const Marketplace = () => {
     if (!error && data) {
       setPublicaciones(data);
       setFilteredPublicaciones(data);
+      
+      // Extraer ubicaciones únicas
+      const ubicaciones = [...new Set(data.map(pub => pub.ubicacion).filter(Boolean))] as string[];
+      setUbicacionesDisponibles(ubicaciones);
     }
     setLoading(false);
+  };
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setModalidadFilter("todas");
+    setUbicacionFilter("todas");
+    setSalarioMin("");
+    setSalarioMax("");
+  };
+
+  const hasActiveFilters = () => {
+    return searchTerm !== "" || 
+           modalidadFilter !== "todas" || 
+           ubicacionFilter !== "todas" || 
+           salarioMin !== "" || 
+           salarioMax !== "";
   };
 
   return (
@@ -64,10 +129,11 @@ const Marketplace = () => {
         </div>
       </header>
 
-      {/* Search Bar */}
-      <div className="border-b bg-muted/50">
+      {/* Search Bar & Filters */}
+      <div className="border-b bg-muted/30">
         <div className="container mx-auto px-4 py-6">
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-4xl mx-auto space-y-4">
+            {/* Search input */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -76,6 +142,103 @@ const Marketplace = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+            </div>
+
+            {/* Filters toggle */}
+            <div className="flex items-center justify-between">
+              <Collapsible open={showFilters} onOpenChange={setShowFilters} className="w-full">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <SlidersHorizontal className="h-4 w-4" />
+                      Filtros
+                      {hasActiveFilters() && (
+                        <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                          {[
+                            searchTerm !== "",
+                            modalidadFilter !== "todas",
+                            ubicacionFilter !== "todas",
+                            salarioMin !== "",
+                            salarioMax !== ""
+                          ].filter(Boolean).length}
+                        </Badge>
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  
+                  {hasActiveFilters() && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={clearFilters}
+                      className="gap-2 text-muted-foreground hover:text-foreground"
+                    >
+                      <X className="h-4 w-4" />
+                      Limpiar filtros
+                    </Button>
+                  )}
+                </div>
+
+                <CollapsibleContent className="pt-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-card rounded-lg border">
+                    {/* Modalidad */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Modalidad</label>
+                      <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todas">Todas</SelectItem>
+                          <SelectItem value="remoto">Remoto</SelectItem>
+                          <SelectItem value="presencial">Presencial</SelectItem>
+                          <SelectItem value="hibrido">Híbrido</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Ubicación */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Ubicación</label>
+                      <Select value={ubicacionFilter} onValueChange={setUbicacionFilter}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todas">Todas</SelectItem>
+                          {ubicacionesDisponibles.map((ubicacion) => (
+                            <SelectItem key={ubicacion} value={ubicacion}>
+                              {ubicacion}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Salario mínimo */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Salario mínimo</label>
+                      <Input
+                        type="number"
+                        placeholder="$ 0"
+                        value={salarioMin}
+                        onChange={(e) => setSalarioMin(e.target.value)}
+                      />
+                    </div>
+
+                    {/* Salario máximo */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Salario máximo</label>
+                      <Input
+                        type="number"
+                        placeholder="$ 0"
+                        value={salarioMax}
+                        onChange={(e) => setSalarioMax(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
         </div>
