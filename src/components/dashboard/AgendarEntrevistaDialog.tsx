@@ -35,6 +35,7 @@ export function AgendarEntrevistaDialog({
   const [duracion, setDuracion] = useState("60");
   const [tipoEntrevista, setTipoEntrevista] = useState<string>("virtual");
   const [notas, setNotas] = useState("");
+  const [detallesReunion, setDetallesReunion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -59,7 +60,8 @@ export function AgendarEntrevistaDialog({
       const fechaEntrevista = new Date(fecha);
       fechaEntrevista.setHours(parseInt(hours), parseInt(minutes));
 
-      const { error } = await supabase
+      // Insertar entrevista
+      const { error: entrevistaError } = await supabase
         .from("entrevistas_candidato")
         .insert({
           postulacion_id: postulacionId,
@@ -69,10 +71,22 @@ export function AgendarEntrevistaDialog({
           tipo_entrevista: tipoEntrevista,
           duracion_minutos: parseInt(duracion),
           notas,
+          detalles_reunion: detallesReunion || null,
           estado: "propuesta",
         });
 
-      if (error) throw error;
+      if (entrevistaError) throw entrevistaError;
+
+      // Actualizar etapa de la postulación a "entrevista"
+      const { error: postulacionError } = await supabase
+        .from("postulaciones")
+        .update({ 
+          etapa: "entrevista",
+          fecha_actualizacion: new Date().toISOString() 
+        })
+        .eq("id", postulacionId);
+
+      if (postulacionError) throw postulacionError;
 
       toast({
         title: "Propuesta enviada",
@@ -88,6 +102,7 @@ export function AgendarEntrevistaDialog({
       setDuracion("60");
       setTipoEntrevista("virtual");
       setNotas("");
+      setDetallesReunion("");
     } catch (error) {
       console.error("Error al crear propuesta:", error);
       toast({
@@ -178,6 +193,16 @@ export function AgendarEntrevistaDialog({
               value={notas}
               onChange={(e) => setNotas(e.target.value)}
               placeholder="Temas a tratar, preparación necesaria, etc."
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label>Detalles de la Reunión (opcional)</Label>
+            <Textarea
+              value={detallesReunion}
+              onChange={(e) => setDetallesReunion(e.target.value)}
+              placeholder="Link de Zoom/Meet, dirección, instrucciones de acceso, etc."
               rows={3}
             />
           </div>

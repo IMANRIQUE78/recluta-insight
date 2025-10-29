@@ -94,7 +94,8 @@ export function ProximasEntrevistasCard() {
     if (!selectedEntrevista) return;
 
     try {
-      const { error } = await supabase
+      // Actualizar estado de entrevista
+      const { error: entrevistaError } = await supabase
         .from("entrevistas_candidato")
         .update({
           estado: "completada",
@@ -104,7 +105,27 @@ export function ProximasEntrevistasCard() {
         })
         .eq("id", selectedEntrevista.id);
 
-      if (error) throw error;
+      if (entrevistaError) throw entrevistaError;
+
+      // Obtener postulacion_id de la entrevista
+      const { data: entrevistaData } = await supabase
+        .from("entrevistas_candidato")
+        .select("postulacion_id")
+        .eq("id", selectedEntrevista.id)
+        .single();
+
+      if (entrevistaData) {
+        // Actualizar etapa de postulación a "revision" (post-entrevista)
+        const { error: postulacionError } = await supabase
+          .from("postulaciones")
+          .update({ 
+            etapa: "revision",
+            fecha_actualizacion: new Date().toISOString()
+          })
+          .eq("id", entrevistaData.postulacion_id);
+
+        if (postulacionError) console.error("Error actualizando postulación:", postulacionError);
+      }
 
       toast({
         title: "Entrevista completada",

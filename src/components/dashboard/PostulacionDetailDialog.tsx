@@ -126,9 +126,43 @@ export const PostulacionDetailDialog = ({
   const handleAvanzar = async () => {
     const nuevaEtapa = postulacion.etapa === "entrevista" ? "contratada" : "revision";
     await onEtapaChange(nuevaEtapa);
+    
+    // Si se contrató, cerrar la vacante
+    if (nuevaEtapa === "contratada") {
+      try {
+        const { data: publicacion } = await supabase
+          .from("publicaciones_marketplace")
+          .select("vacante_id")
+          .eq("id", postulacion.publicacion_id)
+          .single();
+
+        if (publicacion) {
+          await supabase
+            .from("vacantes")
+            .update({ 
+              estatus: "cerrada",
+              fecha_cierre: new Date().toISOString()
+            })
+            .eq("id", publicacion.vacante_id);
+
+          // Recalcular estadísticas
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.rpc("recalcular_estadisticas_reclutador", {
+              p_user_id: user.id
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error cerrando vacante:", error);
+      }
+    }
+
     toast({
       title: "Candidato avanzado",
-      description: "El candidato ha sido movido a la siguiente etapa",
+      description: nuevaEtapa === "contratada" 
+        ? "Candidato contratado y vacante cerrada" 
+        : "El candidato ha sido movido a la siguiente etapa",
     });
     onOpenChange(false);
   };
