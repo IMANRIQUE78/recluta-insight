@@ -261,14 +261,14 @@ export const VacantePublicaDetailModal = ({
             </>
           )}
 
-          {/* Observaciones */}
-          {publicacion.observaciones && (
+          {/* Observaciones - SOLO para el propietario */}
+          {publicacion.observaciones && user && user.id === publicacion.user_id && (
             <>
               <Separator />
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Calendar className="h-4 w-4" />
-                  Información Adicional
+                  Observaciones Internas
                 </div>
                 <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">
                   {publicacion.observaciones}
