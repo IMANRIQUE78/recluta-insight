@@ -200,7 +200,11 @@ const Dashboard = () => {
 
         {/* Forecast Chart */}
         <section className="pt-2">
-          <ForecastChart />
+          <ForecastChart 
+            selectedCliente={selectedCliente}
+            selectedReclutador={selectedReclutador}
+            selectedEstatus={selectedEstatus}
+          />
         </section>
 
         {/* Entrevistas Section */}
