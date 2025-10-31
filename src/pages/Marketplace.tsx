@@ -122,9 +122,14 @@ const Marketplace = () => {
               <Briefcase className="h-6 w-6" />
               <h1 className="text-2xl font-bold">Marketplace de Vacantes</h1>
             </div>
-            <Button variant="outline" onClick={() => navigate("/")}>
-              Dashboard
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/")}>
+                Volver
+              </Button>
+              <Button onClick={() => navigate("/auth")}>
+                Iniciar Sesión
+              </Button>
+            </div>
           </div>
         </div>
       </header>

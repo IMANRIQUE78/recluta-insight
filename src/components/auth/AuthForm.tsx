@@ -55,7 +55,7 @@ export const AuthForm = () => {
     }
 
     toast.success("Cuenta creada exitosamente");
-    navigate("/dashboard");
+    navigate("/");
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -89,7 +89,7 @@ export const AuthForm = () => {
     }
 
     toast.success("Sesión iniciada exitosamente");
-    navigate("/dashboard");
+    navigate("/");
   };
 
   return (

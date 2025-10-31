@@ -94,7 +94,7 @@ const Onboarding = () => {
     }
 
     toast.success("Perfil configurado exitosamente");
-    navigate("/");
+    navigate("/dashboard");
   };
 
   return (
