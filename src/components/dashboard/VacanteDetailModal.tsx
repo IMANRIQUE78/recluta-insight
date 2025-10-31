@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Lock, Globe } from "lucide-react";
+import { Loader2, Lock, Globe, Users, Calendar } from "lucide-react";
 import { PublishToMarketplaceDialog } from "@/components/marketplace/PublishToMarketplaceDialog";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface VacanteDetailModalProps {
   open: boolean;
@@ -25,6 +26,8 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [clientes, setClientes] = useState<any[]>([]);
   const [reclutadores, setReclutadores] = useState<any[]>([]);
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [postulacionesCount, setPostulacionesCount] = useState(0);
+  const [entrevistasCount, setEntrevistasCount] = useState(0);
   
   const [formData, setFormData] = useState<{
     folio: string;
@@ -77,6 +80,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       });
       loadClientes();
       loadReclutadores();
+      loadVacanteMetrics();
     }
   }, [vacante, open]);
 
@@ -99,6 +103,43 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
     
     if (!error && data) {
       setReclutadores(data);
+    }
+  };
+
+  const loadVacanteMetrics = async () => {
+    if (!vacante?.id) return;
+
+    try {
+      // Obtener publicación de esta vacante
+      const { data: publicacion } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id")
+        .eq("vacante_id", vacante.id)
+        .maybeSingle();
+
+      if (publicacion) {
+        // Contar postulaciones
+        const { count: postCount } = await supabase
+          .from("postulaciones")
+          .select("*", { count: 'exact', head: true })
+          .eq("publicacion_id", publicacion.id);
+
+        setPostulacionesCount(postCount || 0);
+
+        // Contar entrevistas realizadas
+        const { count: entCount } = await supabase
+          .from("entrevistas_candidato")
+          .select("*", { count: 'exact', head: true })
+          .eq("postulacion_id", publicacion.id)
+          .neq("estado", "rechazada");
+
+        setEntrevistasCount(entCount || 0);
+      } else {
+        setPostulacionesCount(0);
+        setEntrevistasCount(0);
+      }
+    } catch (error) {
+      console.error("Error loading metrics:", error);
     }
   };
 
@@ -146,6 +187,14 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
         if (auditError) {
           console.error("Error al registrar auditoría:", auditError);
+        }
+
+        // Si se cierra o cancela la vacante, despublicar del marketplace
+        if (estatusNuevo === "cerrada" || estatusNuevo === "cancelada") {
+          await supabase
+            .from("publicaciones_marketplace")
+            .update({ publicada: false })
+            .eq("vacante_id", vacante.id);
         }
       }
 
@@ -202,10 +251,43 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
           <div className="bg-muted/50 border border-border rounded-lg p-4 flex items-center gap-3">
             <Lock className="h-5 w-5 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              Esta vacante ha sido {vacante?.estatus === "cerrada" ? "cerrada" : "cancelada"} y ya no puede modificarse.
+              Esta vacante ha sido {vacante?.estatus === "cerrada" ? "cerrada" : "cancelada"} y ya no puede modificarse ni está visible en el marketplace.
             </p>
           </div>
         )}
+
+        {/* Métricas de la vacante */}
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" />
+                Postulaciones Recibidas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{postulacionesCount}</p>
+              <CardDescription className="text-xs mt-1">
+                Total de candidatos interesados
+              </CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" />
+                Entrevistas Realizadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold">{entrevistasCount}</p>
+              <CardDescription className="text-xs mt-1">
+                {vacante?.estatus === "abierta" ? "En proceso de selección" : "Total de entrevistas"}
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           {/* ID Único - Solo lectura */}
@@ -422,15 +504,17 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
           </div>
 
           <div className="flex justify-between items-center gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShowPublishDialog(true)}
-              className="flex items-center gap-2"
-            >
-              <Globe className="h-4 w-4" />
-              Publicar en Marketplace
-            </Button>
+            {vacante?.estatus === "abierta" && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowPublishDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                Publicar en Marketplace
+              </Button>
+            )}
             
             <div className="flex gap-3">
               <Button

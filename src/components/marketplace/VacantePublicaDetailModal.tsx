@@ -143,6 +143,19 @@ export const VacantePublicaDetailModal = ({
     setPostulando(true);
 
     try {
+      // Verificar que la vacante sigue abierta
+      const { data: vacante } = await supabase
+        .from("vacantes")
+        .select("estatus")
+        .eq("id", publicacion.vacante_id)
+        .single();
+
+      if (vacante?.estatus !== "abierta") {
+        toast.error("Esta vacante ya no está disponible para postulaciones");
+        onOpenChange(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("postulaciones")
         .insert({
