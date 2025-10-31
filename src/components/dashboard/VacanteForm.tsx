@@ -27,7 +27,6 @@ const vacanteSchema = z.object({
   titulo_puesto: z.string().min(3, "El título debe tener al menos 3 caracteres").max(100, "Máximo 100 caracteres"),
   sueldo_bruto_aprobado: z.string().optional(),
   cliente_area_id: z.string().min(1, "Selecciona un cliente/área"),
-  fecha_solicitud: z.string().min(1, "Selecciona una fecha"),
   reclutador_id: z.string().optional(),
   lugar_trabajo: z.enum(["presencial", "remoto", "hibrido"]),
   motivo: z.enum(["baja_personal", "incapacidad", "crecimiento_negocio", "nuevo_puesto"]),
@@ -57,7 +56,6 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       titulo_puesto: "",
       sueldo_bruto_aprobado: "",
       cliente_area_id: "",
-      fecha_solicitud: new Date().toISOString().split('T')[0],
       reclutador_id: "",
       lugar_trabajo: "hibrido",
       motivo: "crecimiento_negocio",
@@ -107,6 +105,8 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      const fechaSolicitud = new Date().toISOString().split('T')[0];
+
       // Insertar vacante
       const { data: vacanteData, error: vacanteError } = await supabase
         .from("vacantes")
@@ -114,7 +114,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
           titulo_puesto: values.titulo_puesto,
           sueldo_bruto_aprobado: values.sueldo_bruto_aprobado ? parseFloat(values.sueldo_bruto_aprobado) : null,
           cliente_area_id: values.cliente_area_id,
-          fecha_solicitud: values.fecha_solicitud,
+          fecha_solicitud: fechaSolicitud,
           estatus: "abierta",
           reclutador_id: values.reclutador_id || null,
           lugar_trabajo: values.lugar_trabajo,
@@ -134,7 +134,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       await supabase.from("eventos_proceso").insert([{
         vacante_id: vacanteData.id,
         etapa: "sourcing",
-        fecha_inicio: values.fecha_solicitud,
+        fecha_inicio: fechaSolicitud,
       }]);
 
       // Crear registro de auditoría
@@ -441,21 +441,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="fecha_solicitud"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Fecha de Solicitud *</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="sueldo_bruto_aprobado"
