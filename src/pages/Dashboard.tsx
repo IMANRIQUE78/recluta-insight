@@ -7,6 +7,7 @@ import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
+import { ReclutadorProfileModal } from "@/components/dashboard/ReclutadorProfileModal";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
@@ -35,6 +36,8 @@ const Dashboard = () => {
   const [invitarReclutadorOpen, setInvitarReclutadorOpen] = useState(false);
   const [selectedVacante, setSelectedVacante] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [reclutadorProfileOpen, setReclutadorProfileOpen] = useState(false);
+  const [selectedReclutadorId, setSelectedReclutadorId] = useState<string>("");
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -48,6 +51,19 @@ const Dashboard = () => {
 
   useEffect(() => {
     loadFilters();
+
+    // Escuchar evento para abrir perfil de reclutador
+    const handleOpenReclutadorProfile = (event: any) => {
+      const { reclutadorId } = event.detail;
+      setSelectedReclutadorId(reclutadorId);
+      setReclutadorProfileOpen(true);
+    };
+
+    window.addEventListener('openReclutadorProfile', handleOpenReclutadorProfile as EventListener);
+
+    return () => {
+      window.removeEventListener('openReclutadorProfile', handleOpenReclutadorProfile as EventListener);
+    };
   }, []);
 
   const loadFilters = async () => {
@@ -262,6 +278,12 @@ const Dashboard = () => {
         data={detailData}
         columns={detailColumns}
         loading={detailLoading}
+      />
+
+      <ReclutadorProfileModal
+        open={reclutadorProfileOpen}
+        onOpenChange={setReclutadorProfileOpen}
+        reclutadorId={selectedReclutadorId}
       />
     </div>
   );

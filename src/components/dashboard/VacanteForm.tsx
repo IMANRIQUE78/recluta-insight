@@ -393,24 +393,35 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0">
+                        <PopoverContent className="w-full p-0 z-[100] bg-popover">
                           <Command>
                             <CommandInput 
-                              placeholder="Buscar o crear reclutador..." 
-                              value={newReclutadorValue}
-                              onValueChange={setNewReclutadorValue}
+                              placeholder="Buscar reclutador..." 
                             />
                             <CommandList>
                               <CommandEmpty>
-                                <Button
-                                  variant="ghost"
-                                  className="w-full"
-                                  onClick={handleAddReclutador}
-                                >
-                                  Crear "{newReclutadorValue}"
-                                </Button>
+                                <div className="py-6 text-center text-sm text-muted-foreground">
+                                  No hay reclutadores asociados. 
+                                  <br />
+                                  Usa 'Invitar Reclutador' para agregar uno.
+                                </div>
                               </CommandEmpty>
                               <CommandGroup>
+                                <CommandItem
+                                  value="sin-asignar"
+                                  onSelect={() => {
+                                    form.setValue("reclutador_id", "");
+                                    setOpenReclutadorCombo(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "mr-2 h-4 w-4",
+                                      !field.value ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  Sin asignar
+                                </CommandItem>
                                 {reclutadores.map((reclutador) => (
                                   <CommandItem
                                     key={reclutador.id}
@@ -426,7 +437,10 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                                         field.value === reclutador.id ? "opacity-100" : "opacity-0"
                                       )}
                                     />
-                                    {reclutador.nombre}
+                                    <div>
+                                      <div className="font-medium">{reclutador.nombre}</div>
+                                      <div className="text-xs text-muted-foreground">{reclutador.email}</div>
+                                    </div>
                                   </CommandItem>
                                 ))}
                               </CommandGroup>

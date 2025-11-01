@@ -232,8 +232,21 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                         {getEstatusLabel(vacante.estatus)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {vacante.reclutadores?.nombre || (
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      {vacante.reclutadores?.nombre ? (
+                        <button
+                          onClick={() => {
+                            // Aquí se abrirá el perfil del reclutador
+                            const reclutadorId = vacante.reclutador_id;
+                            if (reclutadorId) {
+                              window.dispatchEvent(new CustomEvent('openReclutadorProfile', { detail: { reclutadorId } }));
+                            }
+                          }}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {vacante.reclutadores.nombre}
+                        </button>
+                      ) : (
                         <span className="text-muted-foreground italic">No asignado</span>
                       )}
                     </TableCell>

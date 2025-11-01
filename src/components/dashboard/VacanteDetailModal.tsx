@@ -96,13 +96,53 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   };
 
   const loadReclutadores = async () => {
-    const { data, error } = await supabase
-      .from("reclutadores")
-      .select("*")
-      .order("nombre");
-    
-    if (!error && data) {
-      setReclutadores(data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Obtener empresa del usuario
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
+      if (!userRoles?.empresa_id) {
+        setReclutadores([]);
+        return;
+      }
+
+      // Obtener reclutadores asociados a la empresa
+      const { data: asociaciones, error } = await supabase
+        .from("reclutador_empresa")
+        .select(`
+          id,
+          reclutador_id,
+          perfil_reclutador (
+            id,
+            nombre_reclutador,
+            email,
+            user_id
+          )
+        `)
+        .eq("empresa_id", userRoles.empresa_id)
+        .eq("estado", "activa");
+
+      if (error) throw error;
+
+      // Formatear datos para el selector
+      const formattedReclutadores = asociaciones?.map(asoc => ({
+        id: (asoc.perfil_reclutador as any)?.id || "",
+        nombre: (asoc.perfil_reclutador as any)?.nombre_reclutador || "Sin nombre",
+        email: (asoc.perfil_reclutador as any)?.email || "",
+        user_id: (asoc.perfil_reclutador as any)?.user_id || "",
+      })).filter(rec => rec.id) || [];
+
+      setReclutadores(formattedReclutadores);
+    } catch (error) {
+      console.error("Error cargando reclutadores:", error);
+      setReclutadores([]);
     }
   };
 
@@ -396,7 +436,8 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
                 <SelectTrigger>
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[100] bg-popover">
+                  <SelectItem value="">Sin asignar</SelectItem>
                   {reclutadores.map((reclutador) => (
                     <SelectItem key={reclutador.id} value={reclutador.id}>
                       {reclutador.nombre}
