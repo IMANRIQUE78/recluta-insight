@@ -9,6 +9,7 @@ import Home from "./pages/Home";
 import Auth from "./pages/Auth";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
+import ReclutadorDashboard from "./pages/ReclutadorDashboard";
 import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import NotFound from "./pages/NotFound";
@@ -57,6 +58,11 @@ const App = () => (
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/reclutador-dashboard" element={
+            <ProtectedRoute>
+              <ReclutadorDashboard />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
