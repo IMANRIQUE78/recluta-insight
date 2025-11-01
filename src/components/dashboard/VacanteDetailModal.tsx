@@ -194,14 +194,19 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       const estatusAnterior = vacante.estatus;
       const estatusNuevo = formData.estatus;
 
+      // Convertir reclutador_id a null si es vacío o "sin-asignar"
+      const reclutadorId = (formData.reclutador_id === "sin-asignar" || formData.reclutador_id === "" || !formData.reclutador_id) 
+        ? null 
+        : formData.reclutador_id;
+
       // Preparar solo los campos que se pueden actualizar en la tabla vacantes
       const updateData: any = {
         titulo_puesto: formData.titulo_puesto,
         sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
         cliente_area_id: formData.cliente_area_id,
         estatus: formData.estatus,
-        reclutador_id: formData.reclutador_id === "sin-asignar" ? null : formData.reclutador_id,
-        reclutador_asignado_id: formData.reclutador_id === "sin-asignar" ? null : formData.reclutador_id,
+        reclutador_id: reclutadorId,
+        reclutador_asignado_id: reclutadorId,
         lugar_trabajo: formData.lugar_trabajo,
         motivo: formData.motivo,
         a_quien_sustituye: (formData.motivo === "baja_personal" || formData.motivo === "incapacidad") ? formData.a_quien_sustituye : null,
