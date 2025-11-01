@@ -253,12 +253,12 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="observaciones">Observaciones y Beneficios</Label>
+                <Label htmlFor="observaciones">La empresa ofrece</Label>
                 <Textarea
                   id="observaciones"
                   value={observaciones}
                   onChange={(e) => setObservaciones(e.target.value)}
-                  placeholder="Información adicional, beneficios, horarios..."
+                  placeholder="Prestaciones, beneficios y ventajas que ofrece la empresa..."
                   rows={3}
                 />
               </div>

@@ -274,14 +274,14 @@ export const VacantePublicaDetailModal = ({
             </>
           )}
 
-          {/* Observaciones - SOLO para el propietario */}
-          {publicacion.observaciones && user && user.id === publicacion.user_id && (
+          {/* La empresa ofrece */}
+          {publicacion.observaciones && (
             <>
               <Separator />
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Calendar className="h-4 w-4" />
-                  Observaciones Internas
+                  La empresa ofrece
                 </div>
                 <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">
                   {publicacion.observaciones}

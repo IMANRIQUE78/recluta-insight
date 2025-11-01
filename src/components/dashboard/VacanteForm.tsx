@@ -598,15 +598,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
                 name="observaciones"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Observaciones y Notas Internas</FormLabel>
+                    <FormLabel>La empresa ofrece</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="ej. Cliente prefiere candidatos con disponibilidad inmediata. Horario 9-6pm. Prestaciones superiores. Proceso urgente."
+                        placeholder="ej. Prestaciones superiores a la ley, vales de despensa, seguro de gastos médicos mayores, bonos por desempeño, horario flexible, home office, capacitación constante."
                         className="min-h-[80px]"
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription className="text-xs">Información adicional, urgencias, prioridades o condiciones especiales</FormDescription>
+                    <FormDescription className="text-xs">Beneficios, prestaciones y ventajas que ofrece la empresa para esta posición</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
