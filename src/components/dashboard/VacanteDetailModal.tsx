@@ -61,11 +61,13 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
   useEffect(() => {
     if (vacante && open) {
+      const clienteId = vacante.cliente_area_id || vacante.clientes_areas?.id || "";
+      
       setFormData({
         folio: vacante.folio || "",
         titulo_puesto: vacante.titulo_puesto || "",
         sueldo_bruto_aprobado: vacante.sueldo_bruto_aprobado?.toString() || "",
-        cliente_area_id: vacante.cliente_area_id || "",
+        cliente_area_id: clienteId,
         fecha_solicitud: vacante.fecha_solicitud || "",
         estatus: vacante.estatus || "abierta",
         reclutador_id: vacante.reclutador_id || "sin-asignar",

@@ -177,7 +177,7 @@ export const useKPIDetails = (kpiTitle: string) => {
   const loadOpenVacanciesDetails = async (userId: string) => {
     const { data: vacantes } = await supabase
       .from("vacantes")
-      .select("folio, titulo_puesto, fecha_solicitud, clientes_areas!inner(cliente_nombre), reclutadores(nombre)")
+      .select("folio, titulo_puesto, fecha_solicitud, clientes_areas!inner(cliente_nombre), perfil_reclutador(nombre_reclutador)")
       .eq("user_id", userId)
       .eq("estatus", "abierta")
       .order("fecha_solicitud", { ascending: false });
@@ -192,7 +192,7 @@ export const useKPIDetails = (kpiTitle: string) => {
         puesto: v.titulo_puesto,
         cliente: v.clientes_areas?.cliente_nombre,
         diasAbierta,
-        reclutador: v.reclutadores?.nombre || "No asignado",
+        reclutador: (v.perfil_reclutador as any)?.nombre_reclutador || "No asignado",
       };
     }) || [];
 

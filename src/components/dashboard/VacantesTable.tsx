@@ -69,8 +69,9 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
             tipo_cliente,
             area
           ),
-          reclutadores:reclutador_id (
-            nombre
+          perfil_reclutador:reclutador_id (
+            id,
+            nombre_reclutador
           )
         `)
         .order("created_at", { ascending: false })
@@ -233,10 +234,9 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                       </Badge>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
-                      {vacante.reclutadores?.nombre ? (
+                      {vacante.perfil_reclutador?.nombre_reclutador ? (
                         <button
                           onClick={() => {
-                            // Aquí se abrirá el perfil del reclutador
                             const reclutadorId = vacante.reclutador_id;
                             if (reclutadorId) {
                               window.dispatchEvent(new CustomEvent('openReclutadorProfile', { detail: { reclutadorId } }));
@@ -244,7 +244,7 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                           }}
                           className="text-primary hover:underline font-medium"
                         >
-                          {vacante.reclutadores.nombre}
+                          {vacante.perfil_reclutador.nombre_reclutador}
                         </button>
                       ) : (
                         <span className="text-muted-foreground italic">No asignado</span>

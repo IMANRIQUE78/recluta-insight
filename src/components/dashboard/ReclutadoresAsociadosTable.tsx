@@ -7,6 +7,7 @@ import { Loader2, Users } from "lucide-react";
 
 interface ReclutadorAsociado {
   id: string;
+  reclutador_id: string;
   nombre_reclutador: string;
   email: string;
   tipo_vinculacion: string;
@@ -46,10 +47,12 @@ export const ReclutadoresAsociadosTable = () => {
         .from("reclutador_empresa")
         .select(`
           id,
+          reclutador_id,
           tipo_vinculacion,
           estado,
           fecha_inicio,
           perfil_reclutador (
+            id,
             nombre_reclutador,
             email,
             especialidades
@@ -62,6 +65,7 @@ export const ReclutadoresAsociadosTable = () => {
 
       const formattedData = asociaciones?.map(asoc => ({
         id: asoc.id,
+        reclutador_id: asoc.reclutador_id,
         nombre_reclutador: (asoc.perfil_reclutador as any)?.nombre_reclutador || "Sin nombre",
         email: (asoc.perfil_reclutador as any)?.email || "Sin email",
         tipo_vinculacion: asoc.tipo_vinculacion,
@@ -147,7 +151,16 @@ export const ReclutadoresAsociadosTable = () => {
               <TableBody>
                 {reclutadores.map((rec) => (
                   <TableRow key={rec.id}>
-                    <TableCell className="font-medium">{rec.nombre_reclutador}</TableCell>
+                    <TableCell className="font-medium">
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(new CustomEvent('openReclutadorProfile', { detail: { reclutadorId: rec.reclutador_id } }));
+                        }}
+                        className="text-primary hover:underline font-medium"
+                      >
+                        {rec.nombre_reclutador}
+                      </button>
+                    </TableCell>
                     <TableCell className="text-sm text-muted-foreground">{rec.email}</TableCell>
                     <TableCell>{getTipoVinculacionBadge(rec.tipo_vinculacion)}</TableCell>
                     <TableCell>
