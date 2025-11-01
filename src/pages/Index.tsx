@@ -20,12 +20,11 @@ const Index = () => {
       return;
     }
 
-    // Verificar si tiene perfil de usuario (reclutador)
-    const { data: perfilUsuario } = await supabase
-      .from("perfil_usuario")
+    // Verificar si tiene rol de empresa o reclutador
+    const { data: userRoles } = await supabase
+      .from("user_roles")
       .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+      .eq("user_id", user.id);
 
     // Verificar si tiene perfil de candidato
     const { data: perfilCandidato } = await supabase
@@ -34,9 +33,18 @@ const Index = () => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (perfilUsuario) {
-      navigate("/dashboard");
-    } else if (perfilCandidato) {
+    if (userRoles && userRoles.length > 0) {
+      // Si tiene rol de empresa o reclutador, ir al dashboard
+      const hasEmpresaOrReclutador = userRoles.some(r => 
+        r.role === "admin_empresa" || r.role === "reclutador"
+      );
+      if (hasEmpresaOrReclutador) {
+        navigate("/dashboard");
+        return;
+      }
+    }
+
+    if (perfilCandidato) {
       navigate("/candidate-dashboard");
     } else {
       // Si no tiene ningún perfil, ir a onboarding

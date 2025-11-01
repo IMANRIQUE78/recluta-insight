@@ -7,7 +7,7 @@ import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
-import Onboarding from "./pages/Onboarding";
+import OnboardingFlow from "./pages/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
 import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
@@ -51,7 +51,7 @@ const App = () => (
           } />
           <Route path="/onboarding" element={
             <ProtectedRoute>
-              <Onboarding />
+              <OnboardingFlow />
             </ProtectedRoute>
           } />
           <Route path="/dashboard" element={
