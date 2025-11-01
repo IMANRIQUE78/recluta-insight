@@ -5,10 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar } from "lucide-react";
+import { Eye, Calendar, MessageSquare } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
 import { PostulacionDetailDialog } from "./PostulacionDetailDialog";
+import { PostulacionChatDialog } from "@/components/postulacion/PostulacionChatDialog";
 
 interface Postulacion {
   id: string;
@@ -62,6 +63,13 @@ export const PostulacionesRecibidas = () => {
     id: string;
     candidato_user_id: string;
     candidato_nombre: string;
+  } | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [selectedChat, setSelectedChat] = useState<{
+    postulacionId: string;
+    candidatoUserId: string;
+    candidatoNombre: string;
+    tituloVacante: string;
   } | null>(null);
 
   useEffect(() => {
@@ -312,7 +320,7 @@ export const PostulacionesRecibidas = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex gap-2 justify-center">
+                          <div className="flex gap-2 justify-center flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
@@ -320,6 +328,22 @@ export const PostulacionesRecibidas = () => {
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               Ver Detalles
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedChat({
+                                  postulacionId: postulacion.id,
+                                  candidatoUserId: postulacion.candidato_user_id,
+                                  candidatoNombre: postulacion.perfil?.nombre_completo || "Candidato",
+                                  tituloVacante: postulacion.publicacion.titulo_puesto,
+                                });
+                                setChatOpen(true);
+                              }}
+                            >
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              Chat
                             </Button>
                             {postulacion.etapa === "recibida" && (
                               <Button
@@ -366,6 +390,17 @@ export const PostulacionesRecibidas = () => {
           candidatoUserId={agendarPostulacion.candidato_user_id}
           candidatoNombre={agendarPostulacion.candidato_nombre}
           onSuccess={handleAgendarSuccess}
+        />
+      )}
+
+      {selectedChat && (
+        <PostulacionChatDialog
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          postulacionId={selectedChat.postulacionId}
+          destinatarioUserId={selectedChat.candidatoUserId}
+          destinatarioNombre={selectedChat.candidatoNombre}
+          tituloVacante={selectedChat.tituloVacante}
         />
       )}
     </>

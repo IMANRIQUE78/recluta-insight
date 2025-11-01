@@ -5,12 +5,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
+import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
@@ -222,7 +224,25 @@ const ReclutadorDashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6 space-y-6">
+      <div className="container mx-auto px-4 py-6">
+        <Tabs defaultValue="resumen" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+            <TabsTrigger value="resumen">
+              <Star className="h-4 w-4 mr-2" />
+              Resumen
+            </TabsTrigger>
+            <TabsTrigger value="gestion">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Gestión de Vacantes
+            </TabsTrigger>
+            <TabsTrigger value="mensajes">
+              <MessageSquare className="h-4 w-4 mr-2" />
+              Comunicación
+            </TabsTrigger>
+          </TabsList>
+
+          {/* TAB: RESUMEN */}
+          <TabsContent value="resumen" className="space-y-6">
         {/* Perfil y Código Único */}
         <section className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -498,6 +518,47 @@ const ReclutadorDashboard = () => {
             </Card>
           </section>
         )}
+          </TabsContent>
+
+          {/* TAB: GESTIÓN DE VACANTES */}
+          <TabsContent value="gestion" className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold">Gestión de Vacantes Publicadas</h2>
+                <p className="text-muted-foreground">
+                  Administra tus vacantes publicadas en el marketplace y sus postulaciones
+                </p>
+              </div>
+
+              {/* Postulaciones Recibidas Component */}
+              <PostulacionesRecibidas />
+            </div>
+          </TabsContent>
+
+          {/* TAB: MENSAJES */}
+          <TabsContent value="mensajes" className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold">Centro de Comunicación</h2>
+                <p className="text-muted-foreground">
+                  Gestiona tus conversaciones con candidatos
+                </p>
+              </div>
+
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Mensajes con Candidatos</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Accede al chat con cada candidato desde la sección de Postulaciones Recibidas en "Gestión de Vacantes"
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Modal de edición de perfil */}

@@ -453,6 +453,47 @@ export type Database = {
           },
         ]
       }
+      mensajes_postulacion: {
+        Row: {
+          created_at: string
+          destinatario_user_id: string
+          id: string
+          leido: boolean
+          mensaje: string
+          postulacion_id: string
+          remitente_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_user_id: string
+          id?: string
+          leido?: boolean
+          mensaje: string
+          postulacion_id: string
+          remitente_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_user_id?: string
+          id?: string
+          leido?: boolean
+          mensaje?: string
+          postulacion_id?: string
+          remitente_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mensajes_postulacion_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "postulaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfil_candidato: {
         Row: {
           carrera: string | null
