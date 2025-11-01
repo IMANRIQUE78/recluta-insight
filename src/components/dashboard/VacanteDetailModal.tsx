@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, Lock, Globe, Users, Calendar } from "lucide-react";
-import { PublishToMarketplaceDialog } from "@/components/marketplace/PublishToMarketplaceDialog";
+import { Loader2, Lock, Users, Calendar } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface VacanteDetailModalProps {
@@ -25,7 +24,6 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [editing, setEditing] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
   const [reclutadores, setReclutadores] = useState<any[]>([]);
-  const [showPublishDialog, setShowPublishDialog] = useState(false);
   const [postulacionesCount, setPostulacionesCount] = useState(0);
   const [entrevistasCount, setEntrevistasCount] = useState(0);
   
@@ -196,9 +194,19 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       const estatusAnterior = vacante.estatus;
       const estatusNuevo = formData.estatus;
 
+      // Preparar solo los campos que se pueden actualizar en la tabla vacantes
       const updateData: any = {
-        ...formData,
+        titulo_puesto: formData.titulo_puesto,
         sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
+        cliente_area_id: formData.cliente_area_id,
+        estatus: formData.estatus,
+        reclutador_id: formData.reclutador_id === "sin-asignar" ? null : formData.reclutador_id,
+        reclutador_asignado_id: formData.reclutador_id === "sin-asignar" ? null : formData.reclutador_id,
+        lugar_trabajo: formData.lugar_trabajo,
+        motivo: formData.motivo,
+        a_quien_sustituye: (formData.motivo === "baja_personal" || formData.motivo === "incapacidad") ? formData.a_quien_sustituye : null,
+        perfil_requerido: formData.perfil_requerido,
+        observaciones: formData.observaciones || null,
       };
 
       // Si está cambiando a cerrada o cancelada, establecer fecha_cierre
@@ -544,50 +552,26 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             />
           </div>
 
-          <div className="flex justify-between items-center gap-3 pt-4 border-t">
-            {vacante?.estatus === "abierta" && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowPublishDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Globe className="h-4 w-4" />
-                Publicar en Marketplace
+          <div className="flex justify-end items-center gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                onOpenChange(false);
+                setEditing(false);
+              }}
+            >
+              Cerrar
+            </Button>
+            {!isLocked && (
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Cambios
               </Button>
             )}
-            
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  onOpenChange(false);
-                  setEditing(false);
-                }}
-              >
-                Cerrar
-              </Button>
-              {!isLocked && (
-                <Button type="submit" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Guardar Cambios
-                </Button>
-              )}
-            </div>
           </div>
         </form>
       </DialogContent>
-
-      <PublishToMarketplaceDialog
-        open={showPublishDialog}
-        onOpenChange={setShowPublishDialog}
-        vacante={vacante}
-        onSuccess={() => {
-          setShowPublishDialog(false);
-          onSuccess();
-        }}
-      />
     </Dialog>
   );
 };
