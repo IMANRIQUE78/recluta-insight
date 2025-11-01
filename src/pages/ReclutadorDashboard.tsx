@@ -5,8 +5,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2 } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
+import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -242,12 +244,31 @@ const ReclutadorDashboard = () => {
                   <span className="font-semibold">1 empresa</span>
                 </div>
                 <Separator />
-                <Button className="w-full" variant="outline" disabled>
-                  <Star className="mr-2 h-4 w-4" />
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold">Actualiza a Premium para obtener:</p>
+                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Hasta 5 asociaciones simultáneas</li>
+                    <li>Acceso a pool de candidatos premium</li>
+                    <li>Baterías psicométricas</li>
+                    <li>IA para sourcing automático</li>
+                    <li>Publicaciones destacadas</li>
+                  </ul>
+                </div>
+                <Button className="w-full" disabled>
+                  <Zap className="mr-2 h-4 w-4" />
                   Actualizar a Premium (Próximamente)
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        {/* Gestión de Vacantes y Entrevistas */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold">Mi Trabajo</h2>
+          <div className="grid gap-4 lg:grid-cols-2">
+            <VacantesAsignadasCard reclutadorId={perfilReclutador?.id} />
+            <EntrevistasReclutadorCard reclutadorUserId={perfilReclutador?.user_id} />
           </div>
         </section>
 
@@ -384,21 +405,23 @@ const ReclutadorDashboard = () => {
           </section>
         )}
 
-        {/* Estado Vacío */}
+        {/* Estado Vacío - Solo mostrar si no hay invitaciones NI asociaciones NI trabajo activo */}
         {invitacionesPendientes.length === 0 && asociacionesActivas.length === 0 && (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Briefcase className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Aún no tienes colaboraciones</h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-4">
-                Comparte tu código único con empresas para que te inviten a colaborar en sus procesos de reclutamiento.
-              </p>
-              <Button onClick={handleCopyCode} variant="outline">
-                <Copy className="mr-2 h-4 w-4" />
-                Copiar mi código
-              </Button>
-            </CardContent>
-          </Card>
+          <section>
+            <Card className="border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                <Briefcase className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">Aún no tienes colaboraciones</h3>
+                <p className="text-sm text-muted-foreground max-w-md mb-4">
+                  Comparte tu código único con empresas para que te inviten a colaborar en sus procesos de reclutamiento.
+                </p>
+                <Button onClick={handleCopyCode} variant="outline">
+                  <Copy className="mr-2 h-4 w-4" />
+                  Copiar mi código
+                </Button>
+              </CardContent>
+            </Card>
+          </section>
         )}
       </div>
     </div>

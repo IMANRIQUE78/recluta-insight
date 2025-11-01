@@ -42,16 +42,23 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
         throw new Error("No se encontró la empresa asociada");
       }
 
-      // Buscar reclutador por código
+      // Buscar reclutador por código (convertir a minúsculas para búsqueda case-insensitive)
       const { data: reclutador, error: reclutadorError } = await supabase
         .from("perfil_reclutador")
-        .select("id")
-        .eq("codigo_reclutador", codigoReclutador.trim())
-        .single();
+        .select("id, nombre_reclutador, email")
+        .ilike("codigo_reclutador", codigoReclutador.trim())
+        .maybeSingle();
 
-      if (reclutadorError || !reclutador) {
-        throw new Error("No se encontró un reclutador con ese código");
+      if (reclutadorError) {
+        console.error("Error buscando reclutador:", reclutadorError);
+        throw new Error("Error al buscar el reclutador");
       }
+
+      if (!reclutador) {
+        throw new Error(`No se encontró un reclutador con el código "${codigoReclutador.trim().toUpperCase()}". Verifica que el código sea correcto.`);
+      }
+
+      console.log("Reclutador encontrado:", reclutador);
 
       // Crear invitación
       const { error: invitacionError } = await supabase
@@ -69,7 +76,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
 
       toast({
         title: "✅ Invitación enviada",
-        description: "El reclutador recibirá la invitación para colaborar con tu empresa",
+        description: `Invitación enviada a ${reclutador.nombre_reclutador || reclutador.email}`,
       });
 
       onSuccess?.();
