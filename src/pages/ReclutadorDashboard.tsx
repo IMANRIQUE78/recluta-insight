@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
@@ -13,6 +13,7 @@ import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
 import { KPICard } from "@/components/dashboard/KPICard";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
+import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const ReclutadorDashboard = () => {
   const [perfilReclutador, setPerfilReclutador] = useState<any>(null);
   const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
   const [asociacionesActivas, setAsociacionesActivas] = useState<any[]>([]);
+  const [editarPerfilOpen, setEditarPerfilOpen] = useState(false);
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
 
@@ -204,6 +206,13 @@ const ReclutadorDashboard = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditarPerfilOpen(true)}
+              >
+                <UserCog className="mr-2 h-4 w-4" />
+                Mejorar Perfil
+              </Button>
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Salir
@@ -490,6 +499,16 @@ const ReclutadorDashboard = () => {
           </section>
         )}
       </div>
+
+      {/* Modal de edición de perfil */}
+      {perfilReclutador && (
+        <EditarPerfilReclutadorDialog
+          open={editarPerfilOpen}
+          onOpenChange={setEditarPerfilOpen}
+          reclutadorId={perfilReclutador.id}
+          onUpdate={loadDashboardData}
+        />
+      )}
     </div>
   );
 };

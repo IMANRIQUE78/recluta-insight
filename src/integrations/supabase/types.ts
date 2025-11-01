@@ -549,11 +549,16 @@ export type Database = {
           email: string
           especialidades: string[] | null
           id: string
+          linkedin_url: string | null
+          mostrar_telefono: boolean | null
           nombre_reclutador: string
+          semblanza_profesional: string | null
           telefono: string | null
           tipo_reclutador: Database["public"]["Enums"]["tipo_reclutador"]
+          twitter_url: string | null
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           anos_experiencia?: number | null
@@ -563,11 +568,16 @@ export type Database = {
           email: string
           especialidades?: string[] | null
           id?: string
+          linkedin_url?: string | null
+          mostrar_telefono?: boolean | null
           nombre_reclutador: string
+          semblanza_profesional?: string | null
           telefono?: string | null
           tipo_reclutador?: Database["public"]["Enums"]["tipo_reclutador"]
+          twitter_url?: string | null
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           anos_experiencia?: number | null
@@ -577,11 +587,16 @@ export type Database = {
           email?: string
           especialidades?: string[] | null
           id?: string
+          linkedin_url?: string | null
+          mostrar_telefono?: boolean | null
           nombre_reclutador?: string
+          semblanza_profesional?: string | null
           telefono?: string | null
           tipo_reclutador?: Database["public"]["Enums"]["tipo_reclutador"]
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: []
       }
