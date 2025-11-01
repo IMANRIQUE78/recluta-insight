@@ -9,6 +9,7 @@ import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
+import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -207,6 +208,11 @@ const Dashboard = () => {
             selectedReclutador={selectedReclutador}
             selectedEstatus={selectedEstatus}
           />
+        </section>
+
+        {/* Reclutadores Asociados */}
+        <section className="space-y-4">
+          <ReclutadoresAsociadosTable />
         </section>
 
         {/* Requisiciones Internas */}

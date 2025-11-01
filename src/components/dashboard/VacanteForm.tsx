@@ -86,13 +86,53 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   };
 
   const loadReclutadores = async () => {
-    const { data, error } = await supabase
-      .from("reclutadores")
-      .select("*")
-      .order("nombre");
-    
-    if (!error && data) {
-      setReclutadores(data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Obtener empresa del usuario
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
+      if (!userRoles?.empresa_id) {
+        setReclutadores([]);
+        return;
+      }
+
+      // Obtener reclutadores asociados a la empresa
+      const { data: asociaciones, error } = await supabase
+        .from("reclutador_empresa")
+        .select(`
+          id,
+          reclutador_id,
+          perfil_reclutador (
+            id,
+            nombre_reclutador,
+            email,
+            user_id
+          )
+        `)
+        .eq("empresa_id", userRoles.empresa_id)
+        .eq("estado", "activa");
+
+      if (error) throw error;
+
+      // Formatear datos para el selector
+      const formattedReclutadores = asociaciones?.map(asoc => ({
+        id: (asoc.perfil_reclutador as any)?.id || "",
+        nombre: (asoc.perfil_reclutador as any)?.nombre_reclutador || "Sin nombre",
+        email: (asoc.perfil_reclutador as any)?.email || "",
+        user_id: (asoc.perfil_reclutador as any)?.user_id || "",
+      })).filter(rec => rec.id) || [];
+
+      setReclutadores(formattedReclutadores);
+    } catch (error) {
+      console.error("Error cargando reclutadores:", error);
+      setReclutadores([]);
     }
   };
 
@@ -115,6 +155,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
           fecha_solicitud: fechaSolicitud,
           estatus: "abierta",
           reclutador_id: values.reclutador_id || null,
+          reclutador_asignado_id: values.reclutador_id || null,
           lugar_trabajo: values.lugar_trabajo,
           motivo: values.motivo,
           a_quien_sustituye: (values.motivo === "baja_personal" || values.motivo === "incapacidad") ? values.a_quien_sustituye : null,
@@ -196,36 +237,13 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   };
 
   const handleAddReclutador = async () => {
-    if (!newReclutadorValue.trim()) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from("reclutadores")
-        .insert({
-          nombre: newReclutadorValue,
-          correo: `${newReclutadorValue.toLowerCase().replace(/\s/g, '.')}@example.com`,
-          senioridad: "junior",
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      
-      await loadReclutadores();
-      form.setValue("reclutador_id", data.id);
-      setNewReclutadorValue("");
-      setOpenReclutadorCombo(false);
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
+    // Ya no se pueden agregar reclutadores desde aquí
+    // Solo se pueden asignar los que ya están asociados a la empresa
+    toast({
+      title: "Información",
+      description: "Solo puedes asignar reclutadores que ya están asociados a tu empresa. Usa 'Invitar Reclutador' para agregar nuevos.",
+      variant: "default",
+    });
   };
 
   const handleDeleteCliente = (clienteId: string, e: React.MouseEvent) => {
