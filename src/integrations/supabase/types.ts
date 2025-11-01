@@ -457,10 +457,13 @@ export type Database = {
         Row: {
           anos_experiencia: number | null
           carrera: string | null
+          certificaciones: Json | null
           created_at: string
           disponibilidad: string | null
+          educacion: Json | null
           email: string
           empresa_actual: string | null
+          experiencia_laboral: Json | null
           github_url: string | null
           habilidades_blandas: string[] | null
           habilidades_tecnicas: string[] | null
@@ -485,10 +488,13 @@ export type Database = {
         Insert: {
           anos_experiencia?: number | null
           carrera?: string | null
+          certificaciones?: Json | null
           created_at?: string
           disponibilidad?: string | null
+          educacion?: Json | null
           email: string
           empresa_actual?: string | null
+          experiencia_laboral?: Json | null
           github_url?: string | null
           habilidades_blandas?: string[] | null
           habilidades_tecnicas?: string[] | null
@@ -513,10 +519,13 @@ export type Database = {
         Update: {
           anos_experiencia?: number | null
           carrera?: string | null
+          certificaciones?: Json | null
           created_at?: string
           disponibilidad?: string | null
+          educacion?: Json | null
           email?: string
           empresa_actual?: string | null
+          experiencia_laboral?: Json | null
           github_url?: string | null
           habilidades_blandas?: string[] | null
           habilidades_tecnicas?: string[] | null
