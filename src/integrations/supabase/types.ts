@@ -173,6 +173,7 @@ export type Database = {
           codigo_empresa: string
           codigo_postal: string | null
           created_at: string
+          created_by: string | null
           descripcion_empresa: string | null
           direccion_fiscal: string | null
           email_contacto: string
@@ -193,6 +194,7 @@ export type Database = {
           codigo_empresa?: string
           codigo_postal?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion_empresa?: string | null
           direccion_fiscal?: string | null
           email_contacto: string
@@ -213,6 +215,7 @@ export type Database = {
           codigo_empresa?: string
           codigo_postal?: string | null
           created_at?: string
+          created_by?: string | null
           descripcion_empresa?: string | null
           direccion_fiscal?: string | null
           email_contacto?: string

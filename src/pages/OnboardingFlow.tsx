@@ -88,6 +88,7 @@ const OnboardingFlow = () => {
           sector: sector,
           tamano_empresa: tamanoEmpresa,
           email_contacto: emailContacto || user.email || "",
+          created_by: user.id,
         })
         .select()
         .single();
