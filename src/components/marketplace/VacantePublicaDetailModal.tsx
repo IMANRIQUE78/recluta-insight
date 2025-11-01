@@ -60,7 +60,7 @@ export const VacantePublicaDetailModal = ({
         // Cargar información del perfil del usuario
         const { data: perfilData } = await supabase
           .from("perfil_usuario")
-          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_reclutador, descripcion_reclutador, nombre_usuario, sector, tamano_empresa, sitio_web, created_at, pais")
+          .select("nombre_empresa, mostrar_empresa_publica, descripcion_empresa, nombre_usuario, sector, tamano_empresa, sitio_web, created_at, pais")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
@@ -74,8 +74,8 @@ export const VacantePublicaDetailModal = ({
           setSectorEmpresa(perfilData.sector || "");
           setTamanoEmpresa(perfilData.tamano_empresa || "");
           setSitioWebEmpresa(perfilData.sitio_web || "");
-          setNombreReclutador(perfilData.nombre_reclutador || perfilData.nombre_usuario || "Reclutador");
-          setDescripcionReclutador(perfilData.descripcion_reclutador || "No hay información disponible sobre el reclutador");
+          setNombreReclutador(perfilData.nombre_usuario || "Reclutador");
+          setDescripcionReclutador("No hay información disponible sobre el reclutador");
           setFechaRegistro(perfilData.created_at || "");
           setPaisReclutador(perfilData.pais || "México");
         }
