@@ -38,6 +38,10 @@ const ReclutadorDashboard = () => {
         .single();
 
       if (perfilError) throw perfilError;
+      
+      console.log("Perfil de reclutador cargado:", perfil);
+      console.log("Código único del reclutador:", perfil?.codigo_reclutador);
+      
       setPerfilReclutador(perfil);
 
       // Cargar invitaciones pendientes
@@ -84,10 +88,17 @@ const ReclutadorDashboard = () => {
 
   const handleCopyCode = () => {
     if (perfilReclutador?.codigo_reclutador) {
-      navigator.clipboard.writeText(perfilReclutador.codigo_reclutador);
+      const codigoUpper = perfilReclutador.codigo_reclutador.toUpperCase();
+      navigator.clipboard.writeText(codigoUpper);
       toast({
         title: "✅ Código copiado",
-        description: "Tu código único ha sido copiado al portapapeles",
+        description: `Tu código ${codigoUpper} ha sido copiado al portapapeles`,
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el código. Intenta recargar la página.",
+        variant: "destructive",
       });
     }
   };
@@ -212,14 +223,26 @@ const ReclutadorDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
-                  <code className="text-2xl font-bold tracking-wider flex-1">
-                    {perfilReclutador?.codigo_reclutador}
-                  </code>
-                  <Button size="icon" variant="ghost" onClick={handleCopyCode}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
+                {perfilReclutador?.codigo_reclutador ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
+                      <code className="text-2xl font-bold tracking-wider flex-1 text-primary">
+                        {perfilReclutador.codigo_reclutador.toUpperCase()}
+                      </code>
+                      <Button size="icon" variant="ghost" onClick={handleCopyCode}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Este código es único e identifica tu perfil de reclutador en el sistema
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <p className="text-sm">Código no disponible</p>
+                    <p className="text-xs">Contacta a soporte si el problema persiste</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

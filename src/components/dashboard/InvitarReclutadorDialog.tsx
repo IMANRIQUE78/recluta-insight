@@ -113,14 +113,15 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
             <Label htmlFor="codigo">Código del Reclutador *</Label>
             <Input
               id="codigo"
-              placeholder="ej. ABC12345"
+              placeholder="ej. ABC12345 (8 caracteres)"
               value={codigoReclutador}
-              onChange={(e) => setCodigoReclutador(e.target.value)}
+              onChange={(e) => setCodigoReclutador(e.target.value.toUpperCase())}
               required
               disabled={loading}
+              maxLength={8}
             />
             <p className="text-xs text-muted-foreground">
-              Solicita al reclutador su código único de 8 caracteres
+              Solicita al reclutador su código único de 8 caracteres. No distingue entre mayúsculas y minúsculas.
             </p>
           </div>
 

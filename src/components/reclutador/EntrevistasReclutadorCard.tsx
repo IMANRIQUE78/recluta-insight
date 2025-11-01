@@ -21,30 +21,69 @@ export const EntrevistasReclutadorCard = ({ reclutadorUserId }: EntrevistasReclu
 
   const loadEntrevistas = async () => {
     try {
-      const { data, error } = await supabase
+      // Primero obtener las entrevistas del reclutador
+      const { data: entrevistasData, error: entrevistasError } = await supabase
         .from("entrevistas_candidato")
         .select(`
-          *,
-          postulaciones (
-            publicaciones_marketplace (
-              titulo_puesto,
-              vacantes (
-                folio
-              )
-            ),
-            perfil_candidato (
-              nombre_completo,
-              email
-            )
-          )
+          id,
+          fecha_entrevista,
+          asistio,
+          estado,
+          detalles_reunion,
+          postulacion_id,
+          candidato_user_id
         `)
         .eq("reclutador_user_id", reclutadorUserId)
         .gte("fecha_entrevista", new Date().toISOString())
         .order("fecha_entrevista", { ascending: true })
         .limit(5);
 
-      if (error) throw error;
-      setEntrevistas(data || []);
+      if (entrevistasError) throw entrevistasError;
+
+      if (!entrevistasData || entrevistasData.length === 0) {
+        setEntrevistas([]);
+        return;
+      }
+
+      // Obtener datos de postulaciones
+      const postulacionIds = entrevistasData.map(e => e.postulacion_id);
+      const { data: postulaciones } = await supabase
+        .from("postulaciones")
+        .select(`
+          id,
+          publicacion_id,
+          candidato_user_id
+        `)
+        .in("id", postulacionIds);
+
+      // Obtener datos de publicaciones
+      const publicacionIds = postulaciones?.map(p => p.publicacion_id) || [];
+      const { data: publicaciones } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id, titulo_puesto, vacante_id")
+        .in("id", publicacionIds);
+
+      // Obtener datos de candidatos
+      const candidatoUserIds = entrevistasData.map(e => e.candidato_user_id);
+      const { data: candidatos } = await supabase
+        .from("perfil_candidato")
+        .select("user_id, nombre_completo, email")
+        .in("user_id", candidatoUserIds);
+
+      // Combinar los datos
+      const entrevistasEnriquecidas = entrevistasData.map(entrevista => {
+        const postulacion = postulaciones?.find(p => p.id === entrevista.postulacion_id);
+        const publicacion = publicaciones?.find(p => p.id === postulacion?.publicacion_id);
+        const candidato = candidatos?.find(c => c.user_id === entrevista.candidato_user_id);
+
+        return {
+          ...entrevista,
+          titulo_puesto: publicacion?.titulo_puesto || "Sin título",
+          candidato_nombre: candidato?.nombre_completo || candidato?.email || "Sin nombre",
+        };
+      });
+
+      setEntrevistas(entrevistasEnriquecidas);
     } catch (error: any) {
       console.error("Error cargando entrevistas:", error);
     } finally {
@@ -116,11 +155,11 @@ export const EntrevistasReclutadorCard = ({ reclutadorUserId }: EntrevistasReclu
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <p className="font-semibold">
-                      {entrevista.postulaciones?.publicaciones_marketplace?.titulo_puesto}
+                      {entrevista.titulo_puesto}
                     </p>
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <User className="h-3 w-3" />
-                      {entrevista.postulaciones?.perfil_candidato?.nombre_completo}
+                      {entrevista.candidato_nombre}
                     </p>
                   </div>
                   <Badge variant={entrevista.estado === "confirmada" ? "default" : "secondary"}>
