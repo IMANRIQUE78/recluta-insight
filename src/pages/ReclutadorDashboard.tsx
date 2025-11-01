@@ -10,6 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
+import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
+import { KPICard } from "@/components/dashboard/KPICard";
+import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -18,6 +21,8 @@ const ReclutadorDashboard = () => {
   const [perfilReclutador, setPerfilReclutador] = useState<any>(null);
   const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
   const [asociacionesActivas, setAsociacionesActivas] = useState<any[]>([]);
+  
+  const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
 
   useEffect(() => {
     loadDashboardData();
@@ -287,6 +292,36 @@ const ReclutadorDashboard = () => {
           </div>
         </section>
 
+        {/* Indicadores de Performance */}
+        <section className="space-y-4">
+          <h2 className="text-xl font-bold">Indicadores de Performance</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <KPICard
+              title="Promedio Cierre"
+              value={stats.promedioDiasCierre}
+              unit="días"
+              icon={<Clock className="h-5 w-5" />}
+            />
+            <KPICard
+              title="Vacantes Cerradas"
+              value={stats.vacantesCerradas}
+              icon={<CheckCircle2 className="h-5 w-5" />}
+            />
+            <KPICard
+              title="Entrevistas / Cierre"
+              value={stats.porcentajeExito}
+              unit="%"
+              icon={<TrendingUp className="h-5 w-5" />}
+            />
+            <KPICard
+              title="Calificación"
+              value={stats.calificacionPromedio}
+              unit={`★ (${stats.totalCalificaciones})`}
+              icon={<Star className="h-5 w-5" />}
+            />
+          </div>
+        </section>
+
         {/* Gestión de Vacantes y Entrevistas */}
         <section className="space-y-4">
           <h2 className="text-xl font-bold">Mi Trabajo</h2>
@@ -299,48 +334,50 @@ const ReclutadorDashboard = () => {
         {/* Estadísticas Rápidas */}
         <section className="space-y-4">
           <h2 className="text-xl font-bold">Resumen</h2>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+          <div className="grid gap-4 md:grid-cols-4">
+            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Invitaciones Pendientes
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-yellow-500" />
-                  <span className="text-3xl font-bold">{invitacionesPendientes.length}</span>
+                <div className="flex items-center gap-3">
+                  <Clock className="h-8 w-8 text-primary opacity-60" />
+                  <span className="text-3xl font-bold tracking-tight">{invitacionesPendientes.length}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Empresas Activas
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-blue-500" />
-                  <span className="text-3xl font-bold">{asociacionesActivas.length}</span>
+                <div className="flex items-center gap-3">
+                  <Building2 className="h-8 w-8 text-primary opacity-60" />
+                  <span className="text-3xl font-bold tracking-tight">{asociacionesActivas.length}</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   Vacantes Asignadas
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-green-500" />
-                  <span className="text-3xl font-bold">0</span>
+                <div className="flex items-center gap-3">
+                  <Briefcase className="h-8 w-8 text-primary opacity-60" />
+                  <span className="text-3xl font-bold tracking-tight">{stats.vacantesAsignadas}</span>
                 </div>
               </CardContent>
             </Card>
+
+            <VacantesPublicadasCard count={stats.vacantesPublicadas} loading={statsLoading} />
           </div>
         </section>
 

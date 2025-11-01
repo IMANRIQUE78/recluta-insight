@@ -103,17 +103,29 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         return;
       }
 
-      // Mapear los datos al formato esperado
-      const leaderboardData: LeaderboardEntry[] = entries.map((entry: any) => ({
-        id: entry.user_id,
-        user_id: entry.user_id,
-        nombre: entry.nombre_usuario || "Usuario",
-        pais: entry.pais || "México",
-        empresa: entry.nombre_empresa || "Empresa Confidencial",
-        promedio_dias_cierre: entry.estadisticas?.promedio_dias_cierre || 0,
-        vacantes_cerradas: entry.estadisticas?.vacantes_cerradas || 0,
-        ranking_score: entry.estadisticas?.ranking_score || null,
-      }));
+      // Mapear los datos al formato esperado con nombre formateado
+      const leaderboardData: LeaderboardEntry[] = entries.map((entry: any) => {
+        const nombreCompleto = entry.nombre_usuario || "Usuario";
+        // Para todos excepto el usuario actual, mostrar solo nombre + primera letra del apellido
+        let nombreFormateado = nombreCompleto;
+        if (entry.user_id !== user?.id) {
+          const parts = nombreCompleto.trim().split(' ');
+          if (parts.length > 1) {
+            nombreFormateado = `${parts[0]} ${parts[1].charAt(0)}.`;
+          }
+        }
+        
+        return {
+          id: entry.user_id,
+          user_id: entry.user_id,
+          nombre: nombreFormateado,
+          pais: entry.pais || "México",
+          empresa: entry.nombre_empresa || "Empresa Confidencial",
+          promedio_dias_cierre: entry.estadisticas?.promedio_dias_cierre || 0,
+          vacantes_cerradas: entry.estadisticas?.vacantes_cerradas || 0,
+          ranking_score: entry.estadisticas?.ranking_score || null,
+        };
+      });
 
       console.log("Total entries:", leaderboardData.length);
       setLeaderboard(leaderboardData);
@@ -172,22 +184,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
     }
   };
 
-  const formatNombre = (nombre: string, userId: string) => {
-    // Mostrar nombre completo para el usuario actual
-    if (currentUserId && userId === currentUserId) {
-      return nombre;
-    }
-    
-    // Para otros usuarios, mostrar nombre + inicial del apellido
-    const partes = nombre.trim().split(" ");
-    if (partes.length === 1) {
-      return partes[0];
-    }
-    
-    const primerNombre = partes[0];
-    const inicialApellido = partes[partes.length - 1][0] + ".";
-    return `${primerNombre} ${inicialApellido}`;
-  };
+  // La función formatNombre ya no es necesaria porque formateamos en loadLeaderboard
 
   const getRankingBadge = (index: number) => {
     const position = index + 1;
@@ -287,7 +284,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          {formatNombre(entry.nombre, entry.user_id)}
+                          {entry.nombre}
                           {currentUserId && entry.user_id === currentUserId && (
                             <Badge variant="secondary" className="text-xs">Tú</Badge>
                           )}
