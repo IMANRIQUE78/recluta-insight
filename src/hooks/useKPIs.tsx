@@ -72,43 +72,14 @@ export const useKPIs = (
       const tasaExito = totalVacantes > 0 ? Math.round((cerradas / totalVacantes) * 100) : 0;
       const tasaCancel = totalVacantes > 0 ? Math.round((canceladas / totalVacantes) * 100) : 0;
 
-      // Obtener candidatos
-      const { data: candidatos } = await supabase
-        .from("candidatos")
-        .select("*, vacantes!inner(user_id)")
-        .eq("vacantes.user_id", user.id);
-
-      const totalCandidatos = candidatos?.length || 0;
-      const contratados = candidatos?.filter((c) => c.contratado).length || 0;
-      const ratio = contratados > 0 ? `1:${(totalCandidatos / contratados).toFixed(1)}` : "0:0";
-
-      // Obtener costos
-      const { data: costos } = await supabase
-        .from("costos")
-        .select("*, vacantes!inner(user_id)")
-        .eq("vacantes.user_id", user.id);
-
-      const costoTotal = costos?.reduce((sum, c) => sum + Number(c.monto), 0) || 0;
-      const costoPromedio = contratados > 0 ? Math.round(costoTotal / contratados) : 0;
-
-      // Obtener satisfacción
-      const { data: satisfaccion } = await supabase
-        .from("satisfaccion")
-        .select("*, vacantes!inner(user_id)")
-        .eq("vacantes.user_id", user.id);
-
-      const promedioSatisfaccion = satisfaccion && satisfaccion.length > 0
-        ? (satisfaccion.reduce((sum, s) => sum + (s.satisfaccion || 0), 0) / satisfaccion.length).toFixed(1)
-        : 0;
-
-      // Obtener rotación
-      const { data: rotacion } = await supabase
-        .from("rotacion")
-        .select("*, vacantes!inner(user_id)")
-        .eq("vacantes.user_id", user.id);
-
-      const empleadosConBaja = rotacion?.filter((r) => r.fecha_baja).length || 0;
-      const tasaRot = contratados > 0 ? Math.round((empleadosConBaja / contratados) * 100) : 0;
+      // KPIs obsoletos deshabilitados temporalmente
+      // TODO: Reimplementar usando el sistema de postulaciones
+      const totalCandidatos = 0;
+      const contratados = 0;
+      const ratio = "0:0";
+      const costoPromedio = 0;
+      const promedioSatisfaccion = 0;
+      const tasaRot = 0;
 
       setKpis({
         tiempoPromedioCobertura: tiempoPromedio,

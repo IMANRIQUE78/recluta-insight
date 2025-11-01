@@ -74,14 +74,24 @@ const Dashboard = () => {
       .eq("user_id", user.id)
       .order("cliente_nombre", { ascending: true });
 
-    const { data: reclutadoresData } = await supabase
-      .from("reclutadores")
-      .select("id, nombre")
-      .eq("user_id", user.id)
-      .order("nombre", { ascending: true });
+    // Cargar reclutadores desde perfil_reclutador asociados
+    const { data: reclutadoresAsociados } = await supabase
+      .from("reclutador_empresa")
+      .select(`
+        perfil_reclutador!inner(
+          id,
+          nombre_reclutador
+        )
+      `)
+      .eq("estado", "activa");
+
+    const formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
+      id: asoc.perfil_reclutador.id,
+      nombre: asoc.perfil_reclutador.nombre_reclutador
+    })) || [];
 
     if (clientesData) setClientes(clientesData);
-    if (reclutadoresData) setReclutadores(reclutadoresData);
+    setReclutadores(formattedReclutadores);
   };
 
   const handleKPIDoubleClick = (kpiTitle: string) => {

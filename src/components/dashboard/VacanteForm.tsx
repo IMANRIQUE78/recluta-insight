@@ -169,12 +169,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
 
       if (vacanteError) throw vacanteError;
 
-      // Crear evento inicial en eventos_proceso
-      await supabase.from("eventos_proceso").insert([{
-        vacante_id: vacanteData.id,
-        etapa: "sourcing",
-        fecha_inicio: fechaSolicitud,
-      }]);
+      // Ya no creamos eventos_proceso (tabla eliminada)
 
       // Crear registro de auditoría
       await supabase.from("auditoria_vacantes").insert({

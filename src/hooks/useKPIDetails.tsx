@@ -32,16 +32,24 @@ export const useKPIDetails = (kpiTitle: string) => {
           await loadOpenVacanciesDetails(user.id);
           break;
         case "Costo por Contratación":
-          await loadCostDetails(user.id);
+          // Funcionalidad deshabilitada - tabla eliminada
+          setData([]);
+          setColumns([{ key: "nota", label: "Nota" }]);
           break;
         case "Satisfacción del Cliente":
-          await loadSatisfactionDetails(user.id);
+          // Funcionalidad deshabilitada - tabla eliminada
+          setData([]);
+          setColumns([{ key: "nota", label: "Nota" }]);
           break;
         case "Tasa de Rotación":
-          await loadTurnoverDetails(user.id);
+          // Funcionalidad deshabilitada - tabla eliminada
+          setData([]);
+          setColumns([{ key: "nota", label: "Nota" }]);
           break;
         case "Entrevistados vs Contratados":
-          await loadCandidateRatioDetails(user.id);
+          // Funcionalidad deshabilitada - tabla eliminada
+          setData([]);
+          setColumns([{ key: "nota", label: "Nota" }]);
           break;
         default:
           setData([]);
@@ -207,21 +215,8 @@ export const useKPIDetails = (kpiTitle: string) => {
   };
 
   const loadCostDetails = async (userId: string) => {
-    const { data: costos } = await supabase
-      .from("costos")
-      .select("tipo_costo, monto, fecha, vacantes!inner(folio, titulo_puesto, user_id)")
-      .eq("vacantes.user_id", userId)
-      .order("fecha", { ascending: false });
-
-    const details = costos?.map((c) => ({
-      folio: c.vacantes?.folio,
-      puesto: c.vacantes?.titulo_puesto,
-      tipoCosto: c.tipo_costo,
-      monto: `$${Number(c.monto).toLocaleString()}`,
-      fecha: new Date(c.fecha).toLocaleDateString("es-MX"),
-    })) || [];
-
-    setData(details);
+    // Tabla costos eliminada - retornar datos vacíos
+    setData([]);
     setColumns([
       { key: "folio", label: "Folio" },
       { key: "puesto", label: "Puesto" },
@@ -231,105 +226,20 @@ export const useKPIDetails = (kpiTitle: string) => {
     ]);
   };
 
+  // Funciones obsoletas - tablas eliminadas
   const loadSatisfactionDetails = async (userId: string) => {
-    const { data: satisfaccion } = await supabase
-      .from("satisfaccion")
-      .select("satisfaccion, nps, comentarios, fecha, vacantes!inner(folio, titulo_puesto, user_id, clientes_areas(cliente_nombre))")
-      .eq("vacantes.user_id", userId)
-      .order("fecha", { ascending: false });
-
-    const details = satisfaccion?.map((s) => ({
-      folio: s.vacantes?.folio,
-      puesto: s.vacantes?.titulo_puesto,
-      cliente: s.vacantes?.clientes_areas?.cliente_nombre,
-      satisfaccion: `${s.satisfaccion || 0}/5`,
-      nps: s.nps || 0,
-      fecha: new Date(s.fecha).toLocaleDateString("es-MX"),
-    })) || [];
-
-    setData(details);
-    setColumns([
-      { key: "folio", label: "Folio" },
-      { key: "puesto", label: "Puesto" },
-      { key: "cliente", label: "Cliente" },
-      { key: "satisfaccion", label: "Satisfacción" },
-      { key: "nps", label: "NPS" },
-      { key: "fecha", label: "Fecha" },
-    ]);
+    setData([]);
+    setColumns([{ key: "nota", label: "Funcionalidad temporalmente deshabilitada" }]);
   };
 
   const loadTurnoverDetails = async (userId: string) => {
-    const { data: rotacion } = await supabase
-      .from("rotacion")
-      .select("empleado_hash, fecha_ingreso, fecha_baja, motivo_baja, vacantes!inner(folio, titulo_puesto, user_id)")
-      .eq("vacantes.user_id", userId)
-      .not("fecha_baja", "is", null)
-      .order("fecha_baja", { ascending: false });
-
-    const details = rotacion?.map((r) => {
-      const diasTrabajados = Math.ceil(
-        (new Date(r.fecha_baja!).getTime() - new Date(r.fecha_ingreso).getTime()) /
-        (1000 * 60 * 60 * 24)
-      );
-      return {
-        folio: r.vacantes?.folio,
-        puesto: r.vacantes?.titulo_puesto,
-        fechaBaja: new Date(r.fecha_baja!).toLocaleDateString("es-MX"),
-        diasTrabajados,
-        motivo: r.motivo_baja || "No especificado",
-      };
-    }) || [];
-
-    setData(details);
-    setColumns([
-      { key: "folio", label: "Folio" },
-      { key: "puesto", label: "Puesto" },
-      { key: "fechaBaja", label: "Fecha Baja" },
-      { key: "diasTrabajados", label: "Días Trabajados" },
-      { key: "motivo", label: "Motivo" },
-    ]);
+    setData([]);
+    setColumns([{ key: "nota", label: "Funcionalidad temporalmente deshabilitada" }]);
   };
 
   const loadCandidateRatioDetails = async (userId: string) => {
-    const { data: candidatos } = await supabase
-      .from("candidatos")
-      .select("contratado, etapa_maxima, fuente, vacantes!inner(folio, titulo_puesto, user_id)")
-      .eq("vacantes.user_id", userId)
-      .order("vacantes(folio)", { ascending: false });
-
-    const groupedByVacante: { [key: string]: any } = {};
-    candidatos?.forEach((c) => {
-      const folio = c.vacantes?.folio || "";
-      if (!groupedByVacante[folio]) {
-        groupedByVacante[folio] = {
-          folio,
-          puesto: c.vacantes?.titulo_puesto,
-          entrevistados: 0,
-          contratados: 0,
-        };
-      }
-      groupedByVacante[folio].entrevistados++;
-      if (c.contratado) {
-        groupedByVacante[folio].contratados++;
-      }
-    });
-
-    const details = Object.values(groupedByVacante).map((v: any) => ({
-      folio: v.folio,
-      puesto: v.puesto,
-      entrevistados: v.entrevistados,
-      contratados: v.contratados,
-      ratio: v.contratados > 0 ? `1:${(v.entrevistados / v.contratados).toFixed(1)}` : "0:0",
-    }));
-
-    setData(details);
-    setColumns([
-      { key: "folio", label: "Folio" },
-      { key: "puesto", label: "Puesto" },
-      { key: "entrevistados", label: "Entrevistados" },
-      { key: "contratados", label: "Contratados" },
-      { key: "ratio", label: "Ratio" },
-    ]);
+    setData([]);
+    setColumns([{ key: "nota", label: "Funcionalidad temporalmente deshabilitada" }]);
   };
 
   return { data, columns, loading };

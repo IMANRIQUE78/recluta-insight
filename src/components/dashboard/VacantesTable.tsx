@@ -95,21 +95,31 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const [clientesData, reclutadoresData] = await Promise.all([
-        supabase
-          .from("clientes_areas")
-          .select("id, cliente_nombre, area")
-          .eq("user_id", user.id)
-          .order("cliente_nombre"),
-        supabase
-          .from("reclutadores")
-          .select("id, nombre")
-          .eq("user_id", user.id)
-          .order("nombre")
-      ]);
+      const clientesData = await supabase
+        .from("clientes_areas")
+        .select("id, cliente_nombre, area")
+        .eq("user_id", user.id)
+        .order("cliente_nombre");
 
       if (clientesData.data) setClientes(clientesData.data);
-      if (reclutadoresData.data) setReclutadores(reclutadoresData.data);
+      
+      // Cargar reclutadores desde perfil_reclutador
+      const { data: reclutadoresAsociados } = await supabase
+        .from("reclutador_empresa")
+        .select(`
+          perfil_reclutador!inner(
+            id,
+            nombre_reclutador
+          )
+        `)
+        .eq("estado", "activa");
+
+      const formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
+        id: asoc.perfil_reclutador.id,
+        nombre: asoc.perfil_reclutador.nombre_reclutador
+      })) || [];
+      
+      setReclutadores(formattedReclutadores);
     } catch (error) {
       console.error("Error loading filters:", error);
     }

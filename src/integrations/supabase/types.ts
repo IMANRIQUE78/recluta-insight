@@ -55,47 +55,6 @@ export type Database = {
           },
         ]
       }
-      candidatos: {
-        Row: {
-          contratado: boolean
-          created_at: string
-          etapa_maxima: Database["public"]["Enums"]["etapa_proceso"] | null
-          fecha_ingreso: string | null
-          fuente: Database["public"]["Enums"]["fuente_candidato"]
-          id: string
-          updated_at: string
-          vacante_id: string
-        }
-        Insert: {
-          contratado?: boolean
-          created_at?: string
-          etapa_maxima?: Database["public"]["Enums"]["etapa_proceso"] | null
-          fecha_ingreso?: string | null
-          fuente: Database["public"]["Enums"]["fuente_candidato"]
-          id?: string
-          updated_at?: string
-          vacante_id: string
-        }
-        Update: {
-          contratado?: boolean
-          created_at?: string
-          etapa_maxima?: Database["public"]["Enums"]["etapa_proceso"] | null
-          fecha_ingreso?: string | null
-          fuente?: Database["public"]["Enums"]["fuente_candidato"]
-          id?: string
-          updated_at?: string
-          vacante_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "candidatos_vacante_id_fkey"
-            columns: ["vacante_id"]
-            isOneToOne: false
-            referencedRelation: "vacantes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       clientes_areas: {
         Row: {
           area: string
@@ -128,44 +87,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      costos: {
-        Row: {
-          created_at: string
-          fecha: string
-          id: string
-          monto: number
-          tipo_costo: string
-          updated_at: string
-          vacante_id: string
-        }
-        Insert: {
-          created_at?: string
-          fecha: string
-          id?: string
-          monto: number
-          tipo_costo: string
-          updated_at?: string
-          vacante_id: string
-        }
-        Update: {
-          created_at?: string
-          fecha?: string
-          id?: string
-          monto?: number
-          tipo_costo?: string
-          updated_at?: string
-          vacante_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "costos_vacante_id_fkey"
-            columns: ["vacante_id"]
-            isOneToOne: false
-            referencedRelation: "vacantes"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       empresas: {
         Row: {
@@ -324,44 +245,6 @@ export type Database = {
           vacantes_cerradas?: number
         }
         Relationships: []
-      }
-      eventos_proceso: {
-        Row: {
-          created_at: string
-          etapa: Database["public"]["Enums"]["etapa_proceso"]
-          fecha_fin: string | null
-          fecha_inicio: string
-          id: string
-          updated_at: string
-          vacante_id: string
-        }
-        Insert: {
-          created_at?: string
-          etapa: Database["public"]["Enums"]["etapa_proceso"]
-          fecha_fin?: string | null
-          fecha_inicio: string
-          id?: string
-          updated_at?: string
-          vacante_id: string
-        }
-        Update: {
-          created_at?: string
-          etapa?: Database["public"]["Enums"]["etapa_proceso"]
-          fecha_fin?: string | null
-          fecha_inicio?: string
-          id?: string
-          updated_at?: string
-          vacante_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "eventos_proceso_vacante_id_fkey"
-            columns: ["vacante_id"]
-            isOneToOne: false
-            referencedRelation: "vacantes"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       feedback_candidato: {
         Row: {
@@ -864,124 +747,6 @@ export type Database = {
           },
         ]
       }
-      reclutadores: {
-        Row: {
-          correo: string
-          costo_hora: number
-          created_at: string
-          equipo: string | null
-          id: string
-          nombre: string
-          senioridad: Database["public"]["Enums"]["senioridad"]
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          correo: string
-          costo_hora?: number
-          created_at?: string
-          equipo?: string | null
-          id?: string
-          nombre: string
-          senioridad: Database["public"]["Enums"]["senioridad"]
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          correo?: string
-          costo_hora?: number
-          created_at?: string
-          equipo?: string | null
-          id?: string
-          nombre?: string
-          senioridad?: Database["public"]["Enums"]["senioridad"]
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      rotacion: {
-        Row: {
-          created_at: string
-          empleado_hash: string
-          fecha_baja: string | null
-          fecha_ingreso: string
-          id: string
-          motivo_baja: string | null
-          updated_at: string
-          vacante_id: string
-        }
-        Insert: {
-          created_at?: string
-          empleado_hash: string
-          fecha_baja?: string | null
-          fecha_ingreso: string
-          id?: string
-          motivo_baja?: string | null
-          updated_at?: string
-          vacante_id: string
-        }
-        Update: {
-          created_at?: string
-          empleado_hash?: string
-          fecha_baja?: string | null
-          fecha_ingreso?: string
-          id?: string
-          motivo_baja?: string | null
-          updated_at?: string
-          vacante_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "rotacion_vacante_id_fkey"
-            columns: ["vacante_id"]
-            isOneToOne: false
-            referencedRelation: "vacantes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      satisfaccion: {
-        Row: {
-          comentarios: string | null
-          created_at: string
-          fecha: string
-          id: string
-          nps: number | null
-          satisfaccion: number | null
-          updated_at: string
-          vacante_id: string
-        }
-        Insert: {
-          comentarios?: string | null
-          created_at?: string
-          fecha?: string
-          id?: string
-          nps?: number | null
-          satisfaccion?: number | null
-          updated_at?: string
-          vacante_id: string
-        }
-        Update: {
-          comentarios?: string | null
-          created_at?: string
-          fecha?: string
-          id?: string
-          nps?: number | null
-          satisfaccion?: number | null
-          updated_at?: string
-          vacante_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "satisfaccion_vacante_id_fkey"
-            columns: ["vacante_id"]
-            isOneToOne: false
-            referencedRelation: "vacantes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       suscripcion_empresa: {
         Row: {
           acceso_analytics_avanzado: boolean | null
@@ -1249,15 +1014,6 @@ export type Database = {
       estado_asociacion: "activa" | "inactiva" | "finalizada"
       estado_invitacion: "pendiente" | "aceptada" | "rechazada" | "expirada"
       estatus_vacante: "abierta" | "cerrada" | "cancelada"
-      etapa_proceso:
-        | "sourcing"
-        | "screening"
-        | "entrevista_rrhh"
-        | "entrevista_tecnica"
-        | "validacion_cliente"
-        | "oferta"
-        | "onboarding"
-      fuente_candidato: "linkedin" | "referido" | "portal" | "base"
       modalidad_trabajo: "hibrido" | "remoto" | "presencial"
       motivo_vacante:
         | "reposicion"
@@ -1412,16 +1168,6 @@ export const Constants = {
       estado_asociacion: ["activa", "inactiva", "finalizada"],
       estado_invitacion: ["pendiente", "aceptada", "rechazada", "expirada"],
       estatus_vacante: ["abierta", "cerrada", "cancelada"],
-      etapa_proceso: [
-        "sourcing",
-        "screening",
-        "entrevista_rrhh",
-        "entrevista_tecnica",
-        "validacion_cliente",
-        "oferta",
-        "onboarding",
-      ],
-      fuente_candidato: ["linkedin", "referido", "portal", "base"],
       modalidad_trabajo: ["hibrido", "remoto", "presencial"],
       motivo_vacante: [
         "reposicion",
