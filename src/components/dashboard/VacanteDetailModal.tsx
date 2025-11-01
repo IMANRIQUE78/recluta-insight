@@ -194,16 +194,24 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       const estatusAnterior = vacante.estatus;
       const estatusNuevo = formData.estatus;
 
-      // Convertir reclutador_id a null si es vacío o "sin-asignar"
+      // Validar todos los campos UUID para evitar cadenas vacías
       const reclutadorId = (formData.reclutador_id === "sin-asignar" || formData.reclutador_id === "" || !formData.reclutador_id) 
         ? null 
         : formData.reclutador_id;
+      
+      const clienteAreaId = (formData.cliente_area_id === "" || !formData.cliente_area_id)
+        ? null
+        : formData.cliente_area_id;
+
+      if (!clienteAreaId) {
+        throw new Error("Debe seleccionar un cliente/área válido");
+      }
 
       // Preparar solo los campos que se pueden actualizar en la tabla vacantes
       const updateData: any = {
         titulo_puesto: formData.titulo_puesto,
         sueldo_bruto_aprobado: formData.sueldo_bruto_aprobado ? parseFloat(formData.sueldo_bruto_aprobado) : null,
-        cliente_area_id: formData.cliente_area_id,
+        cliente_area_id: clienteAreaId,
         estatus: formData.estatus,
         reclutador_id: reclutadorId,
         reclutador_asignado_id: reclutadorId,

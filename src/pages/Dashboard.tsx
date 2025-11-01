@@ -8,7 +8,6 @@ import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { ReclutadorProfileModal } from "@/components/dashboard/ReclutadorProfileModal";
-import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
 import { useKPIs } from "@/hooks/useKPIs";
@@ -22,8 +21,7 @@ import {
   Target,
   XCircle,
   Award,
-  UserCheck,
-  Trophy
+  UserCheck
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -146,13 +144,6 @@ const Dashboard = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const scrollToLeaderboard = () => {
-    const element = document.getElementById("global-leaderboard");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <DashboardHeader
@@ -173,14 +164,6 @@ const Dashboard = () => {
             onNewRequisicion={() => setRequisicionFormOpen(true)}
             onInvitarReclutador={() => setInvitarReclutadorOpen(true)}
           />
-          <Button 
-            variant="outline" 
-            onClick={scrollToLeaderboard}
-            className="flex items-center gap-2 hover-scale"
-          >
-            <Trophy className="h-4 w-4" />
-            <span className="hidden sm:inline">Ver Ranking Global</span>
-          </Button>
         </div>
 
         {/* KPIs Section - Resumen Ejecutivo */}
@@ -241,11 +224,6 @@ const Dashboard = () => {
             onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
             refreshTrigger={refreshTrigger}
           />
-        </section>
-
-        {/* Global Leaderboard */}
-        <section className="pt-4">
-          <GlobalLeaderboard />
         </section>
       </div>
 

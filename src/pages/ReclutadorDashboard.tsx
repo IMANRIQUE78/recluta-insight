@@ -9,6 +9,7 @@ import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Za
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
+import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -427,6 +428,11 @@ const ReclutadorDashboard = () => {
             </div>
           </section>
         )}
+
+        {/* Ranking Global de Reclutadores */}
+        <section className="pt-4">
+          <GlobalLeaderboard />
+        </section>
 
         {/* Estado Vacío - Solo mostrar si no hay invitaciones NI asociaciones NI trabajo activo */}
         {invitacionesPendientes.length === 0 && asociacionesActivas.length === 0 && (
