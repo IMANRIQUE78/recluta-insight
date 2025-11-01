@@ -824,7 +824,15 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "rrhh" | "solo_lectura"
+      app_role:
+        | "admin"
+        | "rrhh"
+        | "solo_lectura"
+        | "admin_empresa"
+        | "reclutador"
+        | "candidato"
+      estado_asociacion: "activa" | "inactiva" | "finalizada"
+      estado_invitacion: "pendiente" | "aceptada" | "rechazada" | "expirada"
       estatus_vacante: "abierta" | "cerrada" | "cancelada"
       etapa_proceso:
         | "sourcing"
@@ -844,9 +852,13 @@ export type Database = {
         | "incapacidad"
         | "crecimiento_negocio"
         | "nuevo_puesto"
+      plan_empresa: "basico" | "profesional" | "enterprise"
+      plan_reclutador: "basico" | "profesional" | "premium"
       senioridad: "junior" | "senior"
       tamano_empresa: "micro" | "pyme" | "mediana" | "grande"
+      tipo_reclutador: "interno" | "freelance"
       tipo_usuario: "dueno_direccion" | "profesional_rrhh"
+      tipo_vinculacion: "interno" | "freelance"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -974,7 +986,16 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "rrhh", "solo_lectura"],
+      app_role: [
+        "admin",
+        "rrhh",
+        "solo_lectura",
+        "admin_empresa",
+        "reclutador",
+        "candidato",
+      ],
+      estado_asociacion: ["activa", "inactiva", "finalizada"],
+      estado_invitacion: ["pendiente", "aceptada", "rechazada", "expirada"],
       estatus_vacante: ["abierta", "cerrada", "cancelada"],
       etapa_proceso: [
         "sourcing",
@@ -996,9 +1017,13 @@ export const Constants = {
         "crecimiento_negocio",
         "nuevo_puesto",
       ],
+      plan_empresa: ["basico", "profesional", "enterprise"],
+      plan_reclutador: ["basico", "profesional", "premium"],
       senioridad: ["junior", "senior"],
       tamano_empresa: ["micro", "pyme", "mediana", "grande"],
+      tipo_reclutador: ["interno", "freelance"],
       tipo_usuario: ["dueno_direccion", "profesional_rrhh"],
+      tipo_vinculacion: ["interno", "freelance"],
     },
   },
 } as const
