@@ -41,14 +41,36 @@ export const DashboardHeader = ({
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { data } = await supabase
+    // Intentar obtener perfil de usuario
+    const { data: perfilUsuario } = await supabase
       .from("perfil_usuario")
       .select("*")
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (data) {
-      setPerfil(data);
+    if (perfilUsuario) {
+      setPerfil(perfilUsuario);
+      return;
+    }
+
+    // Si no hay perfil de usuario, intentar obtener datos de empresa
+    const { data: userRole } = await supabase
+      .from("user_roles")
+      .select("empresa_id")
+      .eq("user_id", user.id)
+      .eq("role", "admin_empresa")
+      .maybeSingle();
+
+    if (userRole?.empresa_id) {
+      const { data: empresa } = await supabase
+        .from("empresas")
+        .select("nombre_empresa")
+        .eq("id", userRole.empresa_id)
+        .single();
+
+      if (empresa) {
+        setPerfil({ nombre_empresa: empresa.nombre_empresa, nombre_usuario: user.email?.split('@')[0] });
+      }
     }
   };
 

@@ -8,9 +8,7 @@ import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
 import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
-import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
-import { ProximasEntrevistasCard } from "@/components/dashboard/ProximasEntrevistasCard";
-import { EntrevistasCompletadasCard } from "@/components/dashboard/EntrevistasCompletadasCard";
+import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,7 +30,8 @@ import { Button } from "@/components/ui/button";
 const Dashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
-  const [vacanteFormOpen, setVacanteFormOpen] = useState(false);
+  const [requisicionFormOpen, setRequisicionFormOpen] = useState(false);
+  const [invitarReclutadorOpen, setInvitarReclutadorOpen] = useState(false);
   const [selectedVacante, setSelectedVacante] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
@@ -153,7 +152,10 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Quick Actions Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b">
-          <QuickActions onNewVacante={() => setVacanteFormOpen(true)} />
+          <QuickActions 
+            onNewRequisicion={() => setRequisicionFormOpen(true)}
+            onInvitarReclutador={() => setInvitarReclutadorOpen(true)}
+          />
           <Button 
             variant="outline" 
             onClick={scrollToLeaderboard}
@@ -207,37 +209,16 @@ const Dashboard = () => {
           />
         </section>
 
-        {/* Entrevistas Section */}
+        {/* Requisiciones Internas */}
         <section className="space-y-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Gestión de Entrevistas</h2>
-            <p className="text-sm text-muted-foreground">Próximas y completadas</p>
-          </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <ProximasEntrevistasCard />
-            <EntrevistasCompletadasCard />
-          </div>
-        </section>
-
-        {/* Vacantes Section */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Gestión de Vacantes</h2>
-            <p className="text-sm text-muted-foreground">Estado y control de posiciones</p>
+            <h2 className="text-2xl font-bold tracking-tight">Requisiciones Internas</h2>
+            <p className="text-sm text-muted-foreground">Solicitudes de contratación de la empresa</p>
           </div>
           <VacantesTable 
             onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
             refreshTrigger={refreshTrigger}
           />
-        </section>
-
-        {/* Postulaciones Recibidas */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Postulaciones Recibidas</h2>
-            <p className="text-sm text-muted-foreground">Candidatos en proceso</p>
-          </div>
-          <PostulacionesRecibidas />
         </section>
 
         {/* Global Leaderboard */}
@@ -247,8 +228,14 @@ const Dashboard = () => {
       </div>
 
       <VacanteForm
-        open={vacanteFormOpen}
-        onOpenChange={setVacanteFormOpen}
+        open={requisicionFormOpen}
+        onOpenChange={setRequisicionFormOpen}
+        onSuccess={handleVacanteSuccess}
+      />
+
+      <InvitarReclutadorDialog
+        open={invitarReclutadorOpen}
+        onOpenChange={setInvitarReclutadorOpen}
         onSuccess={handleVacanteSuccess}
       />
 
