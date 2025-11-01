@@ -226,7 +226,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
       const { error } = await supabase
         .from("perfil_candidato")
-        .upsert([profileData] as any);
+        .upsert([profileData as any], { 
+          onConflict: 'user_id' 
+        });
 
       if (error) throw error;
 
