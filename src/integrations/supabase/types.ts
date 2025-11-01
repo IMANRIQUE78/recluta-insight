@@ -455,7 +455,6 @@ export type Database = {
       }
       perfil_candidato: {
         Row: {
-          anos_experiencia: number | null
           carrera: string | null
           certificaciones: Json | null
           created_at: string
@@ -473,7 +472,6 @@ export type Database = {
           linkedin_url: string | null
           modalidad_preferida: string | null
           nivel_educacion: string | null
-          nivel_seniority: string | null
           nombre_completo: string
           portfolio_url: string | null
           puesto_actual: string | null
@@ -486,7 +484,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          anos_experiencia?: number | null
           carrera?: string | null
           certificaciones?: Json | null
           created_at?: string
@@ -504,7 +501,6 @@ export type Database = {
           linkedin_url?: string | null
           modalidad_preferida?: string | null
           nivel_educacion?: string | null
-          nivel_seniority?: string | null
           nombre_completo: string
           portfolio_url?: string | null
           puesto_actual?: string | null
@@ -517,7 +513,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          anos_experiencia?: number | null
           carrera?: string | null
           certificaciones?: Json | null
           created_at?: string
@@ -535,7 +530,6 @@ export type Database = {
           linkedin_url?: string | null
           modalidad_preferida?: string | null
           nivel_educacion?: string | null
-          nivel_seniority?: string | null
           nombre_completo?: string
           portfolio_url?: string | null
           puesto_actual?: string | null

@@ -28,8 +28,6 @@ interface Postulacion {
     telefono: string | null;
     puesto_actual: string | null;
     empresa_actual: string | null;
-    anos_experiencia: number | null;
-    nivel_seniority: string | null;
     habilidades_tecnicas: string[] | null;
     nivel_educacion: string | null;
     resumen_profesional: string | null;

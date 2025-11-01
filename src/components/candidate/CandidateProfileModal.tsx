@@ -118,8 +118,6 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
     telefono: "",
     ubicacion: "",
     resumen_profesional: "",
-    anos_experiencia: 0,
-    nivel_seniority: "",
     habilidades_tecnicas: "",
     habilidades_blandas: "",
     salario_esperado_min: 0,
@@ -175,8 +173,6 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         telefono: data.telefono || "",
         ubicacion: data.ubicacion || "",
         resumen_profesional: data.resumen_profesional || "",
-        anos_experiencia: data.anos_experiencia || 0,
-        nivel_seniority: data.nivel_seniority || "",
         habilidades_tecnicas: data.habilidades_tecnicas?.join(", ") || "",
         habilidades_blandas: data.habilidades_blandas?.join(", ") || "",
         salario_esperado_min: data.salario_esperado_min || 0,
@@ -215,8 +211,6 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         telefono: formData.telefono,
         ubicacion: formData.ubicacion,
         resumen_profesional: formData.resumen_profesional,
-        anos_experiencia: formData.anos_experiencia,
-        nivel_seniority: formData.nivel_seniority,
         habilidades_tecnicas: formData.habilidades_tecnicas.split(",").map(h => h.trim()).filter(h => h),
         habilidades_blandas: formData.habilidades_blandas.split(",").map(h => h.trim()).filter(h => h),
         salario_esperado_min: formData.salario_esperado_min,
@@ -295,7 +289,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Completitud del perfil</span>
+            <span className="text-sm font-medium">Avance del perfil</span>
             <span className="text-sm font-bold">{porcentajeLlenado}%</span>
           </div>
           <Progress value={porcentajeLlenado} className="h-2" />
@@ -367,30 +361,6 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                 onChange={(e) => setFormData({ ...formData, resumen_profesional: e.target.value })}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="anos_experiencia">Años de Experiencia Total</Label>
-                <Input
-                  id="anos_experiencia"
-                  type="number"
-                  value={formData.anos_experiencia}
-                  onChange={(e) => setFormData({ ...formData, anos_experiencia: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="nivel_seniority">Nivel de Seniority</Label>
-                <Select value={formData.nivel_seniority} onValueChange={(value) => setFormData({ ...formData, nivel_seniority: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {nivelesSeniority.map((nivel) => (
-                      <SelectItem key={nivel} value={nivel}>{nivel}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
           </div>
 
           <Separator />
@@ -407,7 +377,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
             {experiencias.map((exp, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-sm">Experiencia #{index + 1}</h4>
+                  <h4 className="font-medium text-sm">
+                    {index === 0 ? "Experiencia más reciente" : "Experiencia previa"}
+                  </h4>
                   {experiencias.length > 1 && (
                     <Button
                       type="button"
@@ -438,29 +410,30 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                     />
                   </div>
                   <div>
-                    <Label>Fecha Inicio (MMAAAA)</Label>
+                    <Label className="text-xs">Fecha Inicio</Label>
                     <Input
                       value={exp.fecha_inicio}
                       onChange={(e) => actualizarExperiencia(index, 'fecha_inicio', e.target.value)}
-                      placeholder="012020"
-                      maxLength={6}
+                      placeholder="MM AAAA"
+                      maxLength={7}
+                      className="h-8 text-sm"
                     />
                   </div>
                   <div>
-                    <Label>Fecha Fin (MMAAAA o "Actual")</Label>
+                    <Label className="text-xs">Fecha Fin</Label>
                     <Input
                       value={exp.fecha_fin}
                       onChange={(e) => actualizarExperiencia(index, 'fecha_fin', e.target.value)}
-                      placeholder="122023 o Actual"
+                      placeholder="MM AAAA"
+                      maxLength={7}
+                      className="h-8 text-sm"
                     />
                   </div>
-                  <div className="md:col-span-2">
-                    <Label>Duración (calculada automáticamente)</Label>
-                    <Input
-                      value={calcularDuracion(exp.fecha_inicio, exp.fecha_fin)}
-                      disabled
-                      className="bg-muted"
-                    />
+                  <div>
+                    <Label className="text-xs">Duración</Label>
+                    <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center">
+                      {calcularDuracion(exp.fecha_inicio, exp.fecha_fin)}
+                    </div>
                   </div>
                   <div className="md:col-span-2">
                     <Label>Descripción de la experiencia</Label>
@@ -504,7 +477,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
             {educaciones.map((edu, index) => (
               <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-sm">Educación #{index + 1}</h4>
+                  <h4 className="font-medium text-sm">
+                    {index === 0 ? "Educación más reciente" : "Educación previa"}
+                  </h4>
                   {educaciones.length > 1 && (
                     <Button
                       type="button"
@@ -550,22 +525,32 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                       placeholder="Nombre de la institución"
                     />
                   </div>
-                  <div>
-                    <Label>Periodo (MMAAAA - MMAAAA)</Label>
-                    <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Fecha Inicio</Label>
                       <Input
                         value={edu.fecha_inicio}
                         onChange={(e) => actualizarEducacion(index, 'fecha_inicio', e.target.value)}
-                        placeholder="082015"
-                        maxLength={6}
+                        placeholder="MM AAAA"
+                        maxLength={7}
+                        className="h-8 text-sm"
                       />
-                      <span className="self-center">-</span>
+                    </div>
+                    <div>
+                      <Label className="text-xs">Fecha Fin</Label>
                       <Input
                         value={edu.fecha_fin}
                         onChange={(e) => actualizarEducacion(index, 'fecha_fin', e.target.value)}
-                        placeholder="052019"
-                        maxLength={6}
+                        placeholder="MM AAAA"
+                        maxLength={7}
+                        className="h-8 text-sm"
                       />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Duración</Label>
+                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center">
+                        {calcularDuracion(edu.fecha_inicio, edu.fecha_fin)}
+                      </div>
                     </div>
                   </div>
                 </div>
