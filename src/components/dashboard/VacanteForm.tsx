@@ -34,7 +34,6 @@ const vacanteSchema = z.object({
   perfil_requerido: z.string().min(20, "Describe el perfil con al menos 20 caracteres").max(2000, "Máximo 2000 caracteres"),
   observaciones: z.string().max(1000, "Máximo 1000 caracteres").optional(),
   ubicacion: z.string().min(3, "Especifica la ubicación").max(200, "Máximo 200 caracteres"),
-  publicar_marketplace: z.boolean().default(false),
 });
 
 type VacanteFormData = z.infer<typeof vacanteSchema>;
@@ -63,7 +62,6 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       perfil_requerido: "",
       observaciones: "",
       ubicacion: "",
-      publicar_marketplace: false,
     },
   });
 
@@ -145,26 +143,9 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
         observaciones: "Vacante creada desde formulario",
       });
 
-      // Si se marca publicar en marketplace, crear publicación
-      if (values.publicar_marketplace) {
-        await supabase.from("publicaciones_marketplace").insert({
-          vacante_id: vacanteData.id,
-          user_id: user.id,
-          titulo_puesto: values.titulo_puesto,
-          sueldo_bruto_aprobado: values.sueldo_bruto_aprobado ? parseFloat(values.sueldo_bruto_aprobado) : null,
-          lugar_trabajo: values.lugar_trabajo,
-          perfil_requerido: values.perfil_requerido,
-          observaciones: values.observaciones,
-          ubicacion: values.ubicacion,
-          publicada: true,
-        });
-      }
-
       toast({
         title: "✅ Vacante creada exitosamente",
-        description: values.publicar_marketplace 
-          ? `${vacanteData.folio} - Publicada en marketplace`
-          : `${vacanteData.folio} - Registrada correctamente`,
+        description: `${vacanteData.folio} - Para publicar en marketplace, abre la vacante y usa el botón "Publicar en Marketplace"`,
       });
 
       onSuccess();
@@ -600,30 +581,15 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
               />
             </div>
 
-            {/* Sección: Publicación */}
-            <div className="space-y-4 p-4 border rounded-lg bg-primary/5">
-              <FormField
-                control={form.control}
-                name="publicar_marketplace"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>
-                        Publicar inmediatamente en Marketplace
-                      </FormLabel>
-                      <FormDescription>
-                        La vacante estará visible para candidatos registrados y comenzará a recibir postulaciones
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
+            {/* Nota informativa sobre publicación */}
+            <div className="flex items-start gap-3 p-4 border rounded-lg bg-muted/30">
+              <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Publicación en Marketplace</p>
+                <p className="text-sm text-muted-foreground">
+                  Una vez creada la vacante, podrás publicarla en el marketplace desde el detalle de la vacante usando el botón "Publicar en Marketplace". Esto permite mayor control sobre qué información se comparte públicamente.
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t">
