@@ -167,6 +167,69 @@ export type Database = {
           },
         ]
       }
+      empresas: {
+        Row: {
+          ciudad: string | null
+          codigo_empresa: string
+          codigo_postal: string | null
+          created_at: string
+          descripcion_empresa: string | null
+          direccion_fiscal: string | null
+          email_contacto: string
+          estado: string | null
+          id: string
+          nombre_empresa: string
+          pais: string | null
+          razon_social: string | null
+          rfc: string | null
+          sector: string | null
+          sitio_web: string | null
+          tamano_empresa: string | null
+          telefono_contacto: string | null
+          updated_at: string
+        }
+        Insert: {
+          ciudad?: string | null
+          codigo_empresa?: string
+          codigo_postal?: string | null
+          created_at?: string
+          descripcion_empresa?: string | null
+          direccion_fiscal?: string | null
+          email_contacto: string
+          estado?: string | null
+          id?: string
+          nombre_empresa: string
+          pais?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          sector?: string | null
+          sitio_web?: string | null
+          tamano_empresa?: string | null
+          telefono_contacto?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ciudad?: string | null
+          codigo_empresa?: string
+          codigo_postal?: string | null
+          created_at?: string
+          descripcion_empresa?: string | null
+          direccion_fiscal?: string | null
+          email_contacto?: string
+          estado?: string | null
+          id?: string
+          nombre_empresa?: string
+          pais?: string | null
+          razon_social?: string | null
+          rfc?: string | null
+          sector?: string | null
+          sitio_web?: string | null
+          tamano_empresa?: string | null
+          telefono_contacto?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       entrevistas_candidato: {
         Row: {
           asistio: boolean | null
@@ -333,6 +396,60 @@ export type Database = {
         }
         Relationships: []
       }
+      invitaciones_reclutador: {
+        Row: {
+          codigo_reclutador: string
+          created_at: string
+          empresa_id: string
+          estado: Database["public"]["Enums"]["estado_invitacion"]
+          fecha_expiracion: string | null
+          id: string
+          mensaje: string | null
+          reclutador_id: string | null
+          tipo_vinculacion: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at: string
+        }
+        Insert: {
+          codigo_reclutador: string
+          created_at?: string
+          empresa_id: string
+          estado?: Database["public"]["Enums"]["estado_invitacion"]
+          fecha_expiracion?: string | null
+          id?: string
+          mensaje?: string | null
+          reclutador_id?: string | null
+          tipo_vinculacion: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at?: string
+        }
+        Update: {
+          codigo_reclutador?: string
+          created_at?: string
+          empresa_id?: string
+          estado?: Database["public"]["Enums"]["estado_invitacion"]
+          fecha_expiracion?: string | null
+          id?: string
+          mensaje?: string | null
+          reclutador_id?: string | null
+          tipo_vinculacion?: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitaciones_reclutador_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitaciones_reclutador_reclutador_id_fkey"
+            columns: ["reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       perfil_candidato: {
         Row: {
           anos_experiencia: number | null
@@ -415,6 +532,51 @@ export type Database = {
           salario_esperado_min?: number | null
           telefono?: string | null
           ubicacion?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      perfil_reclutador: {
+        Row: {
+          anos_experiencia: number | null
+          codigo_reclutador: string
+          created_at: string
+          descripcion_reclutador: string | null
+          email: string
+          especialidades: string[] | null
+          id: string
+          nombre_reclutador: string
+          telefono: string | null
+          tipo_reclutador: Database["public"]["Enums"]["tipo_reclutador"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          anos_experiencia?: number | null
+          codigo_reclutador?: string
+          created_at?: string
+          descripcion_reclutador?: string | null
+          email: string
+          especialidades?: string[] | null
+          id?: string
+          nombre_reclutador: string
+          telefono?: string | null
+          tipo_reclutador?: Database["public"]["Enums"]["tipo_reclutador"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          anos_experiencia?: number | null
+          codigo_reclutador?: string
+          created_at?: string
+          descripcion_reclutador?: string | null
+          email?: string
+          especialidades?: string[] | null
+          id?: string
+          nombre_reclutador?: string
+          telefono?: string | null
+          tipo_reclutador?: Database["public"]["Enums"]["tipo_reclutador"]
           updated_at?: string
           user_id?: string
         }
@@ -592,6 +754,60 @@ export type Database = {
           },
         ]
       }
+      reclutador_empresa: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          es_asociacion_activa: boolean | null
+          estado: Database["public"]["Enums"]["estado_asociacion"]
+          fecha_fin: string | null
+          fecha_inicio: string
+          id: string
+          reclutador_id: string
+          tipo_vinculacion: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          es_asociacion_activa?: boolean | null
+          estado?: Database["public"]["Enums"]["estado_asociacion"]
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          reclutador_id: string
+          tipo_vinculacion: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          es_asociacion_activa?: boolean | null
+          estado?: Database["public"]["Enums"]["estado_asociacion"]
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          reclutador_id?: string
+          tipo_vinculacion?: Database["public"]["Enums"]["tipo_vinculacion"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reclutador_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reclutador_empresa_reclutador_id_fkey"
+            columns: ["reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reclutadores: {
         Row: {
           correo: string
@@ -710,32 +926,156 @@ export type Database = {
           },
         ]
       }
+      suscripcion_empresa: {
+        Row: {
+          acceso_analytics_avanzado: boolean | null
+          acceso_marketplace: boolean | null
+          activa: boolean
+          created_at: string
+          empresa_id: string
+          fecha_fin: string | null
+          fecha_inicio: string
+          id: string
+          plan: Database["public"]["Enums"]["plan_empresa"]
+          publicaciones_mes: number | null
+          publicaciones_usadas: number | null
+          soporte_prioritario: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          acceso_analytics_avanzado?: boolean | null
+          acceso_marketplace?: boolean | null
+          activa?: boolean
+          created_at?: string
+          empresa_id: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_empresa"]
+          publicaciones_mes?: number | null
+          publicaciones_usadas?: number | null
+          soporte_prioritario?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          acceso_analytics_avanzado?: boolean | null
+          acceso_marketplace?: boolean | null
+          activa?: boolean
+          created_at?: string
+          empresa_id?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          plan?: Database["public"]["Enums"]["plan_empresa"]
+          publicaciones_mes?: number | null
+          publicaciones_usadas?: number | null
+          soporte_prioritario?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suscripcion_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suscripcion_reclutador: {
+        Row: {
+          acceso_baterias_psicometricas: boolean | null
+          acceso_ia_sourcing: boolean | null
+          acceso_pool_premium: boolean | null
+          activa: boolean
+          created_at: string
+          fecha_fin: string | null
+          fecha_inicio: string
+          id: string
+          max_asociaciones_simultaneas: number | null
+          plan: Database["public"]["Enums"]["plan_reclutador"]
+          publicacion_destacada: boolean | null
+          reclutador_id: string
+          updated_at: string
+        }
+        Insert: {
+          acceso_baterias_psicometricas?: boolean | null
+          acceso_ia_sourcing?: boolean | null
+          acceso_pool_premium?: boolean | null
+          activa?: boolean
+          created_at?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          max_asociaciones_simultaneas?: number | null
+          plan?: Database["public"]["Enums"]["plan_reclutador"]
+          publicacion_destacada?: boolean | null
+          reclutador_id: string
+          updated_at?: string
+        }
+        Update: {
+          acceso_baterias_psicometricas?: boolean | null
+          acceso_ia_sourcing?: boolean | null
+          acceso_pool_premium?: boolean | null
+          activa?: boolean
+          created_at?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string
+          id?: string
+          max_asociaciones_simultaneas?: number | null
+          plan?: Database["public"]["Enums"]["plan_reclutador"]
+          publicacion_destacada?: boolean | null
+          reclutador_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suscripcion_reclutador_reclutador_id_fkey"
+            columns: ["reclutador_id"]
+            isOneToOne: true
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
+          empresa_id: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
           created_at?: string
+          empresa_id?: string | null
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
           created_at?: string
+          empresa_id?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vacantes: {
         Row: {
           a_quien_sustituye: string | null
           cliente_area_id: string
           created_at: string
+          empresa_id: string | null
           estatus: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre: string | null
           fecha_solicitud: string
@@ -745,6 +1085,7 @@ export type Database = {
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones: string | null
           perfil_requerido: string | null
+          reclutador_asignado_id: string | null
           reclutador_id: string | null
           sueldo_bruto_aprobado: number | null
           titulo_puesto: string
@@ -755,6 +1096,7 @@ export type Database = {
           a_quien_sustituye?: string | null
           cliente_area_id: string
           created_at?: string
+          empresa_id?: string | null
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre?: string | null
           fecha_solicitud: string
@@ -764,6 +1106,7 @@ export type Database = {
           motivo: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
           perfil_requerido?: string | null
+          reclutador_asignado_id?: string | null
           reclutador_id?: string | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto: string
@@ -774,6 +1117,7 @@ export type Database = {
           a_quien_sustituye?: string | null
           cliente_area_id?: string
           created_at?: string
+          empresa_id?: string | null
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre?: string | null
           fecha_solicitud?: string
@@ -783,6 +1127,7 @@ export type Database = {
           motivo?: Database["public"]["Enums"]["motivo_vacante"]
           observaciones?: string | null
           perfil_requerido?: string | null
+          reclutador_asignado_id?: string | null
           reclutador_id?: string | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto?: string
@@ -795,6 +1140,20 @@ export type Database = {
             columns: ["cliente_area_id"]
             isOneToOne: false
             referencedRelation: "clientes_areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacantes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vacantes_reclutador_asignado_id_fkey"
+            columns: ["reclutador_asignado_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_reclutador"
             referencedColumns: ["id"]
           },
           {
