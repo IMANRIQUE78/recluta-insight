@@ -429,15 +429,15 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             <div className="space-y-2">
               <Label htmlFor="reclutador">Reclutador</Label>
               <Select
-                value={formData.reclutador_id}
-                onValueChange={(value) => setFormData({ ...formData, reclutador_id: value })}
+                value={formData.reclutador_id || "sin-asignar"}
+                onValueChange={(value) => setFormData({ ...formData, reclutador_id: value === "sin-asignar" ? "" : value })}
                 disabled={isLocked}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sin asignar" />
                 </SelectTrigger>
                 <SelectContent className="z-[100] bg-popover">
-                  <SelectItem value="">Sin asignar</SelectItem>
+                  <SelectItem value="sin-asignar">Sin asignar</SelectItem>
                   {reclutadores.map((reclutador) => (
                     <SelectItem key={reclutador.id} value={reclutador.id}>
                       {reclutador.nombre}
