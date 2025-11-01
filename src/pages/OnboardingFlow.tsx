@@ -48,7 +48,21 @@ const OnboardingFlow = () => {
     }
 
     try {
-      // 1. Crear la empresa
+      // 1. Verificar si ya existe un rol de empresa
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
+      if (existingRole) {
+        toast.error("Ya tienes un perfil de empresa creado");
+        navigate("/dashboard");
+        return;
+      }
+
+      // 2. Crear la empresa
       const { data: empresaData, error: empresaError } = await supabase
         .from("empresas")
         .insert({
@@ -64,7 +78,7 @@ const OnboardingFlow = () => {
 
       if (empresaError) throw empresaError;
 
-      // 2. Crear rol de admin_empresa
+      // 3. Crear rol de admin_empresa
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
@@ -75,7 +89,7 @@ const OnboardingFlow = () => {
 
       if (roleError) throw roleError;
 
-      // 3. Crear suscripción básica de empresa (con acceso COMPLETO para pruebas)
+      // 4. Crear suscripción básica de empresa (con acceso COMPLETO para pruebas)
       const { error: suscripcionError } = await supabase
         .from("suscripcion_empresa")
         .insert({
@@ -106,7 +120,20 @@ const OnboardingFlow = () => {
     }
 
     try {
-      // 1. Crear perfil de reclutador
+      // 1. Verificar si ya existe un perfil de reclutador
+      const { data: existingProfile } = await supabase
+        .from("perfil_reclutador")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error("Ya tienes un perfil de reclutador creado");
+        navigate("/dashboard");
+        return;
+      }
+
+      // 2. Crear perfil de reclutador
       const { data: reclutadorData, error: reclutadorError } = await supabase
         .from("perfil_reclutador")
         .insert([{
@@ -122,7 +149,7 @@ const OnboardingFlow = () => {
 
       if (reclutadorError) throw reclutadorError;
 
-      // 2. Crear rol de reclutador
+      // 3. Crear rol de reclutador
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
@@ -132,7 +159,7 @@ const OnboardingFlow = () => {
 
       if (roleError) throw roleError;
 
-      // 3. Crear suscripción premium para pruebas (con todas las features)
+      // 4. Crear suscripción premium para pruebas (con todas las features)
       const { error: suscripcionError } = await supabase
         .from("suscripcion_reclutador")
         .insert({
