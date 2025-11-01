@@ -1163,7 +1163,7 @@ export type Database = {
             foreignKeyName: "vacantes_reclutador_id_fkey"
             columns: ["reclutador_id"]
             isOneToOne: false
-            referencedRelation: "reclutadores"
+            referencedRelation: "perfil_reclutador"
             referencedColumns: ["id"]
           },
         ]
