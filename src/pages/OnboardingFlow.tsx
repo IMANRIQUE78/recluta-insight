@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,9 @@ const sectoresLatam = [
 ];
 
 const OnboardingFlow = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  
   const [step, setStep] = useState(1);
   const [userType, setUserType] = useState<"empresa" | "reclutador" | "">("");
   
@@ -37,9 +40,14 @@ const OnboardingFlow = () => {
   const [telefono, setTelefono] = useState("");
   const [tipoReclutador, setTipoReclutador] = useState<"interno" | "freelance" | "">("");
   const [anosExperiencia, setAnosExperiencia] = useState(0);
-  
-  const { user } = useAuth();
-  const navigate = useNavigate();
+
+  // Protección de ruta - redirigir si no está autenticado
+  useEffect(() => {
+    if (!loading && !user) {
+      toast.error("Debes iniciar sesión primero");
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
 
   const handleSubmitEmpresa = async () => {
     if (!user) {
@@ -48,6 +56,14 @@ const OnboardingFlow = () => {
     }
 
     try {
+      // Verificar sesión actual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        navigate("/auth");
+        return;
+      }
+
       // 1. Verificar si ya existe un rol de empresa
       const { data: existingRole } = await supabase
         .from("user_roles")
@@ -76,7 +92,10 @@ const OnboardingFlow = () => {
         .select()
         .single();
 
-      if (empresaError) throw empresaError;
+      if (empresaError) {
+        console.error("Error creando empresa:", empresaError);
+        throw empresaError;
+      }
 
       // 3. Crear rol de admin_empresa
       const { error: roleError } = await supabase
@@ -120,6 +139,14 @@ const OnboardingFlow = () => {
     }
 
     try {
+      // Verificar sesión actual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        navigate("/auth");
+        return;
+      }
+
       // 1. Verificar si ya existe un perfil de reclutador
       const { data: existingProfile } = await supabase
         .from("perfil_reclutador")
@@ -147,7 +174,10 @@ const OnboardingFlow = () => {
         .select()
         .single();
 
-      if (reclutadorError) throw reclutadorError;
+      if (reclutadorError) {
+        console.error("Error creando perfil reclutador:", reclutadorError);
+        throw reclutadorError;
+      }
 
       // 3. Crear rol de reclutador
       const { error: roleError } = await supabase
@@ -182,6 +212,20 @@ const OnboardingFlow = () => {
       toast.error("Error al crear perfil: " + error.message);
     }
   };
+
+  // Mostrar loading mientras verifica autenticación
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // No mostrar el formulario si no está autenticado
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
