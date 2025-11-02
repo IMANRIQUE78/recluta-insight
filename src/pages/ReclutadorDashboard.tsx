@@ -98,11 +98,12 @@ const ReclutadorDashboard = () => {
 
   const handleCopyCode = () => {
     if (perfilReclutador?.codigo_reclutador) {
-      const codigoUpper = perfilReclutador.codigo_reclutador.toUpperCase();
-      navigator.clipboard.writeText(codigoUpper);
+      // Copiar código tal como está (en minúsculas, sin modificar)
+      const codigo = perfilReclutador.codigo_reclutador.trim();
+      navigator.clipboard.writeText(codigo);
       toast({
         title: "✅ Código copiado",
-        description: `Tu código ${codigoUpper} ha sido copiado al portapapeles`,
+        description: `Tu código ${codigo} ha sido copiado al portapapeles`,
       });
     } else {
       toast({
@@ -260,16 +261,16 @@ const ReclutadorDashboard = () => {
               <CardContent>
                 {perfilReclutador?.codigo_reclutador ? (
                   <div className="space-y-3">
-                    <div className="flex items-center gap-2 p-4 bg-muted rounded-lg">
-                      <code className="text-2xl font-bold tracking-wider flex-1 text-primary">
-                        {perfilReclutador.codigo_reclutador.toUpperCase()}
+                    <div className="flex items-center gap-2 p-4 bg-muted rounded-lg border-2 border-primary/20">
+                      <code className="text-2xl font-bold font-mono tracking-wider flex-1 text-primary select-all">
+                        {perfilReclutador.codigo_reclutador}
                       </code>
-                      <Button size="icon" variant="ghost" onClick={handleCopyCode}>
+                      <Button size="icon" variant="ghost" onClick={handleCopyCode} title="Copiar código">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Este código es único e identifica tu perfil de reclutador en el sistema
+                      💡 Haz clic en el botón <Copy className="h-3 w-3 inline" /> para copiar tu código y compartirlo con empresas
                     </p>
                   </div>
                 ) : (

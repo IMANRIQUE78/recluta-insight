@@ -46,14 +46,18 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
         throw new Error("No se encontró la empresa asociada. Por favor completa tu perfil de empresa primero.");
       }
 
-      // Buscar reclutador por código (normalizar a minúsculas para búsqueda exacta)
-      const codigoNormalizado = codigoReclutador.trim().toLowerCase();
+      // Buscar reclutador por código (normalizar: trim, lowercase, sin espacios)
+      const codigoNormalizado = codigoReclutador.trim().toLowerCase().replace(/\s+/g, '');
+      
+      console.log("Buscando reclutador con código:", codigoNormalizado);
       
       const { data: reclutador, error: reclutadorError } = await supabase
         .from("perfil_reclutador")
-        .select("id, nombre_reclutador, email")
+        .select("id, nombre_reclutador, email, codigo_reclutador")
         .eq("codigo_reclutador", codigoNormalizado)
         .maybeSingle();
+      
+      console.log("Resultado de búsqueda:", reclutador, reclutadorError);
 
       if (reclutadorError) {
         console.error("Error buscando reclutador:", reclutadorError);
@@ -119,15 +123,16 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
             <Label htmlFor="codigo">Código del Reclutador *</Label>
             <Input
               id="codigo"
-              placeholder="ej. a3959259 (8 caracteres)"
+              placeholder="a3959259"
               value={codigoReclutador}
-              onChange={(e) => setCodigoReclutador(e.target.value.toLowerCase())}
+              onChange={(e) => setCodigoReclutador(e.target.value.trim().toLowerCase().replace(/\s+/g, ''))}
               required
               disabled={loading}
               maxLength={8}
+              className="font-mono"
             />
             <p className="text-xs text-muted-foreground">
-              Solicita al reclutador su código único de 8 caracteres (minúsculas).
+              Ingresa el código único del reclutador (8 caracteres, sin espacios)
             </p>
           </div>
 
