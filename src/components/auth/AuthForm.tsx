@@ -125,9 +125,9 @@ export const AuthForm = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
       <Card className="w-full max-w-md shadow-elegant">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Analítica de Reclutamiento</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">VVGI reclutamiento integral</CardTitle>
           <CardDescription className="text-center">
-            Gestiona tus procesos de reclutamiento de forma profesional
+            Bienvenido a la mejor experiencia de reclutamiento en Latinoamérica
           </CardDescription>
         </CardHeader>
         <CardContent>
