@@ -54,14 +54,16 @@ const ReclutadorDashboard = () => {
       
       setPerfilReclutador(perfil);
 
-      // Cargar invitaciones pendientes
+      // Cargar invitaciones pendientes con información del administrador
       const { data: invitaciones } = await supabase
         .from("invitaciones_reclutador")
         .select(`
           *,
           empresas (
             nombre_empresa,
-            sector
+            sector,
+            created_by,
+            email_contacto
           )
         `)
         .eq("reclutador_id", perfil.id)
@@ -417,25 +419,46 @@ const ReclutadorDashboard = () => {
             <h2 className="text-xl font-bold">Invitaciones Pendientes</h2>
             <div className="space-y-3">
               {invitacionesPendientes.map((invitacion) => (
-                <Card key={invitacion.id}>
+                <Card key={invitacion.id} className="border-primary/20">
                   <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {invitacion.empresas?.nombre_empresa}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg mb-2">
+                          Nueva Invitación de Colaboración
                         </CardTitle>
-                        <CardDescription>
-                          {invitacion.empresas?.sector && `Sector: ${invitacion.empresas.sector}`}
+                        <CardDescription className="text-base leading-relaxed">
+                          <span className="font-medium text-foreground">
+                            {invitacion.empresas?.email_contacto || 'El administrador'}
+                          </span>
+                          {' '}de la empresa{' '}
+                          <span className="font-medium text-foreground">
+                            {invitacion.empresas?.nombre_empresa || 'Empresa'}
+                          </span>
+                          {' '}te está invitando a conectar para trabajar como{' '}
+                          <span className="font-medium text-foreground">
+                            {invitacion.tipo_vinculacion === 'interno' ? 'Reclutador Interno' : 'Reclutador Freelance'}
+                          </span>
+                          {' '}en sus vacantes generadas.
                         </CardDescription>
+                        {invitacion.empresas?.sector && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Sector: {invitacion.empresas.sector}
+                          </p>
+                        )}
                       </div>
-                      <Badge variant="outline">{invitacion.tipo_vinculacion}</Badge>
+                      <Badge variant={invitacion.tipo_vinculacion === 'interno' ? 'default' : 'secondary'}>
+                        {invitacion.tipo_vinculacion === 'interno' ? 'Interno' : 'Freelance'}
+                      </Badge>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {invitacion.mensaje && (
-                      <p className="text-sm text-muted-foreground">{invitacion.mensaje}</p>
+                      <div className="bg-muted/50 p-3 rounded-md border border-border/50">
+                        <p className="text-sm font-medium mb-1">Mensaje del administrador:</p>
+                        <p className="text-sm text-muted-foreground italic">{invitacion.mensaje}</p>
+                      </div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 pt-2">
                       <Button
                         onClick={() => handleAceptarInvitacion(
                           invitacion.id,
@@ -445,7 +468,7 @@ const ReclutadorDashboard = () => {
                         className="flex-1"
                       >
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Aceptar
+                        Aceptar Invitación
                       </Button>
                       <Button
                         variant="outline"
