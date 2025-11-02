@@ -30,12 +30,18 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      console.log("=== INICIO INVITACIÓN RECLUTADOR ===");
+      console.log("Usuario actual:", user.id);
+      console.log("Código ingresado:", codigoReclutador);
+
       // Obtener empresa del usuario (buscar en empresas donde el usuario es el creador)
       const { data: empresa, error: empresaError } = await supabase
         .from("empresas")
-        .select("id")
+        .select("id, nombre_empresa")
         .eq("created_by", user.id)
         .maybeSingle();
+
+      console.log("Empresa encontrada:", empresa, empresaError);
 
       if (empresaError) {
         console.error("Error buscando empresa:", empresaError);
@@ -49,19 +55,21 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       // Buscar reclutador por código (normalizar: trim, lowercase, sin espacios)
       const codigoNormalizado = codigoReclutador.trim().toLowerCase().replace(/\s+/g, '');
       
-      console.log("Buscando reclutador con código:", codigoNormalizado);
+      console.log("Código normalizado para búsqueda:", codigoNormalizado);
       
+      // Primero verificar que la búsqueda funcione sin RLS
       const { data: reclutador, error: reclutadorError } = await supabase
         .from("perfil_reclutador")
         .select("id, nombre_reclutador, email, codigo_reclutador")
         .eq("codigo_reclutador", codigoNormalizado)
         .maybeSingle();
       
-      console.log("Resultado de búsqueda:", reclutador, reclutadorError);
+      console.log("Reclutador encontrado:", reclutador);
+      console.log("Error en búsqueda:", reclutadorError);
 
       if (reclutadorError) {
         console.error("Error buscando reclutador:", reclutadorError);
-        throw new Error("Error al buscar el reclutador");
+        throw new Error("Error al buscar el reclutador: " + reclutadorError.message);
       }
 
       if (!reclutador) {
@@ -82,7 +90,12 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
           estado: "pendiente",
         }]);
 
-      if (invitacionError) throw invitacionError;
+      if (invitacionError) {
+        console.error("Error creando invitación:", invitacionError);
+        throw invitacionError;
+      }
+
+      console.log("=== INVITACIÓN CREADA EXITOSAMENTE ===");
 
       toast({
         title: "✅ Invitación enviada",
@@ -95,6 +108,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       setMensaje("");
       setTipoVinculacion("freelance");
     } catch (error: any) {
+      console.error("=== ERROR EN INVITACIÓN ===", error);
       toast({
         title: "Error al enviar invitación",
         description: error.message,
