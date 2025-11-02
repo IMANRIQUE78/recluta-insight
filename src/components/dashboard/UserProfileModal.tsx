@@ -17,21 +17,18 @@ interface UserProfileModalProps {
 }
 
 const sectoresLatam = [
-  "Agroindustria",
-  "Tecnología",
-  "Manufactura",
-  "Servicios Financieros",
-  "Retail",
-  "Salud",
-  "Educación",
-  "Construcción",
-  "Energía",
-  "Minería",
-  "Turismo y Hospitalidad",
-  "Telecomunicaciones",
-  "Transporte y Logística",
-  "Bienes Raíces",
-  "Consultoría"
+  "Agroindustria", "Tecnología", "Manufactura", "Servicios Financieros",
+  "Retail", "Salud", "Educación", "Construcción", "Energía", "Minería",
+  "Turismo y Hospitalidad", "Telecomunicaciones", "Transporte y Logística",
+  "Bienes Raíces", "Consultoría"
+];
+
+const tamanoEmpresaOptions = [
+  { value: "startup", label: "Startup (1-10)" },
+  { value: "pyme", label: "PyME (11-50)" },
+  { value: "mediana", label: "Mediana (51-250)" },
+  { value: "grande", label: "Grande (250+)" },
+  { value: "corporativo", label: "Corporativo (1000+)" }
 ];
 
 export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileModalProps) => {
@@ -40,11 +37,18 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
   const [profileExists, setProfileExists] = useState(false);
   
   const [formData, setFormData] = useState({
-    nombre_usuario: "",
     nombre_empresa: "",
+    razon_social: "",
+    rfc: "",
     sector: "",
     tamano_empresa: "",
-    mostrar_empresa_publica: true,
+    email_contacto: "",
+    telefono_contacto: "",
+    direccion_fiscal: "",
+    ciudad: "",
+    estado: "",
+    codigo_postal: "",
+    pais: "México",
     sitio_web: "",
     descripcion_empresa: "",
   });
@@ -62,9 +66,9 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
       if (!user) return;
 
       const { data, error } = await supabase
-        .from("perfil_usuario")
+        .from("empresas")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("created_by", user.id)
         .maybeSingle();
 
       if (error && error.code !== "PGRST116") throw error;
@@ -72,11 +76,18 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
       if (data) {
         setProfileExists(true);
         setFormData({
-          nombre_usuario: data.nombre_usuario || "",
           nombre_empresa: data.nombre_empresa || "",
+          razon_social: data.razon_social || "",
+          rfc: data.rfc || "",
           sector: data.sector || "",
           tamano_empresa: data.tamano_empresa || "",
-          mostrar_empresa_publica: data.mostrar_empresa_publica ?? true,
+          email_contacto: data.email_contacto || "",
+          telefono_contacto: data.telefono_contacto || "",
+          direccion_fiscal: data.direccion_fiscal || "",
+          ciudad: data.ciudad || "",
+          estado: data.estado || "",
+          codigo_postal: data.codigo_postal || "",
+          pais: data.pais || "México",
           sitio_web: data.sitio_web || "",
           descripcion_empresa: data.descripcion_empresa || "",
         });
@@ -97,31 +108,68 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
       if (!user) throw new Error("Usuario no autenticado");
 
       if (profileExists) {
+        // Actualizar empresa existente
         const { error } = await supabase
-          .from("perfil_usuario")
+          .from("empresas")
           .update({
-            ...formData,
-            tamano_empresa: formData.tamano_empresa as any,
+            nombre_empresa: formData.nombre_empresa,
+            razon_social: formData.razon_social || formData.nombre_empresa,
+            rfc: formData.rfc,
+            sector: formData.sector,
+            tamano_empresa: formData.tamano_empresa,
+            email_contacto: formData.email_contacto,
+            telefono_contacto: formData.telefono_contacto,
+            direccion_fiscal: formData.direccion_fiscal,
+            ciudad: formData.ciudad,
+            estado: formData.estado,
+            codigo_postal: formData.codigo_postal,
+            pais: formData.pais,
+            sitio_web: formData.sitio_web,
+            descripcion_empresa: formData.descripcion_empresa,
           })
-          .eq("user_id", user.id);
+          .eq("created_by", user.id);
 
         if (error) throw error;
       } else {
-        const { error } = await supabase
-          .from("perfil_usuario")
+        // Crear nueva empresa
+        const { data: empresaData, error: empresaError } = await supabase
+          .from("empresas")
+          .insert({
+            ...formData,
+            razon_social: formData.razon_social || formData.nombre_empresa,
+            created_by: user.id,
+          })
+          .select()
+          .single();
+
+        if (empresaError) throw empresaError;
+
+        // Crear rol de admin_empresa
+        const { error: roleError } = await supabase
+          .from("user_roles")
           .insert({
             user_id: user.id,
-            ...formData,
-            tipo_usuario: "profesional_rrhh" as any,
-            tamano_empresa: formData.tamano_empresa as any,
-            vacantes_promedio_mes: 10,
-            miden_indicadores: false,
-            horizonte_planeacion: 6,
-            pais: "México",
-            frecuencia_actualizacion: "mensual",
+            role: "admin_empresa",
+            empresa_id: empresaData.id,
           });
 
-        if (error) throw error;
+        if (roleError) throw roleError;
+
+        // Crear suscripción profesional
+        const { error: suscripcionError } = await supabase
+          .from("suscripcion_empresa")
+          .insert({
+            empresa_id: empresaData.id,
+            plan: "profesional",
+            activa: true,
+            publicaciones_mes: 999,
+            publicaciones_usadas: 0,
+            acceso_marketplace: true,
+            acceso_analytics_avanzado: true,
+            soporte_prioritario: true,
+          });
+
+        if (suscripcionError) throw suscripcionError;
         setProfileExists(true);
       }
 
@@ -147,111 +195,219 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Mi Perfil</DialogTitle>
+          <DialogTitle>Perfil de Empresa - Employer Branding</DialogTitle>
           <DialogDescription>
-            Administra tu información personal y de empresa
+            Configura el perfil completo de tu empresa. Esta información se mostrará en tus publicaciones de vacantes.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="nombre_usuario">Nombre del Administrador*</Label>
-            <Input
-              id="nombre_usuario"
-              value={formData.nombre_usuario}
-              onChange={(e) => setFormData({ ...formData, nombre_usuario: e.target.value })}
-              placeholder="Nombre del administrador de la cuenta"
-              required
-            />
+        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+          {/* Información Básica */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Información Básica</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="nombre_empresa">Nombre Comercial de la Empresa*</Label>
+              <Input
+                id="nombre_empresa"
+                value={formData.nombre_empresa}
+                onChange={(e) => setFormData({ ...formData, nombre_empresa: e.target.value })}
+                placeholder="Nombre comercial de tu empresa"
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="razon_social">Razón Social</Label>
+                <Input
+                  id="razon_social"
+                  value={formData.razon_social}
+                  onChange={(e) => setFormData({ ...formData, razon_social: e.target.value })}
+                  placeholder="Razón social legal"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="rfc">RFC</Label>
+                <Input
+                  id="rfc"
+                  value={formData.rfc}
+                  onChange={(e) => setFormData({ ...formData, rfc: e.target.value.toUpperCase() })}
+                  placeholder="ABC123456XXX"
+                  maxLength={13}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sector">Sector*</Label>
+                <Select
+                  value={formData.sector}
+                  onValueChange={(value) => setFormData({ ...formData, sector: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un sector" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sectoresLatam.map((sector) => (
+                      <SelectItem key={sector} value={sector}>
+                        {sector}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tamano_empresa">Tamaño de Empresa*</Label>
+                <Select
+                  value={formData.tamano_empresa}
+                  onValueChange={(value) => setFormData({ ...formData, tamano_empresa: value })}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona el tamaño" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {tamanoEmpresaOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="nombre_empresa">Nombre de la Empresa*</Label>
-            <Input
-              id="nombre_empresa"
-              value={formData.nombre_empresa}
-              onChange={(e) => setFormData({ ...formData, nombre_empresa: e.target.value })}
-              placeholder="Nombre de tu empresa"
-              required
-            />
+          {/* Employer Branding */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Employer Branding</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="sitio_web">Sitio Web Corporativo</Label>
+              <Input
+                id="sitio_web"
+                type="url"
+                value={formData.sitio_web}
+                onChange={(e) => setFormData({ ...formData, sitio_web: e.target.value })}
+                placeholder="https://www.tuempresa.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="descripcion_empresa">Descripción de la Empresa (Employer Branding)</Label>
+              <Textarea
+                id="descripcion_empresa"
+                value={formData.descripcion_empresa}
+                onChange={(e) => setFormData({ ...formData, descripcion_empresa: e.target.value })}
+                rows={4}
+                placeholder="Describe tu empresa, cultura, valores y beneficios que ofreces..."
+              />
+              <p className="text-xs text-muted-foreground">
+                Esta descripción aparecerá en tus publicaciones de vacantes para atraer talento.
+              </p>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="sector">Sector*</Label>
-            <Select
-              value={formData.sector}
-              onValueChange={(value) => setFormData({ ...formData, sector: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un sector" />
-              </SelectTrigger>
-              <SelectContent>
-                {sectoresLatam.map((sector) => (
-                  <SelectItem key={sector} value={sector}>
-                    {sector}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Información de Contacto */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Información de Contacto</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="email_contacto">Email de Contacto*</Label>
+                <Input
+                  id="email_contacto"
+                  type="email"
+                  value={formData.email_contacto}
+                  onChange={(e) => setFormData({ ...formData, email_contacto: e.target.value })}
+                  placeholder="contacto@empresa.com"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefono_contacto">Teléfono de Contacto</Label>
+                <Input
+                  id="telefono_contacto"
+                  value={formData.telefono_contacto}
+                  onChange={(e) => setFormData({ ...formData, telefono_contacto: e.target.value })}
+                  placeholder="+52 55 1234 5678"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="tamano_empresa">Tamaño de Empresa*</Label>
-            <Select
-              value={formData.tamano_empresa}
-              onValueChange={(value) => setFormData({ ...formData, tamano_empresa: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona el tamaño" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="micro">Micro (1-10 empleados)</SelectItem>
-                <SelectItem value="pyme">PyME (11-50 empleados)</SelectItem>
-                <SelectItem value="mediana">Mediana (51-250 empleados)</SelectItem>
-                <SelectItem value="grande">Grande (250+ empleados)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Dirección Fiscal */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold border-b pb-2">Dirección Fiscal</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="direccion_fiscal">Dirección Completa</Label>
+              <Input
+                id="direccion_fiscal"
+                value={formData.direccion_fiscal}
+                onChange={(e) => setFormData({ ...formData, direccion_fiscal: e.target.value })}
+                placeholder="Calle, número, colonia"
+              />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="sitio_web">Sitio Web</Label>
-            <Input
-              id="sitio_web"
-              type="url"
-              value={formData.sitio_web}
-              onChange={(e) => setFormData({ ...formData, sitio_web: e.target.value })}
-              placeholder="https://ejemplo.com"
-            />
-          </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ciudad">Ciudad</Label>
+                <Input
+                  id="ciudad"
+                  value={formData.ciudad}
+                  onChange={(e) => setFormData({ ...formData, ciudad: e.target.value })}
+                  placeholder="Ciudad de México"
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="descripcion_empresa">Descripción de la Empresa</Label>
-            <Textarea
-              id="descripcion_empresa"
-              value={formData.descripcion_empresa}
-              onChange={(e) => setFormData({ ...formData, descripcion_empresa: e.target.value })}
-              rows={3}
-              placeholder="Breve descripción de tu empresa..."
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="estado">Estado</Label>
+                <Input
+                  id="estado"
+                  value={formData.estado}
+                  onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                  placeholder="CDMX"
+                />
+              </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="mostrar_empresa"
-              checked={formData.mostrar_empresa_publica}
-              onCheckedChange={(checked) => 
-                setFormData({ ...formData, mostrar_empresa_publica: checked as boolean })
-              }
-            />
-            <Label htmlFor="mostrar_empresa" className="cursor-pointer">
-              Mostrar nombre de empresa en vacantes públicas
-            </Label>
+              <div className="space-y-2">
+                <Label htmlFor="codigo_postal">Código Postal</Label>
+                <Input
+                  id="codigo_postal"
+                  value={formData.codigo_postal}
+                  onChange={(e) => setFormData({ ...formData, codigo_postal: e.target.value })}
+                  placeholder="01234"
+                  maxLength={5}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pais">País</Label>
+              <Select
+                value={formData.pais}
+                onValueChange={(value) => setFormData({ ...formData, pais: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="México">México</SelectItem>
+                  <SelectItem value="Colombia">Colombia</SelectItem>
+                  <SelectItem value="Argentina">Argentina</SelectItem>
+                  <SelectItem value="Chile">Chile</SelectItem>
+                  <SelectItem value="Perú">Perú</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Si desactivas esta opción, las vacantes públicas mostrarán "Confidencial" en lugar del nombre de tu empresa.
-          </p>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
             <Button

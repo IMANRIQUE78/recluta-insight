@@ -30,16 +30,20 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      // Obtener empresa del usuario
-      const { data: userRole } = await supabase
-        .from("user_roles")
-        .select("empresa_id")
-        .eq("user_id", user.id)
-        .eq("role", "admin_empresa")
-        .single();
+      // Obtener empresa del usuario (buscar en empresas donde el usuario es el creador)
+      const { data: empresa, error: empresaError } = await supabase
+        .from("empresas")
+        .select("id")
+        .eq("created_by", user.id)
+        .maybeSingle();
 
-      if (!userRole?.empresa_id) {
-        throw new Error("No se encontró la empresa asociada");
+      if (empresaError) {
+        console.error("Error buscando empresa:", empresaError);
+        throw new Error("Error al buscar la empresa");
+      }
+
+      if (!empresa) {
+        throw new Error("No se encontró la empresa asociada. Por favor completa tu perfil de empresa primero.");
       }
 
       // Buscar reclutador por código (convertir a minúsculas para búsqueda case-insensitive)
@@ -64,7 +68,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       const { error: invitacionError } = await supabase
         .from("invitaciones_reclutador")
         .insert([{
-          empresa_id: userRole.empresa_id,
+          empresa_id: empresa.id,
           reclutador_id: reclutador.id,
           codigo_reclutador: codigoReclutador.trim(),
           tipo_vinculacion: tipoVinculacion as "interno" | "freelance",
