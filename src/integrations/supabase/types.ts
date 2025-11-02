@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      auditoria_acceso_empresas: {
+        Row: {
+          accion: string
+          empresa_id: string
+          id: string
+          ip_address: unknown
+          timestamp: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accion: string
+          empresa_id: string
+          id?: string
+          ip_address?: unknown
+          timestamp?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accion?: string
+          empresa_id?: string
+          id?: string
+          ip_address?: unknown
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_acceso_empresas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria_vacantes: {
         Row: {
           created_at: string
@@ -97,13 +135,16 @@ export type Database = {
           created_by: string | null
           descripcion_empresa: string | null
           direccion_fiscal: string | null
+          direccion_fiscal_encrypted: string | null
           email_contacto: string
           estado: string | null
           id: string
           nombre_empresa: string
           pais: string | null
           razon_social: string | null
+          razon_social_encrypted: string | null
           rfc: string | null
+          rfc_encrypted: string | null
           sector: string | null
           sitio_web: string | null
           tamano_empresa: string | null
@@ -118,13 +159,16 @@ export type Database = {
           created_by?: string | null
           descripcion_empresa?: string | null
           direccion_fiscal?: string | null
+          direccion_fiscal_encrypted?: string | null
           email_contacto: string
           estado?: string | null
           id?: string
           nombre_empresa: string
           pais?: string | null
           razon_social?: string | null
+          razon_social_encrypted?: string | null
           rfc?: string | null
+          rfc_encrypted?: string | null
           sector?: string | null
           sitio_web?: string | null
           tamano_empresa?: string | null
@@ -139,13 +183,16 @@ export type Database = {
           created_by?: string | null
           descripcion_empresa?: string | null
           direccion_fiscal?: string | null
+          direccion_fiscal_encrypted?: string | null
           email_contacto?: string
           estado?: string | null
           id?: string
           nombre_empresa?: string
           pais?: string | null
           razon_social?: string | null
+          razon_social_encrypted?: string | null
           rfc?: string | null
+          rfc_encrypted?: string | null
           sector?: string | null
           sitio_web?: string | null
           tamano_empresa?: string | null
@@ -991,6 +1038,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decrypt_sensitive_data: {
+        Args: { encrypted_data: string }
+        Returns: string
+      }
+      encrypt_sensitive_data: { Args: { data: string }; Returns: string }
+      get_empresa_decrypted: {
+        Args: { empresa_id: string }
+        Returns: {
+          direccion_fiscal_decrypted: string
+          email_contacto: string
+          id: string
+          nombre_empresa: string
+          razon_social_decrypted: string
+          rfc_decrypted: string
+          telefono_contacto: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
