@@ -103,21 +103,33 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
 
       if (clientesData.data) setClientes(clientesData.data);
       
-      // Cargar reclutadores desde perfil_reclutador
-      const { data: reclutadoresAsociados } = await supabase
-        .from("reclutador_empresa")
-        .select(`
-          perfil_reclutador!inner(
-            id,
-            nombre_reclutador
-          )
-        `)
-        .eq("estado", "activa");
+      // Obtener empresa del usuario
+      const { data: empresa } = await supabase
+        .from("empresas")
+        .select("id")
+        .eq("created_by", user.id)
+        .maybeSingle();
 
-      const formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
-        id: asoc.perfil_reclutador.id,
-        nombre: asoc.perfil_reclutador.nombre_reclutador
-      })) || [];
+      let formattedReclutadores: any[] = [];
+
+      if (empresa?.id) {
+        // Cargar reclutadores asociados a la empresa
+        const { data: reclutadoresAsociados } = await supabase
+          .from("reclutador_empresa")
+          .select(`
+            perfil_reclutador!inner(
+              id,
+              nombre_reclutador
+            )
+          `)
+          .eq("empresa_id", empresa.id)
+          .eq("estado", "activa");
+
+        formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
+          id: asoc.perfil_reclutador.id,
+          nombre: asoc.perfil_reclutador.nombre_reclutador
+        })) || [];
+      }
       
       setReclutadores(formattedReclutadores);
     } catch (error) {

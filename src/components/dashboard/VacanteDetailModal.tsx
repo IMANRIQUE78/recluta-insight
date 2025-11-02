@@ -61,7 +61,27 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
   useEffect(() => {
     if (vacante && open) {
+      loadClientes();
+      loadReclutadores();
+      loadVacanteMetrics();
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (vacante) {
+      // Determinar el cliente_area_id correcto preservando el valor existente
       const clienteId = vacante.cliente_area_id || vacante.clientes_areas?.id || "";
+      
+      // Determinar el reclutador correcto usando reclutador_asignado_id o reclutador_id
+      const reclutadorId = vacante.reclutador_asignado_id || vacante.reclutador_id || "sin-asignar";
+      
+      console.log("Cargando vacante:", {
+        vacante_id: vacante.id,
+        cliente_area_id: clienteId,
+        reclutador_asignado_id: vacante.reclutador_asignado_id,
+        reclutador_id: vacante.reclutador_id,
+        reclutadorId
+      });
       
       setFormData({
         folio: vacante.folio || "",
@@ -70,7 +90,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         cliente_area_id: clienteId,
         fecha_solicitud: vacante.fecha_solicitud || "",
         estatus: vacante.estatus || "abierta",
-        reclutador_id: vacante.reclutador_id || "sin-asignar",
+        reclutador_id: reclutadorId,
         lugar_trabajo: vacante.lugar_trabajo || "hibrido",
         motivo: vacante.motivo || "crecimiento_negocio",
         a_quien_sustituye: vacante.a_quien_sustituye || "",
@@ -78,11 +98,8 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         fecha_cierre: vacante.fecha_cierre || "",
         observaciones: vacante.observaciones || "",
       });
-      loadClientes();
-      loadReclutadores();
-      loadVacanteMetrics();
     }
-  }, [vacante, open]);
+  }, [vacante]);
 
   const loadClientes = async () => {
     const { data, error } = await supabase
@@ -101,44 +118,51 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       if (!user) return;
 
       // Obtener empresa del usuario
-      const { data: userRoles } = await supabase
-        .from("user_roles")
-        .select("empresa_id")
-        .eq("user_id", user.id)
-        .eq("role", "admin_empresa")
+      const { data: empresa } = await supabase
+        .from("empresas")
+        .select("id")
+        .eq("created_by", user.id)
         .maybeSingle();
 
-      if (!userRoles?.empresa_id) {
+      if (!empresa?.id) {
+        console.log("No se encontró empresa para el usuario");
         setReclutadores([]);
         return;
       }
+
+      console.log("Buscando reclutadores para empresa:", empresa.id);
 
       // Obtener reclutadores asociados a la empresa
       const { data: asociaciones, error } = await supabase
         .from("reclutador_empresa")
         .select(`
-          id,
           reclutador_id,
-          perfil_reclutador (
+          perfil_reclutador!inner (
             id,
             nombre_reclutador,
             email,
             user_id
           )
         `)
-        .eq("empresa_id", userRoles.empresa_id)
+        .eq("empresa_id", empresa.id)
         .eq("estado", "activa");
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error en query de reclutadores:", error);
+        throw error;
+      }
+
+      console.log("Asociaciones encontradas:", asociaciones);
 
       // Formatear datos para el selector
       const formattedReclutadores = asociaciones?.map(asoc => ({
-        id: (asoc.perfil_reclutador as any)?.id || "",
-        nombre: (asoc.perfil_reclutador as any)?.nombre_reclutador || "Sin nombre",
-        email: (asoc.perfil_reclutador as any)?.email || "",
-        user_id: (asoc.perfil_reclutador as any)?.user_id || "",
-      })).filter(rec => rec.id) || [];
+        id: asoc.perfil_reclutador.id,
+        nombre: asoc.perfil_reclutador.nombre_reclutador,
+        email: asoc.perfil_reclutador.email,
+        user_id: asoc.perfil_reclutador.user_id,
+      })) || [];
 
+      console.log("Reclutadores formateados:", formattedReclutadores);
       setReclutadores(formattedReclutadores);
     } catch (error) {
       console.error("Error cargando reclutadores:", error);

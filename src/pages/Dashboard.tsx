@@ -74,21 +74,33 @@ const Dashboard = () => {
       .eq("user_id", user.id)
       .order("cliente_nombre", { ascending: true });
 
-    // Cargar reclutadores desde perfil_reclutador asociados
-    const { data: reclutadoresAsociados } = await supabase
-      .from("reclutador_empresa")
-      .select(`
-        perfil_reclutador!inner(
-          id,
-          nombre_reclutador
-        )
-      `)
-      .eq("estado", "activa");
+    // Obtener empresa del usuario
+    const { data: empresa } = await supabase
+      .from("empresas")
+      .select("id")
+      .eq("created_by", user.id)
+      .maybeSingle();
 
-    const formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
-      id: asoc.perfil_reclutador.id,
-      nombre: asoc.perfil_reclutador.nombre_reclutador
-    })) || [];
+    let formattedReclutadores: any[] = [];
+
+    if (empresa?.id) {
+      // Cargar reclutadores asociados a la empresa
+      const { data: reclutadoresAsociados } = await supabase
+        .from("reclutador_empresa")
+        .select(`
+          perfil_reclutador!inner(
+            id,
+            nombre_reclutador
+          )
+        `)
+        .eq("empresa_id", empresa.id)
+        .eq("estado", "activa");
+
+      formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
+        id: asoc.perfil_reclutador.id,
+        nombre: asoc.perfil_reclutador.nombre_reclutador
+      })) || [];
+    }
 
     if (clientesData) setClientes(clientesData);
     setReclutadores(formattedReclutadores);
