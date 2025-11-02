@@ -46,11 +46,13 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
         throw new Error("No se encontró la empresa asociada. Por favor completa tu perfil de empresa primero.");
       }
 
-      // Buscar reclutador por código (convertir a minúsculas para búsqueda case-insensitive)
+      // Buscar reclutador por código (normalizar a minúsculas para búsqueda exacta)
+      const codigoNormalizado = codigoReclutador.trim().toLowerCase();
+      
       const { data: reclutador, error: reclutadorError } = await supabase
         .from("perfil_reclutador")
         .select("id, nombre_reclutador, email")
-        .ilike("codigo_reclutador", codigoReclutador.trim())
+        .eq("codigo_reclutador", codigoNormalizado)
         .maybeSingle();
 
       if (reclutadorError) {
@@ -59,7 +61,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       }
 
       if (!reclutador) {
-        throw new Error(`No se encontró un reclutador con el código "${codigoReclutador.trim().toUpperCase()}". Verifica que el código sea correcto.`);
+        throw new Error(`No se encontró un reclutador con el código "${codigoNormalizado}". Verifica que el código sea correcto (8 caracteres).`);
       }
 
       console.log("Reclutador encontrado:", reclutador);
@@ -70,7 +72,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
         .insert([{
           empresa_id: empresa.id,
           reclutador_id: reclutador.id,
-          codigo_reclutador: codigoReclutador.trim(),
+          codigo_reclutador: codigoNormalizado,
           tipo_vinculacion: tipoVinculacion as "interno" | "freelance",
           mensaje: mensaje || null,
           estado: "pendiente",
@@ -117,15 +119,15 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
             <Label htmlFor="codigo">Código del Reclutador *</Label>
             <Input
               id="codigo"
-              placeholder="ej. ABC12345 (8 caracteres)"
+              placeholder="ej. a3959259 (8 caracteres)"
               value={codigoReclutador}
-              onChange={(e) => setCodigoReclutador(e.target.value.toUpperCase())}
+              onChange={(e) => setCodigoReclutador(e.target.value.toLowerCase())}
               required
               disabled={loading}
               maxLength={8}
             />
             <p className="text-xs text-muted-foreground">
-              Solicita al reclutador su código único de 8 caracteres. No distingue entre mayúsculas y minúsculas.
+              Solicita al reclutador su código único de 8 caracteres (minúsculas).
             </p>
           </div>
 
