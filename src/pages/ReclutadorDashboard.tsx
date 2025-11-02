@@ -16,6 +16,7 @@ import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesReci
 import { KPICard } from "@/components/dashboard/KPICard";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
+import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -344,6 +345,9 @@ const ReclutadorDashboard = () => {
                 </div>
               </section>
             )}
+
+        {/* Empresas Vinculadas - TARJETA PERMANENTE */}
+        <EmpresasVinculadasCard asociaciones={asociacionesActivas} />
 
         {/* Perfil y Código Único */}
         <section className="space-y-4">
