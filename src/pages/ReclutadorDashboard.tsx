@@ -419,61 +419,84 @@ const ReclutadorDashboard = () => {
             <h2 className="text-xl font-bold">Invitaciones Pendientes</h2>
             <div className="space-y-3">
               {invitacionesPendientes.map((invitacion) => (
-                <Card key={invitacion.id} className="border-primary/20">
-                  <CardHeader>
+                <Card key={invitacion.id} className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-background shadow-lg hover:shadow-xl transition-all">
+                  <CardHeader className="pb-4">
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg mb-2">
-                          Nueva Invitación de Colaboración
-                        </CardTitle>
-                        <CardDescription className="text-base leading-relaxed">
-                          <span className="font-medium text-foreground">
-                            {invitacion.empresas?.email_contacto || 'El administrador'}
-                          </span>
-                          {' '}de la empresa{' '}
-                          <span className="font-medium text-foreground">
-                            {invitacion.empresas?.nombre_empresa || 'Empresa'}
-                          </span>
-                          {' '}te está invitando a conectar para trabajar como{' '}
-                          <span className="font-medium text-foreground">
-                            {invitacion.tipo_vinculacion === 'interno' ? 'Reclutador Interno' : 'Reclutador Freelance'}
-                          </span>
-                          {' '}en sus vacantes generadas.
-                        </CardDescription>
-                        {invitacion.empresas?.sector && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Sector: {invitacion.empresas.sector}
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="h-5 w-5 text-primary" />
+                          <CardTitle className="text-xl">
+                            Nueva Invitación de Colaboración
+                          </CardTitle>
+                        </div>
+                        
+                        <div className="bg-background/80 backdrop-blur-sm p-4 rounded-lg border border-border/50 space-y-2">
+                          <p className="text-sm leading-relaxed">
+                            La empresa{' '}
+                            <span className="font-bold text-primary text-base">
+                              {invitacion.empresas?.nombre_empresa || 'Empresa'}
+                            </span>
+                            {' '}te invita a trabajar como{' '}
+                            <span className="font-bold text-foreground">
+                              {invitacion.tipo_vinculacion === 'interno' ? 'Reclutador Interno' : 'Reclutador Freelance'}
+                            </span>
                           </p>
-                        )}
+                          
+                          {invitacion.empresas?.sector && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
+                              <Badge variant="outline" className="font-normal">
+                                {invitacion.empresas.sector}
+                              </Badge>
+                            </div>
+                          )}
+                          
+                          {invitacion.empresas?.email_contacto && (
+                            <p className="text-xs text-muted-foreground pt-1">
+                              Contacto: {invitacion.empresas.email_contacto}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant={invitacion.tipo_vinculacion === 'interno' ? 'default' : 'secondary'}>
+                      
+                      <Badge 
+                        variant={invitacion.tipo_vinculacion === 'interno' ? 'default' : 'secondary'}
+                        className="text-sm px-3 py-1"
+                      >
                         {invitacion.tipo_vinculacion === 'interno' ? 'Interno' : 'Freelance'}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  
+                  <CardContent className="space-y-4">
                     {invitacion.mensaje && (
-                      <div className="bg-muted/50 p-3 rounded-md border border-border/50">
-                        <p className="text-sm font-medium mb-1">Mensaje del administrador:</p>
-                        <p className="text-sm text-muted-foreground italic">{invitacion.mensaje}</p>
+                      <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
+                        <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
+                          Mensaje de la Empresa
+                        </p>
+                        <p className="text-sm text-foreground/90 italic leading-relaxed">
+                          "{invitacion.mensaje}"
+                        </p>
                       </div>
                     )}
-                    <div className="flex gap-2 pt-2">
+                    
+                    <div className="flex gap-3 pt-2">
                       <Button
                         onClick={() => handleAceptarInvitacion(
                           invitacion.id,
                           invitacion.empresa_id,
                           invitacion.tipo_vinculacion
                         )}
-                        className="flex-1"
+                        className="flex-1 h-11"
+                        size="lg"
                       >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        <CheckCircle2 className="mr-2 h-5 w-5" />
                         Aceptar Invitación
                       </Button>
                       <Button
                         variant="outline"
                         onClick={() => handleRechazarInvitacion(invitacion.id)}
-                        className="flex-1"
+                        className="flex-1 h-11"
+                        size="lg"
                       >
                         Rechazar
                       </Button>
