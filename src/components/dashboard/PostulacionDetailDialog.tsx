@@ -187,9 +187,58 @@ export const PostulacionDetailDialog = ({
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-6">
-          {/* Detalles de la entrevista */}
+          {/* Columna izquierda: Información del candidato */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Detalles de la Entrevista</h3>
+            {/* Información del Candidato */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Información del Candidato</h3>
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg text-sm">
+                {postulacion?.perfil?.email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p className="font-medium">{postulacion.perfil.email}</p>
+                  </div>
+                )}
+                {postulacion?.perfil?.telefono && (
+                  <div>
+                    <span className="text-muted-foreground">Teléfono:</span>
+                    <p className="font-medium">{postulacion.perfil.telefono}</p>
+                  </div>
+                )}
+                {postulacion?.perfil?.ubicacion && (
+                  <div>
+                    <span className="text-muted-foreground">Ubicación:</span>
+                    <p className="font-medium">{postulacion.perfil.ubicacion}</p>
+                  </div>
+                )}
+                {(postulacion?.perfil?.salario_esperado_min || postulacion?.perfil?.salario_esperado_max) && (
+                  <div>
+                    <span className="text-muted-foreground">Sueldo Pretendido:</span>
+                    <p className="font-medium">
+                      ${postulacion.perfil.salario_esperado_min?.toLocaleString() || "0"} - ${postulacion.perfil.salario_esperado_max?.toLocaleString() || "0"}
+                    </p>
+                  </div>
+                )}
+                {postulacion?.perfil?.modalidad_preferida && (
+                  <div>
+                    <span className="text-muted-foreground">Modalidad Preferida:</span>
+                    <p className="font-medium capitalize">{postulacion.perfil.modalidad_preferida}</p>
+                  </div>
+                )}
+                {postulacion?.perfil?.disponibilidad && (
+                  <div>
+                    <span className="text-muted-foreground">Disponibilidad:</span>
+                    <p className="font-medium capitalize">{postulacion.perfil.disponibilidad.replace("_", " ")}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Detalles de la Entrevista */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3">Detalles de la Entrevista</h3>
             
             {entrevista ? (
               <div className="space-y-3 bg-muted/30 p-4 rounded-lg">
@@ -281,9 +330,10 @@ export const PostulacionDetailDialog = ({
                 </div>
               </div>
             )}
+            </div>
           </div>
 
-          {/* Chat de notas */}
+          {/* Columna derecha: Chat de notas */}
           <div className="flex flex-col h-[500px]">
             <h3 className="font-semibold text-lg mb-4">Notas del Proceso</h3>
             

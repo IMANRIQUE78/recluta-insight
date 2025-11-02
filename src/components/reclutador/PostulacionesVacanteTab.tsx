@@ -35,7 +35,11 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
             telefono,
             ubicacion,
             anos_experiencia,
-            nivel_seniority
+            nivel_seniority,
+            salario_esperado_min,
+            salario_esperado_max,
+            modalidad_preferida,
+            disponibilidad
           )
         `)
         .eq("publicacion_id", publicacionId)
@@ -152,16 +156,24 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
                   <p>{postulacion.perfil_candidato?.ubicacion || "N/A"}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Experiencia:</span>
-                  <p>{postulacion.perfil_candidato?.anos_experiencia || 0} años</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Nivel:</span>
-                  <p>{postulacion.perfil_candidato?.nivel_seniority || "N/A"}</p>
-                </div>
-                <div>
                   <span className="text-muted-foreground">Teléfono:</span>
                   <p>{postulacion.perfil_candidato?.telefono || "N/A"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Sueldo Pretendido:</span>
+                  <p className="font-medium">
+                    {postulacion.perfil_candidato?.salario_esperado_min && postulacion.perfil_candidato?.salario_esperado_max
+                      ? `$${postulacion.perfil_candidato.salario_esperado_min.toLocaleString()} - $${postulacion.perfil_candidato.salario_esperado_max.toLocaleString()}`
+                      : "N/A"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Modalidad:</span>
+                  <p className="capitalize">{postulacion.perfil_candidato?.modalidad_preferida || "N/A"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Disponibilidad:</span>
+                  <p className="capitalize">{postulacion.perfil_candidato?.disponibilidad?.replace("_", " ") || "N/A"}</p>
                 </div>
               </div>
 
