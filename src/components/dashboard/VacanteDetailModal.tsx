@@ -60,22 +60,16 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const isLocked = vacante?.estatus === "cerrada" || vacante?.estatus === "cancelada";
 
   useEffect(() => {
-    if (vacante && open) {
+    if (open && vacante) {
       loadClientes();
       loadReclutadores();
       loadVacanteMetrics();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (vacante) {
-      // Determinar el cliente_area_id correcto preservando el valor existente
-      const clienteId = vacante.cliente_area_id || vacante.clientes_areas?.id || "";
       
-      // Determinar el reclutador correcto usando reclutador_asignado_id o reclutador_id
+      // Cargar datos del formulario una sola vez cuando se abre el modal
+      const clienteId = vacante.cliente_area_id || vacante.clientes_areas?.id || "";
       const reclutadorId = vacante.reclutador_asignado_id || vacante.reclutador_id || "sin-asignar";
       
-      console.log("Cargando vacante:", {
+      console.log("Cargando vacante en modal:", {
         vacante_id: vacante.id,
         cliente_area_id: clienteId,
         reclutador_asignado_id: vacante.reclutador_asignado_id,
@@ -99,7 +93,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         observaciones: vacante.observaciones || "",
       });
     }
-  }, [vacante]);
+  }, [open, vacante]);
 
   const loadClientes = async () => {
     const { data, error } = await supabase
@@ -115,14 +109,24 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const loadReclutadores = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log("No hay usuario autenticado");
+        setReclutadores([]);
+        return;
+      }
 
       // Obtener empresa del usuario
-      const { data: empresa } = await supabase
+      const { data: empresa, error: empresaError } = await supabase
         .from("empresas")
         .select("id")
         .eq("created_by", user.id)
         .maybeSingle();
+
+      if (empresaError) {
+        console.error("Error obteniendo empresa:", empresaError);
+        setReclutadores([]);
+        return;
+      }
 
       if (!empresa?.id) {
         console.log("No se encontró empresa para el usuario");
@@ -132,7 +136,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
       console.log("Buscando reclutadores para empresa:", empresa.id);
 
-      // Obtener reclutadores asociados a la empresa
+      // Obtener reclutadores asociados a la empresa con estado activa
       const { data: asociaciones, error } = await supabase
         .from("reclutador_empresa")
         .select(`
@@ -149,20 +153,27 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
       if (error) {
         console.error("Error en query de reclutadores:", error);
-        throw error;
+        setReclutadores([]);
+        return;
       }
 
       console.log("Asociaciones encontradas:", asociaciones);
 
+      if (!asociaciones || asociaciones.length === 0) {
+        console.log("No hay reclutadores asociados activos");
+        setReclutadores([]);
+        return;
+      }
+
       // Formatear datos para el selector
-      const formattedReclutadores = asociaciones?.map(asoc => ({
+      const formattedReclutadores = asociaciones.map(asoc => ({
         id: asoc.perfil_reclutador.id,
         nombre: asoc.perfil_reclutador.nombre_reclutador,
         email: asoc.perfil_reclutador.email,
         user_id: asoc.perfil_reclutador.user_id,
-      })) || [];
+      }));
 
-      console.log("Reclutadores formateados:", formattedReclutadores);
+      console.log("Reclutadores formateados para dropdown:", formattedReclutadores);
       setReclutadores(formattedReclutadores);
     } catch (error) {
       console.error("Error cargando reclutadores:", error);
