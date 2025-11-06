@@ -103,30 +103,32 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
 
       if (clientesData.data) setClientes(clientesData.data);
       
-      // Obtener empresa del usuario
-      const { data: empresa } = await supabase
-        .from("empresas")
-        .select("id")
-        .eq("created_by", user.id)
+      // Obtener empresa del usuario desde user_roles
+      const { data: userRole } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
         .maybeSingle();
 
       let formattedReclutadores: any[] = [];
 
-      if (empresa?.id) {
+      if (userRole?.empresa_id) {
         // Cargar reclutadores asociados a la empresa
         const { data: reclutadoresAsociados } = await supabase
           .from("reclutador_empresa")
           .select(`
             perfil_reclutador!inner(
               id,
-              nombre_reclutador
+              nombre_reclutador,
+              user_id
             )
           `)
-          .eq("empresa_id", empresa.id)
+          .eq("empresa_id", userRole.empresa_id)
           .eq("estado", "activa");
 
         formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
-          id: asoc.perfil_reclutador.id,
+          id: asoc.perfil_reclutador.user_id,
           nombre: asoc.perfil_reclutador.nombre_reclutador
         })) || [];
       }

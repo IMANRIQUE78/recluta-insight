@@ -115,26 +115,27 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         return;
       }
 
-      // Obtener empresa del usuario
-      const { data: empresa, error: empresaError } = await supabase
-        .from("empresas")
-        .select("id")
-        .eq("created_by", user.id)
+      // Obtener empresa del usuario desde user_roles
+      const { data: userRole, error: roleError } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
         .maybeSingle();
 
-      if (empresaError) {
-        console.error("Error obteniendo empresa:", empresaError);
+      if (roleError) {
+        console.error("Error obteniendo rol de usuario:", roleError);
         setReclutadores([]);
         return;
       }
 
-      if (!empresa?.id) {
+      if (!userRole?.empresa_id) {
         console.log("No se encontró empresa para el usuario");
         setReclutadores([]);
         return;
       }
 
-      console.log("Buscando reclutadores para empresa:", empresa.id);
+      console.log("Buscando reclutadores para empresa:", userRole.empresa_id);
 
       // Obtener reclutadores asociados a la empresa con estado activa
       const { data: asociaciones, error } = await supabase
@@ -148,7 +149,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             user_id
           )
         `)
-        .eq("empresa_id", empresa.id)
+        .eq("empresa_id", userRole.empresa_id)
         .eq("estado", "activa");
 
       if (error) {
@@ -167,10 +168,9 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
       // Formatear datos para el selector
       const formattedReclutadores = asociaciones.map(asoc => ({
-        id: asoc.perfil_reclutador.id,
+        id: asoc.perfil_reclutador.user_id,
         nombre: asoc.perfil_reclutador.nombre_reclutador,
         email: asoc.perfil_reclutador.email,
-        user_id: asoc.perfil_reclutador.user_id,
       }));
 
       console.log("Reclutadores formateados para dropdown:", formattedReclutadores);
