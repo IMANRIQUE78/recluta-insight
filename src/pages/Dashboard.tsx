@@ -86,24 +86,24 @@ const Dashboard = () => {
 
     if (userRole?.empresa_id) {
       // Cargar reclutadores asociados a la empresa
-      const { data: reclutadoresAsociados } = await supabase
+      const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
-        .select(`
-          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
-            id,
-            nombre_reclutador,
-            user_id
-          )
-        `)
+        .select("reclutador_id")
         .eq("empresa_id", userRole.empresa_id)
         .eq("estado", "activa");
 
-      formattedReclutadores = reclutadoresAsociados
-        ?.filter(asoc => asoc.perfil_reclutador)
-        .map(asoc => ({
-          id: asoc.perfil_reclutador.user_id, // usar user_id para vacantes
-          nombre: asoc.perfil_reclutador.nombre_reclutador
+      if (asociaciones && asociaciones.length > 0) {
+        const reclutadorIds = asociaciones.map(a => a.reclutador_id);
+        const { data: perfiles } = await supabase
+          .from("perfil_reclutador")
+          .select("id, nombre_reclutador, user_id")
+          .in("id", reclutadorIds);
+
+        formattedReclutadores = perfiles?.map(perfil => ({
+          id: perfil.user_id,
+          nombre: perfil.nombre_reclutador
         })) || [];
+      }
     }
 
     if (clientesData) setClientes(clientesData);

@@ -137,34 +137,20 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
       console.log("Buscando reclutadores para empresa:", userRole.empresa_id);
 
-      // Obtener reclutadores asociados a la empresa con estado activa
-      const { data: asociaciones, error } = await supabase
+      // Obtener asociaciones activas
+      const { data: asociaciones, error: asocError } = await supabase
         .from("reclutador_empresa")
-        .select(`
-          reclutador_id,
-          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
-            id,
-            nombre_reclutador,
-            email,
-            user_id
-          )
-        `)
+        .select("reclutador_id")
         .eq("empresa_id", userRole.empresa_id)
         .eq("estado", "activa");
 
-      console.log("Query reclutadores para dropdown:", {
-        empresa_id: userRole.empresa_id,
-        asociaciones,
-        error
-      });
+      console.log("Asociaciones encontradas:", { asociaciones, asocError });
 
-      if (error) {
-        console.error("Error en query de reclutadores:", error);
+      if (asocError) {
+        console.error("Error en query de asociaciones:", asocError);
         setReclutadores([]);
         return;
       }
-
-      console.log("Asociaciones encontradas:", asociaciones);
 
       if (!asociaciones || asociaciones.length === 0) {
         console.log("No hay reclutadores asociados activos");
@@ -172,14 +158,27 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         return;
       }
 
+      // Obtener perfiles de reclutadores
+      const reclutadorIds = asociaciones.map(a => a.reclutador_id);
+      const { data: perfiles, error: perfilesError } = await supabase
+        .from("perfil_reclutador")
+        .select("id, nombre_reclutador, email, user_id")
+        .in("id", reclutadorIds);
+
+      console.log("Perfiles encontrados:", { perfiles, perfilesError });
+
+      if (perfilesError) {
+        console.error("Error obteniendo perfiles:", perfilesError);
+        setReclutadores([]);
+        return;
+      }
+
       // Formatear datos para el selector - usar user_id porque vacantes.reclutador_id es user_id
-      const formattedReclutadores = asociaciones
-        .filter(asoc => asoc.perfil_reclutador) // Asegurar que existe el perfil
-        .map(asoc => ({
-          id: asoc.perfil_reclutador.user_id, // user_id para asignar a vacantes
-          nombre: asoc.perfil_reclutador.nombre_reclutador,
-          email: asoc.perfil_reclutador.email,
-        }));
+      const formattedReclutadores = perfiles?.map(perfil => ({
+        id: perfil.user_id, // user_id para asignar a vacantes
+        nombre: perfil.nombre_reclutador,
+        email: perfil.email,
+      })) || [];
 
       console.log("Reclutadores formateados para dropdown:", formattedReclutadores);
       setReclutadores(formattedReclutadores);

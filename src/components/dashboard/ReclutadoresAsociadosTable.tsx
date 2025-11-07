@@ -27,69 +27,91 @@ export const ReclutadoresAsociadosTable = () => {
   const loadReclutadores = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        console.log("No user found");
+        setLoading(false);
+        return;
+      }
 
       // Obtener empresa del usuario
-      const { data: userRoles } = await supabase
+      const { data: userRoles, error: roleError } = await supabase
         .from("user_roles")
         .select("empresa_id")
         .eq("user_id", user.id)
         .eq("role", "admin_empresa")
-        .single();
+        .maybeSingle();
+
+      console.log("User roles query:", { userRoles, roleError });
 
       if (!userRoles?.empresa_id) {
+        console.log("No empresa_id found for user");
         setLoading(false);
         return;
       }
 
-      // Obtener reclutadores asociados
+      // Obtener reclutadores asociados con join manual
       const { data: asociaciones, error } = await supabase
         .from("reclutador_empresa")
-        .select(`
-          id,
-          reclutador_id,
-          tipo_vinculacion,
-          estado,
-          fecha_inicio,
-          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
-            id,
-            nombre_reclutador,
-            email,
-            especialidades
-          )
-        `)
+        .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio")
         .eq("empresa_id", userRoles.empresa_id)
         .eq("estado", "activa");
 
-      console.log("Query de reclutadores asociados:", { 
+      console.log("Asociaciones query:", { 
         empresa_id: userRoles.empresa_id,
-        result: asociaciones,
+        asociaciones,
         error 
       });
 
       if (error) {
-        console.error("Error cargando reclutadores:", error);
+        console.error("Error cargando asociaciones:", error);
         setLoading(false);
         return;
       }
 
-      const formattedData = asociaciones
-        ?.filter(asoc => asoc.perfil_reclutador) // Verificar que existe el perfil
-        .map(asoc => ({
-          id: asoc.id,
-          reclutador_id: asoc.reclutador_id,
-          nombre_reclutador: asoc.perfil_reclutador.nombre_reclutador || "Sin nombre",
-          email: asoc.perfil_reclutador.email || "Sin email",
-          tipo_vinculacion: asoc.tipo_vinculacion,
-          estado: asoc.estado,
-          fecha_inicio: asoc.fecha_inicio,
-          especialidades: asoc.perfil_reclutador.especialidades || [],
-        })) || [];
+      if (!asociaciones || asociaciones.length === 0) {
+        console.log("No asociaciones found");
+        setLoading(false);
+        return;
+      }
 
-      console.log("Reclutadores formateados:", formattedData);
+      // Obtener perfiles de reclutadores
+      const reclutadorIds = asociaciones.map(a => a.reclutador_id);
+      const { data: perfiles, error: perfilesError } = await supabase
+        .from("perfil_reclutador")
+        .select("id, nombre_reclutador, email, especialidades, user_id")
+        .in("id", reclutadorIds);
+
+      console.log("Perfiles query:", { perfiles, perfilesError });
+
+      if (perfilesError) {
+        console.error("Error cargando perfiles:", perfilesError);
+        setLoading(false);
+        return;
+      }
+
+      // Mapear perfiles con asociaciones
+      const formattedData = asociaciones
+        .map(asoc => {
+          const perfil = perfiles?.find(p => p.id === asoc.reclutador_id);
+          if (!perfil) return null;
+          
+          return {
+            id: asoc.id,
+            reclutador_id: asoc.reclutador_id,
+            nombre_reclutador: perfil.nombre_reclutador || "Sin nombre",
+            email: perfil.email || "Sin email",
+            tipo_vinculacion: asoc.tipo_vinculacion,
+            estado: asoc.estado,
+            fecha_inicio: asoc.fecha_inicio,
+            especialidades: perfil.especialidades || [],
+          };
+        })
+        .filter(Boolean) as ReclutadorAsociado[];
+
+      console.log("Reclutadores formateados final:", formattedData);
       setReclutadores(formattedData);
     } catch (error) {
-      console.error("Error cargando reclutadores:", error);
+      console.error("Error general cargando reclutadores:", error);
     } finally {
       setLoading(false);
     }
