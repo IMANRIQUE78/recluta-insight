@@ -142,7 +142,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         .from("reclutador_empresa")
         .select(`
           reclutador_id,
-          perfil_reclutador!inner (
+          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
             id,
             nombre_reclutador,
             email,
@@ -151,6 +151,12 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         `)
         .eq("empresa_id", userRole.empresa_id)
         .eq("estado", "activa");
+
+      console.log("Query reclutadores para dropdown:", {
+        empresa_id: userRole.empresa_id,
+        asociaciones,
+        error
+      });
 
       if (error) {
         console.error("Error en query de reclutadores:", error);
@@ -166,12 +172,14 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         return;
       }
 
-      // Formatear datos para el selector
-      const formattedReclutadores = asociaciones.map(asoc => ({
-        id: asoc.perfil_reclutador.user_id,
-        nombre: asoc.perfil_reclutador.nombre_reclutador,
-        email: asoc.perfil_reclutador.email,
-      }));
+      // Formatear datos para el selector - usar user_id porque vacantes.reclutador_id es user_id
+      const formattedReclutadores = asociaciones
+        .filter(asoc => asoc.perfil_reclutador) // Asegurar que existe el perfil
+        .map(asoc => ({
+          id: asoc.perfil_reclutador.user_id, // user_id para asignar a vacantes
+          nombre: asoc.perfil_reclutador.nombre_reclutador,
+          email: asoc.perfil_reclutador.email,
+        }));
 
       console.log("Reclutadores formateados para dropdown:", formattedReclutadores);
       setReclutadores(formattedReclutadores);

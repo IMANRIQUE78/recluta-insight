@@ -51,7 +51,7 @@ export const ReclutadoresAsociadosTable = () => {
           tipo_vinculacion,
           estado,
           fecha_inicio,
-          perfil_reclutador (
+          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
             id,
             nombre_reclutador,
             email,
@@ -61,19 +61,32 @@ export const ReclutadoresAsociadosTable = () => {
         .eq("empresa_id", userRoles.empresa_id)
         .eq("estado", "activa");
 
-      if (error) throw error;
+      console.log("Query de reclutadores asociados:", { 
+        empresa_id: userRoles.empresa_id,
+        result: asociaciones,
+        error 
+      });
 
-      const formattedData = asociaciones?.map(asoc => ({
-        id: asoc.id,
-        reclutador_id: asoc.reclutador_id,
-        nombre_reclutador: (asoc.perfil_reclutador as any)?.nombre_reclutador || "Sin nombre",
-        email: (asoc.perfil_reclutador as any)?.email || "Sin email",
-        tipo_vinculacion: asoc.tipo_vinculacion,
-        estado: asoc.estado,
-        fecha_inicio: asoc.fecha_inicio,
-        especialidades: (asoc.perfil_reclutador as any)?.especialidades || [],
-      })) || [];
+      if (error) {
+        console.error("Error cargando reclutadores:", error);
+        setLoading(false);
+        return;
+      }
 
+      const formattedData = asociaciones
+        ?.filter(asoc => asoc.perfil_reclutador) // Verificar que existe el perfil
+        .map(asoc => ({
+          id: asoc.id,
+          reclutador_id: asoc.reclutador_id,
+          nombre_reclutador: asoc.perfil_reclutador.nombre_reclutador || "Sin nombre",
+          email: asoc.perfil_reclutador.email || "Sin email",
+          tipo_vinculacion: asoc.tipo_vinculacion,
+          estado: asoc.estado,
+          fecha_inicio: asoc.fecha_inicio,
+          especialidades: asoc.perfil_reclutador.especialidades || [],
+        })) || [];
+
+      console.log("Reclutadores formateados:", formattedData);
       setReclutadores(formattedData);
     } catch (error) {
       console.error("Error cargando reclutadores:", error);

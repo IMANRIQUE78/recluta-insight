@@ -89,7 +89,7 @@ const Dashboard = () => {
       const { data: reclutadoresAsociados } = await supabase
         .from("reclutador_empresa")
         .select(`
-          perfil_reclutador!inner(
+          perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
             id,
             nombre_reclutador,
             user_id
@@ -98,10 +98,12 @@ const Dashboard = () => {
         .eq("empresa_id", userRole.empresa_id)
         .eq("estado", "activa");
 
-      formattedReclutadores = reclutadoresAsociados?.map(asoc => ({
-        id: asoc.perfil_reclutador.user_id,
-        nombre: asoc.perfil_reclutador.nombre_reclutador
-      })) || [];
+      formattedReclutadores = reclutadoresAsociados
+        ?.filter(asoc => asoc.perfil_reclutador)
+        .map(asoc => ({
+          id: asoc.perfil_reclutador.user_id, // usar user_id para vacantes
+          nombre: asoc.perfil_reclutador.nombre_reclutador
+        })) || [];
     }
 
     if (clientesData) setClientes(clientesData);
