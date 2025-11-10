@@ -67,13 +67,14 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       
       // Cargar datos del formulario una sola vez cuando se abre el modal
       const clienteId = vacante.cliente_area_id || vacante.clientes_areas?.id || "";
-      const reclutadorId = vacante.reclutador_asignado_id || vacante.reclutador_id || "sin-asignar";
+      
+      // IMPORTANTE: usar reclutador_asignado_id que es perfil_reclutador.id
+      const reclutadorId = vacante.reclutador_asignado_id || "sin-asignar";
       
       console.log("Cargando vacante en modal:", {
         vacante_id: vacante.id,
         cliente_area_id: clienteId,
         reclutador_asignado_id: vacante.reclutador_asignado_id,
-        reclutador_id: vacante.reclutador_id,
         reclutadorId
       });
       
@@ -162,7 +163,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       const reclutadorIds = asociaciones.map(a => a.reclutador_id);
       const { data: perfiles, error: perfilesError } = await supabase
         .from("perfil_reclutador")
-        .select("id, nombre_reclutador, email, user_id")
+        .select("id, nombre_reclutador, email")
         .in("id", reclutadorIds);
 
       console.log("Perfiles encontrados:", { perfiles, perfilesError });
@@ -173,9 +174,9 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         return;
       }
 
-      // Formatear datos para el selector - usar user_id porque vacantes.reclutador_id es user_id
+      // Formatear datos para el selector - usar perfil_reclutador.id
       const formattedReclutadores = perfiles?.map(perfil => ({
-        id: perfil.user_id, // user_id para asignar a vacantes
+        id: perfil.id, // ID del perfil de reclutador para vacantes.reclutador_asignado_id
         nombre: perfil.nombre_reclutador,
         email: perfil.email,
       })) || [];

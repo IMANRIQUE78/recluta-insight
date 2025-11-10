@@ -69,7 +69,7 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
             tipo_cliente,
             area
           ),
-          perfil_reclutador:reclutador_id (
+          perfil_reclutador:reclutador_asignado_id (
             id,
             nombre_reclutador
           )
@@ -114,25 +114,26 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
       let formattedReclutadores: any[] = [];
 
       if (userRole?.empresa_id) {
-        // Cargar reclutadores asociados a la empresa
-        const { data: reclutadoresAsociados } = await supabase
+        // Cargar asociaciones activas
+        const { data: asociaciones } = await supabase
           .from("reclutador_empresa")
-          .select(`
-            perfil_reclutador!reclutador_empresa_reclutador_id_fkey (
-              id,
-              nombre_reclutador,
-              user_id
-            )
-          `)
+          .select("reclutador_id")
           .eq("empresa_id", userRole.empresa_id)
           .eq("estado", "activa");
 
-        formattedReclutadores = reclutadoresAsociados
-          ?.filter(asoc => asoc.perfil_reclutador)
-          .map(asoc => ({
-            id: asoc.perfil_reclutador.user_id, // usar user_id para vacantes
-            nombre: asoc.perfil_reclutador.nombre_reclutador
+        if (asociaciones && asociaciones.length > 0) {
+          const reclutadorIds = asociaciones.map(a => a.reclutador_id);
+          const { data: perfiles } = await supabase
+            .from("perfil_reclutador")
+            .select("id, nombre_reclutador")
+            .in("id", reclutadorIds);
+
+          // Usar perfil_reclutador.id (coincide con vacantes.reclutador_asignado_id)
+          formattedReclutadores = perfiles?.map(perfil => ({
+            id: perfil.id,
+            nombre: perfil.nombre_reclutador
           })) || [];
+        }
       }
       
       setReclutadores(formattedReclutadores);
@@ -149,7 +150,7 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
     }
 
     if (selectedReclutador !== "todos") {
-      filtered = filtered.filter(v => v.reclutador_id === selectedReclutador);
+      filtered = filtered.filter(v => v.reclutador_asignado_id === selectedReclutador);
     }
 
     if (selectedEstatus !== "todos") {

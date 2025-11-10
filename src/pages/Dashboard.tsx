@@ -96,11 +96,12 @@ const Dashboard = () => {
         const reclutadorIds = asociaciones.map(a => a.reclutador_id);
         const { data: perfiles } = await supabase
           .from("perfil_reclutador")
-          .select("id, nombre_reclutador, user_id")
+          .select("id, nombre_reclutador")
           .in("id", reclutadorIds);
 
+        // Usar perfil_reclutador.id para filtros (coincide con vacantes.reclutador_asignado_id)
         formattedReclutadores = perfiles?.map(perfil => ({
-          id: perfil.user_id,
+          id: perfil.id,
           nombre: perfil.nombre_reclutador
         })) || [];
       }
