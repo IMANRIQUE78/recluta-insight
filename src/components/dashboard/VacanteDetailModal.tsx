@@ -435,14 +435,15 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
           <div className="space-y-2">
             <Label htmlFor="cliente">Cliente / Área*</Label>
             <Select
-              value={formData.cliente_area_id}
+              key={`cliente-${formData.cliente_area_id}`}
+              value={formData.cliente_area_id || undefined}
               onValueChange={(value) => setFormData({ ...formData, cliente_area_id: value })}
               disabled={isLocked}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Seleccionar cliente" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-popover z-50">
                 {clientes.map((cliente) => (
                   <SelectItem key={cliente.id} value={cliente.id}>
                     {cliente.cliente_nombre} - {cliente.area}
