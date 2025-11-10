@@ -140,7 +140,7 @@ export const VacantesAsignadasCard = ({ reclutadorId }: VacantesAsignadasCardPro
                     <div className="flex-1">
                       <p className="font-semibold">{vacante.titulo_puesto}</p>
                       <p className="text-sm text-muted-foreground">
-                        {vacante.empresas?.nombre_empresa || vacante.clientes_areas?.cliente_nombre}
+                        {vacante.empresas?.nombre_empresa || `${vacante.clientes_areas?.cliente_nombre} - ${vacante.clientes_areas?.area}`}
                       </p>
                     </div>
                     <Badge variant={vacante.publicada ? "default" : "secondary"}>
