@@ -73,14 +73,21 @@ const ReclutadorDashboard = () => {
 
       setInvitacionesPendientes(invitaciones || []);
 
-      // Cargar asociaciones activas
+      // Cargar asociaciones activas con información completa de empresas
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
         .select(`
           *,
           empresas (
+            id,
             nombre_empresa,
-            sector
+            sector,
+            descripcion_empresa,
+            sitio_web,
+            tamano_empresa,
+            ciudad,
+            estado,
+            pais
           )
         `)
         .eq("reclutador_id", perfil.id)
