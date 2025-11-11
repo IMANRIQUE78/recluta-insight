@@ -1,15 +1,22 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, Briefcase } from "lucide-react";
+import { Building2, Calendar, Briefcase, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
+import { EmpresaPerfilPublicoModal } from "./EmpresaPerfilPublicoModal";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 
 interface EmpresaVinculada {
   id: string;
   tipo_vinculacion: string;
   estado: string;
   fecha_inicio: string;
+  empresa_id: string;
   empresas: {
+    id: string;
     nombre_empresa: string;
     sector?: string;
   };
@@ -20,6 +27,10 @@ interface EmpresasVinculadasCardProps {
 }
 
 export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardProps) => {
+  const { toast } = useToast();
+  const [selectedEmpresa, setSelectedEmpresa] = useState<any>(null);
+  const [showPerfilModal, setShowPerfilModal] = useState(false);
+
   const getTipoVinculacionBadge = (tipo: string) => {
     const badges = {
       interno: { variant: "default" as const, label: "Interno" },
@@ -27,6 +38,27 @@ export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardP
       externo: { variant: "outline" as const, label: "Externo" }
     };
     return badges[tipo as keyof typeof badges] || badges.freelance;
+  };
+
+  const handleVerPerfilEmpresa = async (empresaId: string) => {
+    try {
+      const { data: empresa, error } = await supabase
+        .from("empresas")
+        .select("*")
+        .eq("id", empresaId)
+        .single();
+
+      if (error) throw error;
+
+      setSelectedEmpresa(empresa);
+      setShowPerfilModal(true);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "No se pudo cargar el perfil de la empresa",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -64,12 +96,17 @@ export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardP
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1">
-                      <h4 className="font-semibold text-base flex items-center gap-2">
-                        <Building2 className="h-4 w-4 text-primary" />
+                      <Button
+                        variant="link"
+                        className="h-auto p-0 font-semibold text-base hover:text-primary transition-colors"
+                        onClick={() => handleVerPerfilEmpresa(asociacion.empresa_id)}
+                      >
+                        <Building2 className="h-4 w-4 text-primary mr-2" />
                         {asociacion.empresas?.nombre_empresa || "Empresa"}
-                      </h4>
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </Button>
                       {asociacion.empresas?.sector && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 ml-6">
                           <Briefcase className="h-3 w-3" />
                           {asociacion.empresas.sector}
                         </p>
@@ -90,6 +127,12 @@ export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardP
           </div>
         )}
       </CardContent>
+
+      <EmpresaPerfilPublicoModal
+        open={showPerfilModal}
+        onOpenChange={setShowPerfilModal}
+        empresa={selectedEmpresa}
+      />
     </Card>
   );
 };
