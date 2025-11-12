@@ -81,12 +81,8 @@ const Marketplace = () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("publicaciones_marketplace")
-      .select(`
-        *,
-        vacantes!inner(estatus)
-      `)
+      .select("*")
       .eq("publicada", true)
-      .eq("vacantes.estatus", "abierta")
       .order("fecha_publicacion", { ascending: false });
 
     if (!error && data) {
