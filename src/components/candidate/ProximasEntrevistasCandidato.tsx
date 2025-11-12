@@ -42,7 +42,7 @@ export function ProximasEntrevistasCandidato() {
             publicacion:publicaciones_marketplace(
               titulo_puesto,
               vacante:vacantes(
-                perfil:perfil_usuario(nombre_empresa)
+                empresa:empresas(nombre_empresa)
               )
             )
           )
@@ -62,7 +62,7 @@ export function ProximasEntrevistasCandidato() {
         duracion_minutos: e.duracion_minutos,
         detalles_reunion: e.detalles_reunion,
         titulo_puesto: e.postulacion?.publicacion?.titulo_puesto || "Sin título",
-        empresa: e.postulacion?.publicacion?.vacante?.perfil?.nombre_empresa || "Empresa",
+        empresa: e.postulacion?.publicacion?.vacante?.empresa?.nombre_empresa || "Empresa",
       }));
 
       setEntrevistas(formattedData);

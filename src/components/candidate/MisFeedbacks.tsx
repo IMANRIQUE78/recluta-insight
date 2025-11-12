@@ -40,7 +40,7 @@ export function MisFeedbacks() {
             publicacion:publicaciones_marketplace(
               titulo_puesto,
               vacante:vacantes(
-                perfil:perfil_usuario(nombre_empresa)
+                empresa:empresas(nombre_empresa)
               )
             )
           )
@@ -56,7 +56,7 @@ export function MisFeedbacks() {
         comentario: f.comentario,
         created_at: f.created_at,
         titulo_puesto: f.postulacion?.publicacion?.titulo_puesto || "Sin título",
-        empresa: f.postulacion?.publicacion?.vacante?.perfil?.nombre_empresa || "Empresa",
+        empresa: f.postulacion?.publicacion?.vacante?.empresa?.nombre_empresa || "Empresa",
       }));
 
       setFeedbacks(formattedData);
