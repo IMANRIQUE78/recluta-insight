@@ -180,12 +180,14 @@ export const PostulacionesRecibidas = () => {
           etapa,
           notas_reclutador,
           candidato_user_id,
-          publicacion:publicaciones_marketplace(
+          publicacion:publicaciones_marketplace!inner(
             id,
             titulo_puesto,
-            vacante_id
+            vacante_id,
+            user_id
           )
         `)
+        .eq("publicacion.user_id", user.id)
         .order("fecha_postulacion", { ascending: false });
 
       if (error) throw error;
@@ -198,7 +200,9 @@ export const PostulacionesRecibidas = () => {
           .select("*")
           .in("user_id", candidatoIds);
 
-        if (perfilesError) throw perfilesError;
+        if (perfilesError) {
+          console.error("Error loading perfiles:", perfilesError);
+        }
 
         // Combinar datos
         const postulacionesConPerfil = data.map(p => ({
