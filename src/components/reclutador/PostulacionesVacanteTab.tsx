@@ -29,13 +29,11 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
         .from("postulaciones")
         .select(`
           *,
-          perfil_candidato (
+          candidato:perfil_candidato!candidato_user_id (
             nombre_completo,
             email,
             telefono,
             ubicacion,
-            anos_experiencia,
-            nivel_seniority,
             salario_esperado_min,
             salario_esperado_max,
             modalidad_preferida,
@@ -45,7 +43,11 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
         .eq("publicacion_id", publicacionId)
         .order("fecha_postulacion", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading postulaciones:", error);
+        throw error;
+      }
+
       setPostulaciones(data || []);
     } catch (error: any) {
       toast({
@@ -130,14 +132,14 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
                     <p className="font-semibold">
-                      {postulacion.perfil_candidato?.nombre_completo || "Candidato"}
+                      {postulacion.candidato?.nombre_completo || "Candidato"}
                     </p>
                     <Badge variant={getEtapaColor(postulacion.etapa)}>
                       {postulacion.etapa}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {postulacion.perfil_candidato?.email}
+                    {postulacion.candidato?.email}
                   </p>
                 </div>
                 <div className="text-right text-xs text-muted-foreground">
@@ -153,27 +155,27 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <span className="text-muted-foreground">Ubicación:</span>
-                  <p>{postulacion.perfil_candidato?.ubicacion || "N/A"}</p>
+                  <p>{postulacion.candidato?.ubicacion || "N/A"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Teléfono:</span>
-                  <p>{postulacion.perfil_candidato?.telefono || "N/A"}</p>
+                  <p>{postulacion.candidato?.telefono || "N/A"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Sueldo Pretendido:</span>
                   <p className="font-medium">
-                    {postulacion.perfil_candidato?.salario_esperado_min && postulacion.perfil_candidato?.salario_esperado_max
-                      ? `$${postulacion.perfil_candidato.salario_esperado_min.toLocaleString()} - $${postulacion.perfil_candidato.salario_esperado_max.toLocaleString()}`
+                    {postulacion.candidato?.salario_esperado_min && postulacion.candidato?.salario_esperado_max
+                      ? `$${postulacion.candidato.salario_esperado_min.toLocaleString()} - $${postulacion.candidato.salario_esperado_max.toLocaleString()}`
                       : "N/A"}
                   </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Modalidad:</span>
-                  <p className="capitalize">{postulacion.perfil_candidato?.modalidad_preferida || "N/A"}</p>
+                  <p className="capitalize">{postulacion.candidato?.modalidad_preferida || "N/A"}</p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Disponibilidad:</span>
-                  <p className="capitalize">{postulacion.perfil_candidato?.disponibilidad?.replace("_", " ") || "N/A"}</p>
+                  <p className="capitalize">{postulacion.candidato?.disponibilidad?.replace("_", " ") || "N/A"}</p>
                 </div>
               </div>
 
@@ -227,7 +229,7 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
           onOpenChange={setShowEntrevistaDialog}
           postulacionId={selectedPostulacion.id}
           candidatoUserId={selectedPostulacion.candidato_user_id}
-          candidatoNombre={selectedPostulacion.perfil_candidato?.nombre_completo || "Candidato"}
+          candidatoNombre={selectedPostulacion.candidato?.nombre_completo || "Candidato"}
           onSuccess={() => {
             loadPostulaciones();
             setShowEntrevistaDialog(false);

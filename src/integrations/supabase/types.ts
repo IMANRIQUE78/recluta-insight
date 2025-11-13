@@ -673,6 +673,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "postulaciones_candidato_user_id_fkey"
+            columns: ["candidato_user_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_candidato"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "postulaciones_publicacion_id_fkey"
             columns: ["publicacion_id"]
             isOneToOne: false

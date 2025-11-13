@@ -53,7 +53,7 @@ export function ProximasEntrevistasCard() {
           detalles_reunion,
           estado,
           postulacion:postulaciones(
-            candidato:perfil_candidato(nombre_completo),
+            candidato:perfil_candidato!candidato_user_id(nombre_completo),
             publicacion:publicaciones_marketplace(titulo_puesto)
           )
         `)

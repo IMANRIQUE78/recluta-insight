@@ -44,7 +44,7 @@ export function EntrevistasCompletadasCard() {
           candidato_user_id,
           postulacion_id,
           postulacion:postulaciones(
-            candidato:perfil_candidato(nombre_completo),
+            candidato:perfil_candidato!candidato_user_id(nombre_completo),
             publicacion:publicaciones_marketplace(titulo_puesto)
           )
         `)
