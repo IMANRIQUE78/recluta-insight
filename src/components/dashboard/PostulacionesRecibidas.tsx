@@ -170,24 +170,32 @@ export const PostulacionesRecibidas = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Primero obtener mis publicaciones
-      const { data: misPublicaciones, error: pubError } = await supabase
+      console.log("🔍 Cargando postulaciones para user:", user.id);
+
+      // Obtener publicaciones marketplace del reclutador
+      const { data: publicaciones, error: pubError } = await supabase
         .from("publicaciones_marketplace")
-        .select("id")
+        .select("id, titulo_puesto, vacante_id")
         .eq("user_id", user.id);
 
-      if (pubError) throw pubError;
+      if (pubError) {
+        console.error("Error obteniendo publicaciones:", pubError);
+        throw pubError;
+      }
 
-      const publicacionIds = misPublicaciones?.map(p => p.id) || [];
+      console.log("📋 Publicaciones encontradas:", publicaciones);
+
+      const publicacionIds = publicaciones?.map(p => p.id) || [];
 
       if (publicacionIds.length === 0) {
+        console.log("⚠️ No hay publicaciones para este reclutador");
         setPostulaciones([]);
         setLoading(false);
         return;
       }
 
-      // Obtener postulaciones a mis publicaciones
-      const { data, error } = await supabase
+      // Obtener postulaciones con perfil de candidato
+      const { data: postulacionesData, error: postError } = await supabase
         .from("postulaciones")
         .select(`
           id,
@@ -211,26 +219,28 @@ export const PostulacionesRecibidas = () => {
         .in("publicacion_id", publicacionIds)
         .order("fecha_postulacion", { ascending: false });
 
-      if (error) throw error;
+      if (postError) {
+        console.error("Error obteniendo postulaciones:", postError);
+        throw postError;
+      }
 
-      // Obtener info de publicaciones
-      const { data: publicaciones, error: pubsError } = await supabase
-        .from("publicaciones_marketplace")
-        .select("id, titulo_puesto, vacante_id")
-        .in("id", publicacionIds);
-
-      if (pubsError) throw pubsError;
+      console.log("✅ Postulaciones obtenidas:", postulacionesData);
 
       // Combinar datos
-      const postulacionesCompletas = (data || []).map(p => ({
+      const postulacionesCompletas = (postulacionesData || []).map(p => ({
         ...p,
-        publicacion: publicaciones?.find(pub => pub.id === p.publicacion_id),
+        publicacion: publicaciones?.find(pub => pub.id === p.publicacion_id) || {
+          id: p.publicacion_id,
+          titulo_puesto: "Vacante sin título",
+          vacante_id: ""
+        },
         perfil: p.candidato,
       }));
 
+      console.log("📊 Postulaciones completas:", postulacionesCompletas);
       setPostulaciones(postulacionesCompletas);
     } catch (error: any) {
-      console.error("Error loading postulaciones:", error);
+      console.error("❌ Error loading postulaciones:", error);
       toast({
         title: "Error al cargar postulaciones",
         description: error.message,
