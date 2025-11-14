@@ -28,8 +28,15 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
       const { data, error } = await supabase
         .from("postulaciones")
         .select(`
-          *,
-          candidato:perfil_candidato!candidato_user_id (
+          id,
+          candidato_user_id,
+          publicacion_id,
+          fecha_postulacion,
+          estado,
+          etapa,
+          notas_reclutador,
+          fecha_actualizacion,
+          candidato:perfil_candidato!candidato_user_id(
             nombre_completo,
             email,
             telefono,

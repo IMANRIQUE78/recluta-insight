@@ -170,6 +170,22 @@ export const PostulacionesRecibidas = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Primero obtener mis publicaciones
+      const { data: misPublicaciones, error: pubError } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id")
+        .eq("user_id", user.id);
+
+      if (pubError) throw pubError;
+
+      const publicacionIds = misPublicaciones?.map(p => p.id) || [];
+
+      if (publicacionIds.length === 0) {
+        setPostulaciones([]);
+        setLoading(false);
+        return;
+      }
+
       // Obtener postulaciones a mis publicaciones
       const { data, error } = await supabase
         .from("postulaciones")
@@ -180,40 +196,39 @@ export const PostulacionesRecibidas = () => {
           etapa,
           notas_reclutador,
           candidato_user_id,
-          publicacion:publicaciones_marketplace!inner(
-            id,
-            titulo_puesto,
-            vacante_id,
-            user_id
+          publicacion_id,
+          candidato:perfil_candidato!candidato_user_id(
+            nombre_completo,
+            email,
+            telefono,
+            puesto_actual,
+            empresa_actual,
+            habilidades_tecnicas,
+            nivel_educacion,
+            resumen_profesional
           )
         `)
-        .eq("publicacion.user_id", user.id)
+        .in("publicacion_id", publicacionIds)
         .order("fecha_postulacion", { ascending: false });
 
       if (error) throw error;
 
-      // Cargar perfiles de candidatos
-      if (data && data.length > 0) {
-        const candidatoIds = data.map(p => p.candidato_user_id);
-        const { data: perfiles, error: perfilesError } = await supabase
-          .from("perfil_candidato")
-          .select("*")
-          .in("user_id", candidatoIds);
+      // Obtener info de publicaciones
+      const { data: publicaciones, error: pubsError } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id, titulo_puesto, vacante_id")
+        .in("id", publicacionIds);
 
-        if (perfilesError) {
-          console.error("Error loading perfiles:", perfilesError);
-        }
+      if (pubsError) throw pubsError;
 
-        // Combinar datos
-        const postulacionesConPerfil = data.map(p => ({
-          ...p,
-          perfil: perfiles?.find(pf => pf.user_id === p.candidato_user_id),
-        }));
+      // Combinar datos
+      const postulacionesCompletas = (data || []).map(p => ({
+        ...p,
+        publicacion: publicaciones?.find(pub => pub.id === p.publicacion_id),
+        perfil: p.candidato,
+      }));
 
-        setPostulaciones(postulacionesConPerfil);
-      } else {
-        setPostulaciones([]);
-      }
+      setPostulaciones(postulacionesCompletas);
     } catch (error: any) {
       console.error("Error loading postulaciones:", error);
       toast({
