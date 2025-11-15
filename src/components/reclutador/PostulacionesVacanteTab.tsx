@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { User, Calendar, CheckCircle, XCircle, MessageSquare } from "lucide-react";
 import { AgendarEntrevistaDialog } from "@/components/dashboard/AgendarEntrevistaDialog";
+import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 
 interface PostulacionesVacanteTabProps {
   publicacionId: string;
@@ -18,6 +19,8 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
   const [loading, setLoading] = useState(true);
   const [selectedPostulacion, setSelectedPostulacion] = useState<any>(null);
   const [showEntrevistaDialog, setShowEntrevistaDialog] = useState(false);
+  const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     loadPostulaciones();
@@ -142,9 +145,15 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-muted-foreground" />
-                    <p className="font-semibold">
+                    <button
+                      onClick={() => {
+                        setSelectedCandidatoUserId(postulacion.candidato_user_id);
+                        setShowProfileModal(true);
+                      }}
+                      className="font-semibold text-primary hover:underline cursor-pointer"
+                    >
                       {postulacion.candidato?.nombre_completo || "Candidato"}
-                    </p>
+                    </button>
                     <Badge variant={getEtapaColor(postulacion.etapa)}>
                       {postulacion.etapa}
                     </Badge>
@@ -245,6 +254,14 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
             loadPostulaciones();
             setShowEntrevistaDialog(false);
           }}
+        />
+      )}
+
+      {selectedCandidatoUserId && (
+        <CandidateProfileViewModal
+          open={showProfileModal}
+          onOpenChange={setShowProfileModal}
+          candidatoUserId={selectedCandidatoUserId}
         />
       )}
     </>
