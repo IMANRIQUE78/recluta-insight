@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
 import { PostulacionDetailDialog } from "./PostulacionDetailDialog";
 import { PostulacionChatDialog } from "@/components/postulacion/PostulacionChatDialog";
+import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 
 interface Postulacion {
   id: string;
@@ -71,6 +72,8 @@ export const PostulacionesRecibidas = () => {
     candidatoNombre: string;
     tituloVacante: string;
   } | null>(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPostulaciones();
@@ -326,9 +329,15 @@ export const PostulacionesRecibidas = () => {
                       <TableRow key={postulacion.id} className="hover:bg-muted/50">
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-medium">
+                            <button
+                              onClick={() => {
+                                setSelectedCandidatoUserId(postulacion.candidato_user_id);
+                                setShowProfileModal(true);
+                              }}
+                              className="font-medium text-primary hover:underline cursor-pointer text-left"
+                            >
                               {postulacion.perfil?.nombre_completo || "Sin perfil"}
-                            </span>
+                            </button>
                             <span className="text-xs text-muted-foreground">
                               {postulacion.perfil?.puesto_actual || "Sin puesto actual"}
                             </span>
@@ -430,6 +439,14 @@ export const PostulacionesRecibidas = () => {
           destinatarioUserId={selectedChat.candidatoUserId}
           destinatarioNombre={selectedChat.candidatoNombre}
           tituloVacante={selectedChat.tituloVacante}
+        />
+      )}
+
+      {selectedCandidatoUserId && (
+        <CandidateProfileViewModal
+          open={showProfileModal}
+          onOpenChange={setShowProfileModal}
+          candidatoUserId={selectedCandidatoUserId}
         />
       )}
     </>
