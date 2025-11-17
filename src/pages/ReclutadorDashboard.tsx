@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
@@ -17,6 +17,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
+import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -278,7 +279,7 @@ const ReclutadorDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="resumen" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
             <TabsTrigger value="resumen">
               <Star className="h-4 w-4 mr-2" />
               Resumen
@@ -286,6 +287,10 @@ const ReclutadorDashboard = () => {
             <TabsTrigger value="gestion">
               <ClipboardList className="h-4 w-4 mr-2" />
               Gestión de Vacantes
+            </TabsTrigger>
+            <TabsTrigger value="pool">
+              <Users className="h-4 w-4 mr-2" />
+              Pool de Candidatos
             </TabsTrigger>
             <TabsTrigger value="mensajes">
               <MessageSquare className="h-4 w-4 mr-2" />
@@ -636,6 +641,20 @@ const ReclutadorDashboard = () => {
 
               {/* Postulaciones Recibidas Component */}
               <PostulacionesRecibidas />
+            </div>
+          </TabsContent>
+
+          {/* TAB: POOL DE CANDIDATOS */}
+          <TabsContent value="pool" className="space-y-6">
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-bold">Pool de Candidatos</h2>
+                <p className="text-muted-foreground">
+                  Explora todos los candidatos registrados en la plataforma
+                </p>
+              </div>
+
+              <PoolCandidatos reclutadorId={perfilReclutador.id} />
             </div>
           </TabsContent>
 
