@@ -47,6 +47,7 @@ interface CandidateProfile {
   salario_esperado_max: number | null;
   modalidad_preferida: string | null;
   disponibilidad: string | null;
+  created_at: string;
 }
 
 export const CandidateProfileViewModal = ({
@@ -56,6 +57,7 @@ export const CandidateProfileViewModal = ({
 }: CandidateProfileViewModalProps) => {
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastLogin, setLastLogin] = useState<string | null>(null);
 
   useEffect(() => {
     if (open && candidatoUserId) {
@@ -74,6 +76,12 @@ export const CandidateProfileViewModal = ({
 
       if (error) throw error;
       setProfile(data);
+
+      // Obtener último login del candidato
+      const { data: authData } = await supabase.auth.admin.getUserById(candidatoUserId);
+      if (authData?.user?.last_sign_in_at) {
+        setLastLogin(authData.user.last_sign_in_at);
+      }
     } catch (error: any) {
       console.error("Error loading profile:", error);
     } finally {
@@ -155,6 +163,76 @@ export const CandidateProfileViewModal = ({
               )}
             </div>
 
+            {/* Estado de actividad */}
+            <Separator />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Registro en plataforma</p>
+                <p className="text-sm">
+                  {new Date(profile.created_at).toLocaleDateString('es-MX', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">Último acceso</p>
+                <p className="text-sm">
+                  {lastLogin ? (
+                    new Date(lastLogin).toLocaleDateString('es-MX', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  ) : (
+                    "No disponible"
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Educación */}
+            {profile.educacion && Array.isArray(profile.educacion) && profile.educacion.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-3">
+                  <h3 className="font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Educación
+                  </h3>
+                  <div className="space-y-4">
+                    {profile.educacion.map((edu: any, idx: number) => (
+                      <div key={idx} className="space-y-1 border-l-2 border-primary pl-4">
+                        <p className="font-medium text-sm">{edu.nivel || edu.titulo}</p>
+                        {edu.institucion && (
+                          <p className="text-sm text-muted-foreground">{edu.institucion}</p>
+                        )}
+                        {(edu.anio_inicio || edu.anio_fin) && (
+                          <p className="text-xs text-muted-foreground">
+                            {edu.anio_inicio} {edu.anio_fin ? `- ${edu.anio_fin}` : '- Presente'}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Resumen profesional */}
+            {profile.resumen_profesional && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h3 className="font-semibold">Resumen Profesional</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{profile.resumen_profesional}</p>
+                </div>
+              </>
+            )}
+
             {/* Posición actual */}
             {(profile.puesto_actual || profile.empresa_actual) && (
               <>
@@ -168,17 +246,6 @@ export const CandidateProfileViewModal = ({
                     {profile.puesto_actual && <p className="font-medium">{profile.puesto_actual}</p>}
                     {profile.empresa_actual && <p className="text-muted-foreground">{profile.empresa_actual}</p>}
                   </div>
-                </div>
-              </>
-            )}
-
-            {/* Resumen profesional */}
-            {profile.resumen_profesional && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <h3 className="font-semibold">Resumen Profesional</h3>
-                  <p className="text-sm text-muted-foreground">{profile.resumen_profesional}</p>
                 </div>
               </>
             )}
