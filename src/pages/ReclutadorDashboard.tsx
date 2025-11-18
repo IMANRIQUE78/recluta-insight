@@ -27,12 +27,68 @@ const ReclutadorDashboard = () => {
   const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
   const [asociacionesActivas, setAsociacionesActivas] = useState<any[]>([]);
   const [editarPerfilOpen, setEditarPerfilOpen] = useState(false);
+  const [rankingPosition, setRankingPosition] = useState<number | null>(null);
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
+
+  useEffect(() => {
+    if (perfilReclutador) {
+      loadRankingPosition();
+    }
+  }, [perfilReclutador]);
+
+  const loadRankingPosition = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Obtener todos los reclutadores con sus estadísticas
+      const { data: reclutadores } = await supabase
+        .from("perfil_reclutador")
+        .select("user_id");
+
+      if (!reclutadores) return;
+
+      const { data: estadisticas } = await supabase
+        .from("estadisticas_reclutador")
+        .select("user_id, vacantes_cerradas, promedio_dias_cierre");
+
+      if (!estadisticas) return;
+
+      // Combinar y ordenar por vacantes cerradas (descendente)
+      const rankings = reclutadores
+        .map(r => {
+          const stats = estadisticas.find(e => e.user_id === r.user_id);
+          return {
+            user_id: r.user_id,
+            vacantes_cerradas: stats?.vacantes_cerradas || 0,
+            promedio_dias_cierre: stats?.promedio_dias_cierre || 0,
+          };
+        })
+        .sort((a, b) => {
+          // Ordenar por vacantes cerradas descendente
+          const diff = b.vacantes_cerradas - a.vacantes_cerradas;
+          if (diff !== 0) return diff;
+          // En caso de empate, ordenar por promedio de días (menor es mejor)
+          if (a.promedio_dias_cierre === 0 && b.promedio_dias_cierre === 0) return 0;
+          if (a.promedio_dias_cierre === 0) return 1;
+          if (b.promedio_dias_cierre === 0) return -1;
+          return a.promedio_dias_cierre - b.promedio_dias_cierre;
+        });
+
+      // Encontrar posición del usuario actual
+      const position = rankings.findIndex(r => r.user_id === user.id);
+      if (position !== -1) {
+        setRankingPosition(position + 1); // +1 porque el índice empieza en 0
+      }
+    } catch (error) {
+      console.error("Error loading ranking position:", error);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -255,9 +311,17 @@ const ReclutadorDashboard = () => {
               <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
                 Dashboard Reclutador
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {perfilReclutador?.nombre_reclutador || "Panel de control"}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {perfilReclutador?.nombre_reclutador || "Panel de control"}
+                </p>
+                {rankingPosition && (
+                  <Badge variant="secondary" className="text-xs">
+                    <Star className="h-3 w-3 mr-1" />
+                    Lugar #{rankingPosition} en ranking
+                  </Badge>
+                )}
+              </div>
             </div>
             
             <div className="flex items-center gap-2">

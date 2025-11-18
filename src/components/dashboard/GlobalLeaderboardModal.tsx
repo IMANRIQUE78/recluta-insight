@@ -223,18 +223,6 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                   <TableHead className="w-[100px]">Posición</TableHead>
                   <TableHead className="w-[60px]">País</TableHead>
                   <TableHead>Reclutador</TableHead>
-                  <TableHead>Empresa</TableHead>
-                  <TableHead className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort("promedio_dias_cierre")}
-                      className="w-full justify-end"
-                    >
-                      Promedio Días
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
-                  </TableHead>
                   <TableHead className="text-right">
                     <Button
                       variant="ghost"
@@ -246,14 +234,14 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-center">
+                  <TableHead className="text-right">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleSort("ranking_score")}
-                      className="w-full justify-center"
+                      onClick={() => handleSort("promedio_dias_cierre")}
+                      className="w-full justify-end"
                     >
-                      Ranking
+                      Promedio Días Cierre
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
@@ -262,7 +250,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
               <TableBody>
                 {leaderboard.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       No hay reclutadores registrados en la plataforma aún
                     </TableCell>
                   </TableRow>
@@ -288,8 +276,8 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">{entry.empresa}</span>
+                      <TableCell className="text-right font-semibold">
+                        {entry.vacantes_cerradas > 0 ? entry.vacantes_cerradas : "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         {entry.promedio_dias_cierre > 0 ? (
@@ -299,14 +287,6 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                         ) : (
                           <span className="text-muted-foreground">-</span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {entry.vacantes_cerradas > 0 ? entry.vacantes_cerradas : "-"}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="text-xs">
-                          {entry.ranking_score !== null ? entry.ranking_score : "-"}
-                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))
