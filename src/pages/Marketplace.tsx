@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Search, Briefcase, SlidersHorizontal, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 const Marketplace = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [publicaciones, setPublicaciones] = useState<any[]>([]);
   const [filteredPublicaciones, setFilteredPublicaciones] = useState<any[]>([]);
   const [selectedPublicacion, setSelectedPublicacion] = useState<any | null>(null);
@@ -35,6 +36,19 @@ const Marketplace = () => {
   useEffect(() => {
     applyFilters();
   }, [searchTerm, publicaciones, modalidadFilter, ubicacionFilter, salarioMin, salarioMax]);
+
+  // Detectar parámetro de URL para abrir modal automáticamente
+  useEffect(() => {
+    const vacanteId = searchParams.get('vacante');
+    if (vacanteId && publicaciones.length > 0) {
+      const publicacion = publicaciones.find(p => p.id === vacanteId);
+      if (publicacion) {
+        setSelectedPublicacion(publicacion);
+        // Limpiar el parámetro después de abrir
+        setSearchParams({});
+      }
+    }
+  }, [searchParams, publicaciones]);
 
   const applyFilters = () => {
     let filtered = [...publicaciones];
