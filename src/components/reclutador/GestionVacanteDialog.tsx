@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Upload, Users, Calendar } from "lucide-react";
+import { FileText, Upload, Users, Calendar, Share2, Copy, Check } from "lucide-react";
 import { PostulacionesVacanteTab } from "./PostulacionesVacanteTab";
 
 interface GestionVacanteDialogProps {
@@ -34,6 +34,7 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
   const [sueldoBruto, setSueldoBruto] = useState("");
   const [lugarTrabajo, setLugarTrabajo] = useState<"remoto" | "hibrido" | "presencial">("presencial");
   const [mostrarEmpresa, setMostrarEmpresa] = useState(true);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   useEffect(() => {
     if (open && vacante) {
@@ -139,6 +140,28 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
     }
   };
 
+  const handleCopyLink = async () => {
+    if (!publicacionData?.id) return;
+    
+    const shareableLink = `${window.location.origin}/marketplace?vacante=${publicacionData.id}`;
+    
+    try {
+      await navigator.clipboard.writeText(shareableLink);
+      setCopiedLink(true);
+      toast({
+        title: "¡Enlace copiado!",
+        description: "Ahora puedes compartirlo en redes sociales",
+      });
+      setTimeout(() => setCopiedLink(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo copiar el enlace",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -163,6 +186,42 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
               Postulaciones ({publicacionData ? "0" : "0"})
             </TabsTrigger>
           </TabsList>
+          
+          {/* Enlace compartible */}
+          {publicacionData && (
+            <div className="mt-4 p-4 bg-secondary/10 rounded-lg border border-border">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Share2 className="h-4 w-4 text-primary" />
+                    <Label className="text-sm font-medium">Enlace para compartir</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Comparte esta vacante en redes sociales
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyLink}
+                  className="gap-2"
+                >
+                  {copiedLink ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copiar enlace
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
 
           <TabsContent value="detalles" className="space-y-4 mt-4">
             {/* Información de la requisición original */}
