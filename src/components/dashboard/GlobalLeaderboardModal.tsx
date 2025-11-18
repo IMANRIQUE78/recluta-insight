@@ -66,19 +66,26 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Obtener todos los perfiles
-      const { data: perfiles, error: perfilesError } = await supabase
-        .from("perfil_usuario")
-        .select("user_id, nombre_usuario, pais, nombre_empresa");
+      // Obtener todos los perfiles de reclutadores con sus estadísticas
+      const { data: reclutadores, error: reclutadoresError } = await supabase
+        .from("perfil_reclutador")
+        .select("user_id, nombre_reclutador");
 
-      if (perfilesError) {
-        console.error("Error fetching perfiles:", perfilesError);
+      if (reclutadoresError) {
+        console.error("Error fetching reclutadores:", reclutadoresError);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      // Obtener todas las estadísticas
+      if (!reclutadores || reclutadores.length === 0) {
+        console.log("No hay reclutadores registrados");
+        setLeaderboard([]);
+        setLoading(false);
+        return;
+      }
+
+      // Obtener estadísticas de todos los reclutadores
       const { data: estadisticas, error: estadisticasError } = await supabase
         .from("estadisticas_reclutador")
         .select("user_id, vacantes_cerradas, promedio_dias_cierre, ranking_score");
@@ -87,47 +94,38 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         console.error("Error fetching estadisticas:", estadisticasError);
       }
 
-      // Combinar los datos manualmente
-      const entries = perfiles?.map(perfil => {
-        const stats = estadisticas?.find(e => e.user_id === perfil.user_id);
-        return {
-          ...perfil,
-          estadisticas: stats || { vacantes_cerradas: 0, promedio_dias_cierre: 0, ranking_score: null }
-        };
-      }) || [];
-
-      if (!entries || entries.length === 0) {
-        console.log("No leaderboard data found");
-        setLeaderboard([]);
-        setLoading(false);
-        return;
-      }
-
-      // Mapear los datos al formato esperado con nombre formateado
-      const leaderboardData: LeaderboardEntry[] = entries.map((entry: any) => {
-        const nombreCompleto = entry.nombre_usuario || "Usuario";
-        // Para todos excepto el usuario actual, mostrar solo nombre + primera letra del apellido
+      // Por ahora usar país fijo, en el futuro se puede agregar un campo de país al perfil_reclutador
+      const leaderboardData: LeaderboardEntry[] = reclutadores.map((reclutador: any) => {
+        const stats = estadisticas?.find(e => e.user_id === reclutador.user_id);
+        
+        // Formatear nombre: si no es el usuario actual, mostrar nombre + primera letra del apellido
+        const nombreCompleto = reclutador.nombre_reclutador || "Reclutador";
         let nombreFormateado = nombreCompleto;
-        if (entry.user_id !== user?.id) {
+        if (reclutador.user_id !== user?.id) {
           const parts = nombreCompleto.trim().split(' ');
           if (parts.length > 1) {
-            nombreFormateado = `${parts[0]} ${parts[1].charAt(0)}.`;
+            // Tomar primer nombre y primera letra del apellido
+            nombreFormateado = `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
           }
         }
         
+        // Calcular score total
+        const vacantesCerradas = stats?.vacantes_cerradas || 0;
+        const promedioDias = stats?.promedio_dias_cierre || 0;
+        
         return {
-          id: entry.user_id,
-          user_id: entry.user_id,
+          id: reclutador.user_id,
+          user_id: reclutador.user_id,
           nombre: nombreFormateado,
-          pais: entry.pais || "México",
-          empresa: entry.nombre_empresa || "Empresa Confidencial",
-          promedio_dias_cierre: entry.estadisticas?.promedio_dias_cierre || 0,
-          vacantes_cerradas: entry.estadisticas?.vacantes_cerradas || 0,
-          ranking_score: entry.estadisticas?.ranking_score || null,
+          pais: "México", // Por defecto, se puede agregar campo de país después
+          empresa: "Independiente",
+          promedio_dias_cierre: promedioDias,
+          vacantes_cerradas: vacantesCerradas,
+          ranking_score: vacantesCerradas > 0 ? vacantesCerradas : null,
         };
       });
 
-      console.log("Total entries:", leaderboardData.length);
+      console.log("Total reclutadores:", leaderboardData.length);
       setLeaderboard(leaderboardData);
       sortLeaderboard(leaderboardData);
     } catch (error) {
