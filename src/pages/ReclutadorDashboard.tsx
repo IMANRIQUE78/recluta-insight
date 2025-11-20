@@ -305,72 +305,85 @@ const ReclutadorDashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
                 Dashboard Reclutador
               </h1>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground">
+              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">
                   {perfilReclutador?.nombre_reclutador || "Panel de control"}
                 </p>
                 {rankingPosition && (
-                  <Badge variant="secondary" className="text-xs">
+                  <Badge variant="secondary" className="text-xs shrink-0">
                     <Star className="h-3 w-3 mr-1" />
-                    Lugar #{rankingPosition} en ranking
+                    <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
                   </Badge>
                 )}
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setEditarPerfilOpen(true)}
+                className="hidden sm:flex"
               >
                 <UserCog className="mr-2 h-4 w-4" />
                 Mejorar Perfil
               </Button>
-              <Button variant="outline" onClick={handleSignOut}>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setEditarPerfilOpen(true)}
+                className="sm:hidden"
+              >
+                <UserCog className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:flex">
                 <LogOut className="mr-2 h-4 w-4" />
                 Salir
+              </Button>
+              <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden">
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="resumen" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
-            <TabsTrigger value="resumen">
-              <Star className="h-4 w-4 mr-2" />
-              Resumen
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        <Tabs defaultValue="resumen" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-4 gap-1 h-auto p-1 lg:w-[800px]">
+            <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+              <Star className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Resumen</span>
             </TabsTrigger>
-            <TabsTrigger value="gestion">
-              <ClipboardList className="h-4 w-4 mr-2" />
-              Gestión de Vacantes
+            <TabsTrigger value="gestion" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+              <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Gestión</span>
             </TabsTrigger>
-            <TabsTrigger value="pool">
-              <Users className="h-4 w-4 mr-2" />
-              Pool de Candidatos
+            <TabsTrigger value="pool" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+              <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Pool</span>
             </TabsTrigger>
-            <TabsTrigger value="mensajes">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Comunicación
+            <TabsTrigger value="mensajes" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+              <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Chat</span>
             </TabsTrigger>
           </TabsList>
 
           {/* TAB: RESUMEN */}
-          <TabsContent value="resumen" className="space-y-6">
+          <TabsContent value="resumen" className="space-y-4 sm:space-y-6">
             
             {/* Invitaciones Pendientes - PRIORIDAD MÁXIMA */}
             {invitacionesPendientes.length > 0 && (
-              <section className="space-y-4">
+              <section className="space-y-3 sm:space-y-4">
                 <div className="flex items-center gap-2">
-                  <div className="h-8 w-1 bg-primary rounded-full" />
-                  <h2 className="text-2xl font-bold">¡Tienes Invitaciones Pendientes!</h2>
+                  <div className="h-6 sm:h-8 w-1 bg-primary rounded-full" />
+                  <h2 className="text-lg sm:text-2xl font-bold">¡Invitaciones Pendientes!</h2>
                 </div>
                 <div className="space-y-3">
                   {invitacionesPendientes.map((invitacion) => (
@@ -434,26 +447,26 @@ const ReclutadorDashboard = () => {
                           </div>
                         )}
                         
-                        <div className="flex gap-3 pt-2">
+                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
                           <Button
                             onClick={() => handleAceptarInvitacion(
                               invitacion.id,
                               invitacion.empresa_id,
                               invitacion.tipo_vinculacion
                             )}
-                            className="flex-1 h-11"
+                            className="flex-1 h-10 sm:h-11"
                             size="lg"
                           >
-                            <CheckCircle2 className="mr-2 h-5 w-5" />
-                            Aceptar Invitación
+                            <CheckCircle2 className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
+                            <span className="text-sm sm:text-base">Aceptar Invitación</span>
                           </Button>
                           <Button
                             variant="outline"
                             onClick={() => handleRechazarInvitacion(invitacion.id)}
-                            className="flex-1 h-11"
+                            className="flex-1 h-10 sm:h-11"
                             size="lg"
                           >
-                            Rechazar
+                            <span className="text-sm sm:text-base">Rechazar</span>
                           </Button>
                         </div>
                       </CardContent>
@@ -467,8 +480,8 @@ const ReclutadorDashboard = () => {
         <EmpresasVinculadasCard asociaciones={asociacionesActivas} />
 
         {/* Perfil y Código Único */}
-        <section className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+        <section className="space-y-3 sm:space-y-4">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
             {/* Código Único */}
             <Card className="border-primary/20">
               <CardHeader>
@@ -545,9 +558,9 @@ const ReclutadorDashboard = () => {
         </section>
 
         {/* Indicadores de Performance */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">Indicadores de Performance</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <section className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-xl font-bold">Indicadores de Performance</h2>
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
             <KPICard
               title="Promedio Cierre"
               value={stats.promedioDiasCierre}
@@ -575,18 +588,18 @@ const ReclutadorDashboard = () => {
         </section>
 
         {/* Gestión de Vacantes y Entrevistas */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">Mi Trabajo</h2>
-          <div className="grid gap-4 lg:grid-cols-2">
+        <section className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-xl font-bold">Mi Trabajo</h2>
+          <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
             <VacantesAsignadasCard reclutadorId={perfilReclutador?.id} />
             <EntrevistasReclutadorCard reclutadorUserId={perfilReclutador?.user_id} />
           </div>
         </section>
 
         {/* Estadísticas Rápidas */}
-        <section className="space-y-4">
-          <h2 className="text-xl font-bold">Resumen</h2>
-          <div className="grid gap-4 md:grid-cols-4">
+        <section className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-xl font-bold">Resumen</h2>
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
             <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -694,12 +707,12 @@ const ReclutadorDashboard = () => {
           </TabsContent>
 
           {/* TAB: GESTIÓN DE VACANTES */}
-          <TabsContent value="gestion" className="space-y-6">
-            <div className="space-y-4">
+          <TabsContent value="gestion" className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <h2 className="text-2xl font-bold">Gestión de Vacantes Publicadas</h2>
-                <p className="text-muted-foreground">
-                  Administra tus vacantes publicadas en el marketplace y sus postulaciones
+                <h2 className="text-lg sm:text-2xl font-bold">Gestión de Vacantes Publicadas</h2>
+                <p className="text-sm text-muted-foreground">
+                  Administra tus vacantes publicadas en el marketplace
                 </p>
               </div>
 
@@ -709,12 +722,12 @@ const ReclutadorDashboard = () => {
           </TabsContent>
 
           {/* TAB: POOL DE CANDIDATOS */}
-          <TabsContent value="pool" className="space-y-6">
-            <div className="space-y-4">
+          <TabsContent value="pool" className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <h2 className="text-2xl font-bold">Pool de Candidatos</h2>
-                <p className="text-muted-foreground">
-                  Explora todos los candidatos registrados en la plataforma
+                <h2 className="text-lg sm:text-2xl font-bold">Pool de Candidatos</h2>
+                <p className="text-sm text-muted-foreground">
+                  Explora candidatos registrados en la plataforma
                 </p>
               </div>
 
@@ -723,11 +736,11 @@ const ReclutadorDashboard = () => {
           </TabsContent>
 
           {/* TAB: MENSAJES */}
-          <TabsContent value="mensajes" className="space-y-6">
-            <div className="space-y-4">
+          <TabsContent value="mensajes" className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <h2 className="text-2xl font-bold">Centro de Comunicación</h2>
-                <p className="text-muted-foreground">
+                <h2 className="text-lg sm:text-2xl font-bold">Centro de Comunicación</h2>
+                <p className="text-sm text-muted-foreground">
                   Gestiona tus conversaciones con candidatos
                 </p>
               </div>
