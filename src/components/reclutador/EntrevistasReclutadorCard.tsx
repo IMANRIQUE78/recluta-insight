@@ -3,8 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar, MapPin, User, CheckCircle } from "lucide-react";
+import { Calendar, MapPin, User, CheckCircle, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GestionarEntrevistaDialog } from "./GestionarEntrevistaDialog";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface EntrevistasReclutadorCardProps {
   reclutadorUserId: string;
@@ -14,6 +17,8 @@ export const EntrevistasReclutadorCard = ({ reclutadorUserId }: EntrevistasReclu
   const { toast } = useToast();
   const [entrevistas, setEntrevistas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedEntrevista, setSelectedEntrevista] = useState<any>(null);
+  const [gestionarDialogOpen, setGestionarDialogOpen] = useState(false);
 
   useEffect(() => {
     loadEntrevistas();
@@ -115,6 +120,11 @@ export const EntrevistasReclutadorCard = ({ reclutadorUserId }: EntrevistasReclu
     }
   };
 
+  const handleGestionarEntrevista = (entrevista: any) => {
+    setSelectedEntrevista(entrevista);
+    setGestionarDialogOpen(true);
+  };
+
   if (loading) {
     return (
       <Card>
@@ -181,22 +191,40 @@ export const EntrevistasReclutadorCard = ({ reclutadorUserId }: EntrevistasReclu
                 {entrevista.detalles_reunion && (
                   <p className="text-xs text-muted-foreground">{entrevista.detalles_reunion}</p>
                 )}
-                {!entrevista.asistio && (
+                <div className="flex gap-2 pt-2">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full"
-                    onClick={() => handleMarcarAsistencia(entrevista.id)}
+                    className="flex-1"
+                    onClick={() => handleGestionarEntrevista(entrevista)}
                   >
-                    <CheckCircle className="mr-2 h-3 w-3" />
-                    Marcar como realizada
+                    <Settings className="mr-2 h-3 w-3" />
+                    Gestionar
                   </Button>
-                )}
+                  {!entrevista.asistio && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1"
+                      onClick={() => handleMarcarAsistencia(entrevista.id)}
+                    >
+                      <CheckCircle className="mr-2 h-3 w-3" />
+                      Realizada
+                    </Button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </CardContent>
+
+      <GestionarEntrevistaDialog
+        open={gestionarDialogOpen}
+        onOpenChange={setGestionarDialogOpen}
+        entrevista={selectedEntrevista}
+        onSuccess={loadEntrevistas}
+      />
     </Card>
   );
 };
