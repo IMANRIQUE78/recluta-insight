@@ -11,9 +11,10 @@ import { GestionEstatusPostulacionDialog } from "./GestionEstatusPostulacionDial
 
 interface PostulacionesVacanteTabProps {
   publicacionId: string;
+  onPostulacionUpdated?: () => void;
 }
 
-export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteTabProps) => {
+export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }: PostulacionesVacanteTabProps) => {
   const { toast } = useToast();
   const [postulaciones, setPostulaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -199,7 +200,10 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
           open={showGestionDialog}
           onOpenChange={setShowGestionDialog}
           postulacion={selectedPostulacion}
-          onSuccess={loadPostulaciones}
+          onSuccess={() => {
+            loadPostulaciones();
+            onPostulacionUpdated?.();
+          }}
         />
       )}
 

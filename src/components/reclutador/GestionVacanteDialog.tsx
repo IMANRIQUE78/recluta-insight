@@ -25,6 +25,7 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [publicacionData, setPublicacionData] = useState<any>(null);
+  const [postulacionesCount, setPostulacionesCount] = useState(0);
   
   // Datos para publicación
   const [titulo, setTitulo] = useState("");
@@ -66,10 +67,21 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
         setUbicacion(data.ubicacion || "");
         setSueldoBruto(data.sueldo_bruto_aprobado?.toString() || "");
         setLugarTrabajo(data.lugar_trabajo);
+        
+        // Cargar conteo de postulaciones
+        const { count } = await supabase
+          .from("postulaciones")
+          .select("*", { count: "exact", head: true })
+          .eq("publicacion_id", data.id);
+        setPostulacionesCount(count || 0);
       }
     } catch (error) {
       console.error("Error cargando publicación:", error);
     }
+  };
+  
+  const handlePostulacionUpdated = () => {
+    loadPublicacionData();
   };
 
   const handlePublicar = async () => {
@@ -183,7 +195,7 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
             </TabsTrigger>
             <TabsTrigger value="postulaciones" disabled={!publicacionData}>
               <Users className="mr-2 h-4 w-4" />
-              Postulaciones ({publicacionData ? "0" : "0"})
+              Postulaciones ({postulacionesCount})
             </TabsTrigger>
           </TabsList>
           
@@ -348,7 +360,10 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
 
           <TabsContent value="postulaciones" className="mt-4">
             {publicacionData && (
-              <PostulacionesVacanteTab publicacionId={publicacionData.id} />
+              <PostulacionesVacanteTab 
+                publicacionId={publicacionData.id}
+                onPostulacionUpdated={handlePostulacionUpdated}
+              />
             )}
           </TabsContent>
         </Tabs>
