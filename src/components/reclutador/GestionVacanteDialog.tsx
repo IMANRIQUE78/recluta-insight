@@ -52,12 +52,15 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
 
   const loadPublicacionData = async () => {
     try {
+      console.log("🔍 [GestionVacante] Cargando publicación para vacante:", vacante.id);
+      
       const { data } = await supabase
         .from("publicaciones_marketplace")
         .select("*")
         .eq("vacante_id", vacante.id)
         .maybeSingle();
       
+      console.log("📋 [GestionVacante] Publicación encontrada:", data);
       setPublicacionData(data);
       
       if (data) {
@@ -69,18 +72,29 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
         setLugarTrabajo(data.lugar_trabajo);
         
         // Cargar conteo de postulaciones
-        const { count } = await supabase
+        console.log("🔍 [GestionVacante] Buscando postulaciones para publicación:", data.id);
+        const { count, error: countError } = await supabase
           .from("postulaciones")
           .select("*", { count: "exact", head: true })
           .eq("publicacion_id", data.id);
-        setPostulacionesCount(count || 0);
+        
+        if (countError) {
+          console.error("❌ [GestionVacante] Error contando postulaciones:", countError);
+        } else {
+          console.log("✅ [GestionVacante] Total de postulaciones:", count);
+          setPostulacionesCount(count || 0);
+        }
+      } else {
+        console.log("⚠️ [GestionVacante] No se encontró publicación para esta vacante");
+        setPostulacionesCount(0);
       }
     } catch (error) {
-      console.error("Error cargando publicación:", error);
+      console.error("❌ [GestionVacante] Error cargando publicación:", error);
     }
   };
   
   const handlePostulacionUpdated = () => {
+    console.log("🔄 [GestionVacante] Recargando datos de publicación...");
     loadPublicacionData();
   };
 

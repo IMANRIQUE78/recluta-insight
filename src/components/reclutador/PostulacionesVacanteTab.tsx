@@ -29,7 +29,7 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
 
   const loadPostulaciones = async () => {
     try {
-      console.log("🔍 Cargando postulaciones para publicación:", publicacionId);
+      console.log("🔍 [PostulacionesTab] Cargando postulaciones para publicación:", publicacionId);
 
       const { data, error } = await supabase
         .from("postulaciones")
@@ -57,14 +57,15 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
         .order("fecha_postulacion", { ascending: false });
 
       if (error) {
-        console.error("❌ Error loading postulaciones:", error);
+        console.error("❌ [PostulacionesTab] Error loading postulaciones:", error);
         throw error;
       }
 
-      console.log("✅ Postulaciones cargadas:", data);
+      console.log("✅ [PostulacionesTab] Postulaciones cargadas:", data?.length || 0, "postulaciones");
+      console.log("📊 [PostulacionesTab] Datos completos:", data);
       setPostulaciones(data || []);
     } catch (error: any) {
-      console.error("❌ Error en loadPostulaciones:", error);
+      console.error("❌ [PostulacionesTab] Error en loadPostulaciones:", error);
       toast({
         title: "Error",
         description: error.message,
