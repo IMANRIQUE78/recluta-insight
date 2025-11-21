@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Calendar, CheckCircle, XCircle, MessageSquare } from "lucide-react";
-import { AgendarEntrevistaDialog } from "@/components/dashboard/AgendarEntrevistaDialog";
+import { User, Calendar, Settings, MessageSquare } from "lucide-react";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
+import { GestionEstatusPostulacionDialog } from "./GestionEstatusPostulacionDialog";
 
 interface PostulacionesVacanteTabProps {
   publicacionId: string;
@@ -18,7 +18,7 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
   const [postulaciones, setPostulaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPostulacion, setSelectedPostulacion] = useState<any>(null);
-  const [showEntrevistaDialog, setShowEntrevistaDialog] = useState(false);
+  const [showGestionDialog, setShowGestionDialog] = useState(false);
   const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
 
@@ -74,47 +74,17 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
     }
   };
 
-  const handleDescartar = async (postulacionId: string) => {
-    try {
-      const { error } = await supabase
-        .from("postulaciones")
-        .update({
-          estado: "descartado",
-          etapa: "descartado",
-          notas_reclutador: "Gracias por tu interés. En esta ocasión hemos decidido continuar con otros perfiles que se ajustan más a los requerimientos específicos de la posición. Te deseamos éxito en tu búsqueda laboral.",
-        })
-        .eq("id", postulacionId);
-
-      if (error) throw error;
-
-      toast({
-        title: "✅ Candidato descartado",
-        description: "Se ha enviado un mensaje de agradecimiento al candidato",
-      });
-
-      loadPostulaciones();
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleAvanzarEntrevista = (postulacion: any) => {
+  const handleGestionarEstatus = (postulacion: any) => {
     setSelectedPostulacion(postulacion);
-    setShowEntrevistaDialog(true);
+    setShowGestionDialog(true);
   };
 
   const getEtapaColor = (etapa: string) => {
-    switch (etapa) {
-      case "recibida": return "secondary";
-      case "revision": return "default";
-      case "entrevista": return "default";
-      case "descartado": return "destructive";
-      default: return "outline";
-    }
+    if (etapa?.includes("entrevista")) return "default";
+    if (etapa === "contratado") return "default";
+    if (etapa?.includes("no_viable") || etapa === "descartado" || etapa?.includes("no_")) return "destructive";
+    if (etapa === "continua_proceso") return "secondary";
+    return "outline";
   };
 
   if (loading) {
@@ -211,49 +181,25 @@ export const PostulacionesVacanteTab = ({ publicacionId }: PostulacionesVacanteT
                 </div>
               )}
 
-              {postulacion.etapa !== "descartado" && postulacion.etapa !== "entrevista" && (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleAvanzarEntrevista(postulacion)}
-                  >
-                    <CheckCircle className="mr-2 h-4 w-4" />
-                    Agendar Entrevista
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => handleDescartar(postulacion.id)}
-                  >
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Descartar
-                  </Button>
-                </div>
-              )}
-
-              {postulacion.etapa === "entrevista" && (
-                <Badge variant="default" className="w-full justify-center">
-                  Entrevista programada
-                </Badge>
-              )}
+              <Button
+                size="sm"
+                className="w-full"
+                onClick={() => handleGestionarEstatus(postulacion)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Gestionar Estatus
+              </Button>
             </div>
           </Card>
         ))}
       </div>
 
       {selectedPostulacion && (
-        <AgendarEntrevistaDialog
-          open={showEntrevistaDialog}
-          onOpenChange={setShowEntrevistaDialog}
-          postulacionId={selectedPostulacion.id}
-          candidatoUserId={selectedPostulacion.candidato_user_id}
-          candidatoNombre={selectedPostulacion.candidato?.nombre_completo || "Candidato"}
-          onSuccess={() => {
-            loadPostulaciones();
-            setShowEntrevistaDialog(false);
-          }}
+        <GestionEstatusPostulacionDialog
+          open={showGestionDialog}
+          onOpenChange={setShowGestionDialog}
+          postulacion={selectedPostulacion}
+          onSuccess={loadPostulaciones}
         />
       )}
 
