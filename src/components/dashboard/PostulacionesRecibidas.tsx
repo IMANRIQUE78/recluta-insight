@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, Calendar, MessageSquare } from "lucide-react";
+import { Eye, Calendar, MessageSquare, Settings } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
 import { PostulacionDetailDialog } from "./PostulacionDetailDialog";
 import { PostulacionChatDialog } from "@/components/postulacion/PostulacionChatDialog";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
+import { GestionEstatusPostulacionDialog } from "@/components/reclutador/GestionEstatusPostulacionDialog";
 
 interface Postulacion {
   id: string;
@@ -40,16 +41,42 @@ const etapaLabels: Record<string, string> = {
   recibida: "Recibida",
   revision: "En Revisión",
   entrevista: "Entrevista",
+  entrevista_presencial: "Entrevista Presencial",
+  entrevista_distancia: "Entrevista a Distancia",
+  no_respondio_contacto: "No respondió contacto",
+  continua_proceso: "Continúa en proceso",
+  candidato_abandona: "Candidato abandona proceso",
+  no_asistio: "No asistió",
+  no_viable_filtro: "No viable en llamada filtro",
+  no_viable_entrevista: "No viable en entrevista",
+  no_viable_conocimientos: "No viable por conocimientos",
+  no_viable_psicometria: "No viable por psicometría",
+  no_viable_segunda_entrevista: "No viable en segunda entrevista",
   rechazada: "Rechazada",
+  contratado: "Contratado",
   contratada: "Contratada",
+  descartado: "Descartado",
 };
 
 const etapaColors: Record<string, string> = {
   recibida: "bg-blue-500",
   revision: "bg-yellow-500",
   entrevista: "bg-purple-500",
+  entrevista_presencial: "bg-purple-500",
+  entrevista_distancia: "bg-purple-500",
+  no_respondio_contacto: "bg-gray-500",
+  continua_proceso: "bg-blue-600",
+  candidato_abandona: "bg-gray-500",
+  no_asistio: "bg-gray-500",
+  no_viable_filtro: "bg-red-500",
+  no_viable_entrevista: "bg-red-500",
+  no_viable_conocimientos: "bg-red-500",
+  no_viable_psicometria: "bg-red-500",
+  no_viable_segunda_entrevista: "bg-red-500",
   rechazada: "bg-red-500",
+  contratado: "bg-green-500",
   contratada: "bg-green-500",
+  descartado: "bg-red-500",
 };
 
 export const PostulacionesRecibidas = () => {
@@ -74,6 +101,8 @@ export const PostulacionesRecibidas = () => {
   } | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
+  const [gestionDialogOpen, setGestionDialogOpen] = useState(false);
+  const [gestionPostulacion, setGestionPostulacion] = useState<any | null>(null);
 
   useEffect(() => {
     loadPostulaciones();
@@ -259,12 +288,41 @@ export const PostulacionesRecibidas = () => {
     setDetailModalOpen(true);
   };
 
+  const matchesEtapaFilter = (p: Postulacion, filter: string) => {
+    switch (filter) {
+      case "recibida":
+        return p.etapa === "recibida";
+      case "revision":
+        return p.etapa === "revision";
+      case "entrevista":
+        return (
+          p.etapa === "entrevista" ||
+          p.etapa === "entrevista_presencial" ||
+          p.etapa === "entrevista_distancia"
+        );
+      case "rechazada":
+        return (
+          p.etapa === "rechazada" ||
+          p.etapa === "descartado" ||
+          p.etapa === "candidato_abandona" ||
+          p.etapa === "no_asistio" ||
+          p.etapa === "no_respondio_contacto" ||
+          (p.etapa && p.etapa.startsWith("no_viable"))
+        );
+      case "contratada":
+        return p.etapa === "contratada" || p.etapa === "contratado";
+      default:
+        return true;
+    }
+  };
+
   const filteredPostulaciones = etapaFilter === "todas" 
     ? postulaciones 
-    : postulaciones.filter(p => p.etapa === etapaFilter);
-
+    : postulaciones.filter(p => matchesEtapaFilter(p, etapaFilter));
+ 
   const countByEtapa = (etapa: string) => {
-    return postulaciones.filter(p => p.etapa === etapa).length;
+    if (etapa === "todas") return postulaciones.length;
+    return postulaciones.filter(p => matchesEtapaFilter(p, etapa)).length;
   };
 
   if (loading) {
@@ -368,6 +426,20 @@ export const PostulacionesRecibidas = () => {
                               Ver Detalles
                             </Button>
                             <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setGestionPostulacion({
+                                  ...postulacion,
+                                  candidato: postulacion.perfil,
+                                });
+                                setGestionDialogOpen(true);
+                              }}
+                            >
+                              <Settings className="h-4 w-4 mr-2" />
+                              Gestionar Estatus
+                            </Button>
+                            <Button
                               variant="secondary"
                               size="sm"
                               onClick={() => {
@@ -447,6 +519,15 @@ export const PostulacionesRecibidas = () => {
           open={showProfileModal}
           onOpenChange={setShowProfileModal}
           candidatoUserId={selectedCandidatoUserId}
+        />
+      )}
+
+      {gestionPostulacion && (
+        <GestionEstatusPostulacionDialog
+          open={gestionDialogOpen}
+          onOpenChange={setGestionDialogOpen}
+          postulacion={gestionPostulacion}
+          onSuccess={loadPostulaciones}
         />
       )}
     </>
