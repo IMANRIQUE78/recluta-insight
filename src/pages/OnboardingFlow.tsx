@@ -23,7 +23,7 @@ const OnboardingFlow = () => {
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
-  const [userType, setUserType] = useState<"empresa" | "reclutador" | "">("");
+  const [userType, setUserType] = useState<"empresa" | "reclutador" | "candidato" | "">("");
   
   // Datos Empresa
   const [nombreEmpresa, setNombreEmpresa] = useState("");
@@ -40,6 +40,11 @@ const OnboardingFlow = () => {
   const [telefono, setTelefono] = useState("");
   const [tipoReclutador, setTipoReclutador] = useState<"interno" | "freelance" | "">("");
   const [anosExperiencia, setAnosExperiencia] = useState(0);
+  
+  // Datos Candidato
+  const [nombreCandidato, setNombreCandidato] = useState("");
+  const [emailCandidato, setEmailCandidato] = useState("");
+  const [telefonoCandidato, setTelefonoCandidato] = useState("");
 
   // Protección de ruta - redirigir si no está autenticado
   useEffect(() => {
@@ -157,7 +162,7 @@ const OnboardingFlow = () => {
 
       if (existingProfile) {
         toast.error("Ya tienes un perfil de reclutador creado");
-        navigate("/dashboard");
+        navigate("/reclutador-dashboard");
         return;
       }
 
@@ -207,7 +212,68 @@ const OnboardingFlow = () => {
       if (suscripcionError) throw suscripcionError;
 
       toast.success(`¡Perfil de reclutador creado! Código único: ${reclutadorData.codigo_reclutador}. Todas las features premium disponibles.`);
-      navigate("/dashboard");
+      navigate("/reclutador-dashboard");
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast.error("Error al crear perfil: " + error.message);
+    }
+  };
+
+  const handleSubmitCandidato = async () => {
+    if (!user) {
+      toast.error("Debes iniciar sesión primero");
+      return;
+    }
+
+    try {
+      // Verificar sesión actual
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        navigate("/auth");
+        return;
+      }
+
+      // 1. Verificar si ya existe un perfil de candidato
+      const { data: existingProfile } = await supabase
+        .from("perfil_candidato")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error("Ya tienes un perfil de candidato creado");
+        navigate("/candidate-dashboard");
+        return;
+      }
+
+      // 2. Crear perfil de candidato
+      const { error: candidatoError } = await supabase
+        .from("perfil_candidato")
+        .insert([{
+          user_id: user.id,
+          nombre_completo: nombreCandidato,
+          email: emailCandidato || user.email || "",
+          telefono: telefonoCandidato || null,
+        }]);
+
+      if (candidatoError) {
+        console.error("Error creando perfil candidato:", candidatoError);
+        throw candidatoError;
+      }
+
+      // 3. Crear rol de candidato
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: user.id,
+          role: "candidato",
+        });
+
+      if (roleError) throw roleError;
+
+      toast.success("¡Perfil de candidato creado exitosamente!");
+      navigate("/candidate-dashboard");
     } catch (error: any) {
       console.error("Error:", error);
       toast.error("Error al crear perfil: " + error.message);
@@ -237,13 +303,14 @@ const OnboardingFlow = () => {
             {step === 1 && "Selecciona cómo quieres usar la plataforma"}
             {step === 2 && userType === "empresa" && "Datos de tu Empresa"}
             {step === 2 && userType === "reclutador" && "Datos del Reclutador"}
+            {step === 2 && userType === "candidato" && "Datos del Candidato"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* PASO 1: Selección de tipo de usuario */}
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-3">
                 <Card 
                   className={`cursor-pointer transition-all hover:shadow-lg ${
                     userType === "empresa" ? "ring-2 ring-primary" : ""
@@ -272,6 +339,21 @@ const OnboardingFlow = () => {
                     <CardDescription>
                       Quiero publicar vacantes en el marketplace, gestionar entrevistas
                       y llevar mis estadísticas personales
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card 
+                  className={`cursor-pointer transition-all hover:shadow-lg ${
+                    userType === "candidato" ? "ring-2 ring-primary" : ""
+                  }`}
+                  onClick={() => setUserType("candidato")}
+                >
+                  <CardHeader>
+                    <UserCircle className="h-12 w-12 mb-2 text-accent" />
+                    <CardTitle>Soy Candidato</CardTitle>
+                    <CardDescription>
+                      Busco oportunidades laborales y quiero postularme a vacantes
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -465,6 +547,55 @@ const OnboardingFlow = () => {
                 <Button 
                   onClick={handleSubmitReclutador}
                   disabled={!nombreReclutador || !emailReclutador || !tipoReclutador}
+                >
+                  Crear Perfil
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 2: Formulario Candidato */}
+          {step === 2 && userType === "candidato" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="space-y-2">
+                <Label htmlFor="nombre_candidato">Nombre Completo*</Label>
+                <Input
+                  id="nombre_candidato"
+                  value={nombreCandidato}
+                  onChange={(e) => setNombreCandidato(e.target.value)}
+                  placeholder="Tu nombre completo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_candidato">Email*</Label>
+                <Input
+                  id="email_candidato"
+                  type="email"
+                  value={emailCandidato}
+                  onChange={(e) => setEmailCandidato(e.target.value)}
+                  placeholder="tu@email.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefono_candidato">Teléfono</Label>
+                <Input
+                  id="telefono_candidato"
+                  value={telefonoCandidato}
+                  onChange={(e) => setTelefonoCandidato(e.target.value)}
+                  placeholder="+52 55 1234 5678"
+                />
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  Atrás
+                </Button>
+                <Button 
+                  onClick={handleSubmitCandidato}
+                  disabled={!nombreCandidato || !emailCandidato}
                 >
                   Crear Perfil
                   <ArrowRight className="ml-2 h-4 w-4" />
