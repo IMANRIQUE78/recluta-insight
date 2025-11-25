@@ -415,19 +415,19 @@ export const PostulacionesRecibidas = () => {
                             {etapaLabels[postulacion.etapa]}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex gap-2 justify-center flex-wrap">
+                        <TableCell>
+                          <div className="flex gap-1.5 flex-nowrap min-w-max">
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant="ghost"
+                              size="icon"
                               onClick={() => handleVerDetalle(postulacion)}
+                              title="Ver Detalles"
                             >
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Detalles
+                              <Eye className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="outline"
-                              size="sm"
+                              variant="ghost"
+                              size="icon"
                               onClick={() => {
                                 setGestionPostulacion({
                                   ...postulacion,
@@ -435,13 +435,13 @@ export const PostulacionesRecibidas = () => {
                                 });
                                 setGestionDialogOpen(true);
                               }}
+                              title="Gestionar Estatus"
                             >
-                              <Settings className="h-4 w-4 mr-2" />
-                              Gestionar Estatus
+                              <Settings className="h-4 w-4" />
                             </Button>
                             <Button
-                              variant="secondary"
-                              size="sm"
+                              variant="ghost"
+                              size="icon"
                               onClick={() => {
                                 setSelectedChat({
                                   postulacionId: postulacion.id,
@@ -451,13 +451,14 @@ export const PostulacionesRecibidas = () => {
                                 });
                                 setChatOpen(true);
                               }}
+                              title="Chat"
                             >
-                              <MessageSquare className="h-4 w-4 mr-2" />
-                              Chat
+                              <MessageSquare className="h-4 w-4" />
                             </Button>
                             {postulacion.etapa === "recibida" && (
                               <Button
-                                size="sm"
+                                variant="ghost"
+                                size="icon"
                                 onClick={() => {
                                   setAgendarPostulacion({
                                     id: postulacion.id,
@@ -466,9 +467,9 @@ export const PostulacionesRecibidas = () => {
                                   });
                                   setAgendarDialogOpen(true);
                                 }}
+                                title="Agendar Entrevista"
                               >
-                                <Calendar className="h-4 w-4 mr-2" />
-                                Agendar Entrevista
+                                <Calendar className="h-4 w-4" />
                               </Button>
                             )}
                           </div>
