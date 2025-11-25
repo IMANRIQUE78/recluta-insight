@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Briefcase, DollarSign, Calendar, MessageSquare, ChevronDown } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { VacantePublicaDetailModal } from "@/components/marketplace/VacantePublicaDetailModal";
 import { EntrevistaPropuestaCard } from "./EntrevistaPropuestaCard";
-import { PostulacionChatDialog } from "@/components/postulacion/PostulacionChatDialog";
-import { PostulacionTimeline } from "@/components/postulacion/PostulacionTimeline";
+import { PostulacionDetailModal } from "./PostulacionDetailModal";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Postulacion {
   id: string;
@@ -53,11 +54,8 @@ export const MisPostulaciones = () => {
   const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
   const [entrevistas, setEntrevistas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPublicacion, setSelectedPublicacion] = useState<any>(null);
+  const [selectedPostulacion, setSelectedPostulacion] = useState<Postulacion | null>(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [selectedChat, setSelectedChat] = useState<{ postulacionId: string; reclutadorId: string; titulo: string } | null>(null);
-  const [timelineOpen, setTimelineOpen] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     loadPostulaciones();
@@ -169,18 +167,9 @@ export const MisPostulaciones = () => {
     return labels[modalidad] || modalidad;
   };
 
-  const handleVerDetalle = (publicacion: any) => {
-    setSelectedPublicacion(publicacion);
+  const handleVerDetalle = (postulacion: Postulacion) => {
+    setSelectedPostulacion(postulacion);
     setDetailModalOpen(true);
-  };
-
-  const handleOpenChat = (postulacionId: string, reclutadorId: string, titulo: string) => {
-    setSelectedChat({ postulacionId, reclutadorId, titulo });
-    setChatOpen(true);
-  };
-
-  const toggleTimeline = (postulacionId: string) => {
-    setTimelineOpen(prev => ({ ...prev, [postulacionId]: !prev[postulacionId] }));
   };
 
   if (loading) {
@@ -219,128 +208,68 @@ export const MisPostulaciones = () => {
       {/* Sección de Postulaciones */}
       <div>
         <h2 className="text-2xl font-bold mb-4">Mis Postulaciones</h2>
-        <div className="space-y-4">
-          {postulaciones.map((postulacion) => (
-            <Card key={postulacion.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">{postulacion.publicacion.titulo_puesto}</CardTitle>
-                    <div className="flex items-center gap-3 mt-2">
-                      {postulacion.publicacion.ubicacion && (
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
-                          {postulacion.publicacion.ubicacion}
-                        </span>
-                      )}
-                      <Badge variant="secondary">
+        <Card>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Puesto</TableHead>
+                  <TableHead>Ubicación</TableHead>
+                  <TableHead>Modalidad</TableHead>
+                  <TableHead>Salario</TableHead>
+                  <TableHead>Etapa</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {postulaciones.map((postulacion) => (
+                  <TableRow key={postulacion.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      {postulacion.publicacion.titulo_puesto}
+                    </TableCell>
+                    <TableCell>
+                      {postulacion.publicacion.ubicacion || "No especificada"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="whitespace-nowrap">
                         {getModalidadLabel(postulacion.publicacion.lugar_trabajo)}
                       </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge className={etapaColors[postulacion.etapa]}>
-                      {etapaLabels[postulacion.etapa]}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1 justify-end">
-                      <Calendar className="h-3 w-3" />
-                      Postulado: {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-MX')}
-                    </p>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {postulacion.publicacion.sueldo_bruto_aprobado && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-semibold">
-                        {formatSalary(postulacion.publicacion.sueldo_bruto_aprobado)}
-                      </span>
-                    </div>
-                  )}
-
-                  {postulacion.publicacion.perfil_requerido && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {postulacion.publicacion.perfil_requerido}
-                    </p>
-                  )}
-
-                  {postulacion.notas_reclutador && (
-                    <div className="bg-muted p-3 rounded-md">
-                      <p className="text-sm font-semibold mb-1">Notas del Reclutador:</p>
-                      <p className="text-sm">{postulacion.notas_reclutador}</p>
-                    </div>
-                  )}
-
-                  {/* Timeline Collapsible */}
-                  <Collapsible open={timelineOpen[postulacion.id]}>
-                    <CollapsibleTrigger asChild>
-                      <Button 
-                        variant="ghost" 
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {formatSalary(postulacion.publicacion.sueldo_bruto_aprobado)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={etapaColors[postulacion.etapa]}>
+                        {etapaLabels[postulacion.etapa]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {new Date(postulacion.fecha_postulacion).toLocaleDateString('es-MX')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        className="w-full justify-between"
-                        onClick={() => toggleTimeline(postulacion.id)}
+                        onClick={() => handleVerDetalle(postulacion)}
                       >
-                        <span>Ver proceso de selección</span>
-                        <ChevronDown className={`h-4 w-4 transition-transform ${timelineOpen[postulacion.id] ? 'rotate-180' : ''}`} />
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver
                       </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <PostulacionTimeline 
-                        etapaActual={postulacion.etapa}
-                        estado={postulacion.estado}
-                      />
-                    </CollapsibleContent>
-                  </Collapsible>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleVerDetalle(postulacion.publicacion)}
-                      className="flex-1"
-                    >
-                      Ver Detalles
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleOpenChat(
-                        postulacion.id, 
-                        postulacion.publicacion.user_id,
-                        postulacion.publicacion.titulo_puesto
-                      )}
-                      className="flex-1"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Chat con Reclutador
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-
-        </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
       </div>
 
-      {selectedPublicacion && (
-        <VacantePublicaDetailModal
+      {selectedPostulacion && (
+        <PostulacionDetailModal
           open={detailModalOpen}
           onOpenChange={setDetailModalOpen}
-          publicacion={selectedPublicacion}
-        />
-      )}
-
-      {selectedChat && (
-        <PostulacionChatDialog
-          open={chatOpen}
-          onOpenChange={setChatOpen}
-          postulacionId={selectedChat.postulacionId}
-          destinatarioUserId={selectedChat.reclutadorId}
-          destinatarioNombre="Reclutador"
-          tituloVacante={selectedChat.titulo}
+          postulacion={selectedPostulacion}
         />
       )}
     </div>
