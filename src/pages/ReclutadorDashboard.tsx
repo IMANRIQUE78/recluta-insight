@@ -647,39 +647,6 @@ const ReclutadorDashboard = () => {
         </section>
 
 
-        {/* Empresas Asociadas */}
-        {asociacionesActivas.length > 0 && (
-          <section className="space-y-4">
-            <h2 className="text-xl font-bold">Empresas con las que Colaboro</h2>
-            <div className="grid gap-4 md:grid-cols-2">
-              {asociacionesActivas.map((asociacion) => (
-                <Card key={asociacion.id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      {asociacion.empresas?.nombre_empresa}
-                    </CardTitle>
-                    <CardDescription>
-                      {asociacion.empresas?.sector && `Sector: ${asociacion.empresas.sector}`}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Tipo:</span>
-                        <Badge variant="secondary">{asociacion.tipo_vinculacion}</Badge>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Desde:</span>
-                        <span>{new Date(asociacion.fecha_inicio).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Ranking Global de Reclutadores */}
         <section className="pt-4">
