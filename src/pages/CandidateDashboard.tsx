@@ -11,61 +11,52 @@ import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
 import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
 import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
-
 export default function CandidateDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [userName, setUserName] = useState("");
-
   useEffect(() => {
     checkAuth();
   }, []);
-
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: {
+        session
+      }
+    } = await supabase.auth.getSession();
     if (!session) {
       navigate("/auth");
       return;
     }
 
     // Verificar si tiene perfil de candidato
-    const { data: profile } = await supabase
-      .from("perfil_candidato")
-      .select("nombre_completo")
-      .eq("user_id", session.user.id)
-      .maybeSingle();
-
+    const {
+      data: profile
+    } = await supabase.from("perfil_candidato").select("nombre_completo").eq("user_id", session.user.id).maybeSingle();
     if (profile) {
       setHasProfile(true);
       setUserName(profile.nombre_completo);
     } else {
       setProfileModalOpen(true); // Abrir modal si no tiene perfil
     }
-
     setLoading(false);
   };
-
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
+    return <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse">Cargando...</div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">Dashboard de Candidato</h1>
+            <h1 className="text-2xl font-bold text-left">Dashboard de Candidato</h1>
             {hasProfile && <p className="text-muted-foreground">Bienvenido, {userName}</p>}
           </div>
           <div className="flex gap-2">
@@ -82,8 +73,7 @@ export default function CandidateDashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {!hasProfile && (
-          <Card className="p-6 mb-6 bg-primary/5 border-primary/20">
+        {!hasProfile && <Card className="p-6 mb-6 bg-primary/5 border-primary/20">
             <h2 className="text-xl font-semibold mb-2">Completa tu perfil</h2>
             <p className="text-muted-foreground mb-4">
               No usamos archivos por cuestiones de espacio, pero de esta forma mejoramos el match con las vacantes disponibles.
@@ -91,8 +81,7 @@ export default function CandidateDashboard() {
             <Button onClick={() => setProfileModalOpen(true)}>
               Completar Perfil
             </Button>
-          </Card>
-        )}
+          </Card>}
 
         <Tabs defaultValue="postulaciones" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
@@ -130,14 +119,9 @@ export default function CandidateDashboard() {
         </Tabs>
       </main>
 
-      <CandidateProfileModal
-        open={profileModalOpen}
-        onOpenChange={setProfileModalOpen}
-        onSuccess={() => {
-          setHasProfile(true);
-          checkAuth();
-        }}
-      />
-    </div>
-  );
+      <CandidateProfileModal open={profileModalOpen} onOpenChange={setProfileModalOpen} onSuccess={() => {
+      setHasProfile(true);
+      checkAuth();
+    }} />
+    </div>;
 }
