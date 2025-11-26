@@ -18,7 +18,9 @@ import {
   Linkedin,
   Twitter,
   Facebook,
-  Instagram
+  Instagram,
+  Check,
+  Zap
 } from "lucide-react";
 
 export default function Home() {
@@ -94,6 +96,60 @@ export default function Home() {
     }
   ];
 
+  const pricingPlans = [
+    {
+      name: "Básico",
+      price: "49",
+      period: "mes",
+      description: "Perfecto para empresas pequeñas que inician",
+      popular: false,
+      features: [
+        "Hasta 5 vacantes activas",
+        "Publicación en Marketplace",
+        "Dashboard básico de KPIs",
+        "Soporte por email",
+        "1 usuario administrador",
+        "Análisis básico de CVs con IA"
+      ]
+    },
+    {
+      name: "Profesional",
+      price: "149",
+      period: "mes",
+      description: "Ideal para empresas en crecimiento",
+      popular: true,
+      features: [
+        "Hasta 20 vacantes activas",
+        "Publicaciones destacadas",
+        "Analytics avanzado con IA",
+        "Soporte prioritario 24/7",
+        "Hasta 5 usuarios",
+        "Predicción de éxito de candidatos",
+        "Integración con reclutadores freelance",
+        "Pool de candidatos premium",
+        "Reportes personalizados"
+      ]
+    },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      period: "",
+      description: "Solución completa para grandes corporativos",
+      popular: false,
+      features: [
+        "Vacantes ilimitadas",
+        "IA personalizada para tu industria",
+        "Account manager dedicado",
+        "Onboarding y capacitación",
+        "Usuarios ilimitados",
+        "API access completo",
+        "Integraciones personalizadas",
+        "SLA garantizado",
+        "Cumplimiento y seguridad enterprise"
+      ]
+    }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header/Navbar */}
@@ -113,8 +169,8 @@ export default function Home() {
             <a href="#ai" className="text-sm font-medium hover:text-primary transition-colors">
               Inteligencia Artificial
             </a>
-            <a href="#benefits" className="text-sm font-medium hover:text-primary transition-colors">
-              Beneficios
+            <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+              Precios
             </a>
           </nav>
           <div className="flex items-center gap-3">
@@ -242,6 +298,84 @@ export default function Home() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">
+              <Zap className="h-4 w-4 mr-2" />
+              Planes y Precios
+            </Badge>
+            <h3 className="text-3xl md:text-4xl font-bold mb-4">
+              Elige el Plan Perfecto para tu Negocio
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Precios transparentes y flexibles que crecen con tu empresa. Sin sorpresas.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+            {pricingPlans.map((plan, index) => (
+              <Card 
+                key={index} 
+                className={`relative overflow-hidden transition-all hover:shadow-2xl ${
+                  plan.popular 
+                    ? 'border-2 border-primary shadow-xl scale-105 md:scale-110' 
+                    : 'border-2 hover:border-primary/50'
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute top-0 right-0 bg-accent text-accent-foreground text-xs font-bold px-4 py-1 rounded-bl-lg">
+                    MÁS POPULAR
+                  </div>
+                )}
+                <CardContent className="pt-8 pb-8 space-y-6">
+                  <div>
+                    <h4 className="text-2xl font-bold mb-2">{plan.name}</h4>
+                    <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                    <div className="flex items-baseline gap-1">
+                      {plan.price !== "Custom" ? (
+                        <>
+                          <span className="text-4xl font-bold text-primary">${plan.price}</span>
+                          <span className="text-muted-foreground">/ {plan.period}</span>
+                        </>
+                      ) : (
+                        <span className="text-4xl font-bold text-primary">Contactar</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button 
+                    className={`w-full ${plan.popular ? 'shadow-lg shadow-primary/40' : ''}`}
+                    variant={plan.popular ? "default" : "outline"}
+                    size="lg"
+                    onClick={() => navigate("/auth")}
+                  >
+                    {plan.price !== "Custom" ? "Comenzar Ahora" : "Contactar Ventas"}
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+
+                  <div className="space-y-3 pt-4">
+                    {plan.features.map((feature, featureIndex) => (
+                      <div key={featureIndex} className="flex items-start gap-3">
+                        <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                        <span className="text-sm text-muted-foreground">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-sm text-muted-foreground">
+              Todos los planes incluyen acceso al Marketplace y actualizaciones gratuitas
+            </p>
           </div>
         </div>
       </section>
