@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Briefcase, SlidersHorizontal, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -129,16 +130,21 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-6">
+      <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Briefcase className="h-6 w-6" />
-              <h1 className="text-2xl font-bold">Marketplace de Vacantes</h1>
+            <div className="flex items-center gap-3">
+              <img src={vvgiLogo} alt="VVGI Logo" className="h-10 w-10 object-contain" />
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Marketplace
+                </h1>
+                <p className="text-xs text-muted-foreground">Encuentra tu próxima oportunidad</p>
+              </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate("/")}>
-                Volver
+              <Button variant="ghost" onClick={() => navigate("/")}>
+                Inicio
               </Button>
               <Button onClick={() => navigate("/auth")}>
                 Iniciar Sesión
@@ -149,7 +155,7 @@ const Marketplace = () => {
       </header>
 
       {/* Search Bar & Filters */}
-      <div className="border-b bg-muted/30">
+      <div className="border-b bg-muted/20">
         <div className="container mx-auto px-4 py-6">
           <div className="max-w-4xl mx-auto space-y-4">
             {/* Search input */}
@@ -159,7 +165,7 @@ const Marketplace = () => {
                 placeholder="Buscar vacantes por título, empresa o perfil..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 border-border/50 focus-visible:ring-primary"
               />
             </div>
 
@@ -168,11 +174,11 @@ const Marketplace = () => {
               <Collapsible open={showFilters} onOpenChange={setShowFilters} className="w-full">
                 <div className="flex items-center justify-between">
                   <CollapsibleTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-2">
+                    <Button variant="outline" size="sm" className="gap-2 border-border/50">
                       <SlidersHorizontal className="h-4 w-4" />
                       Filtros
                       {hasActiveFilters() && (
-                        <Badge variant="secondary" className="ml-1 h-5 px-1.5">
+                        <Badge className="ml-1 h-5 px-1.5 bg-primary/10 text-primary">
                           {[
                             searchTerm !== "",
                             modalidadFilter !== "todas",
@@ -199,10 +205,10 @@ const Marketplace = () => {
                 </div>
 
                 <CollapsibleContent className="pt-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-card rounded-lg border">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-card rounded-lg border border-border/50">
                     {/* Modalidad */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Modalidad</label>
+                      <label className="text-sm font-medium text-muted-foreground">Modalidad</label>
                       <Select value={modalidadFilter} onValueChange={setModalidadFilter}>
                         <SelectTrigger>
                           <SelectValue />
@@ -218,7 +224,7 @@ const Marketplace = () => {
 
                     {/* Ubicación */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Ubicación</label>
+                      <label className="text-sm font-medium text-muted-foreground">Ubicación</label>
                       <Select value={ubicacionFilter} onValueChange={setUbicacionFilter}>
                         <SelectTrigger>
                           <SelectValue />
@@ -236,7 +242,7 @@ const Marketplace = () => {
 
                     {/* Salario mínimo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Salario mínimo</label>
+                      <label className="text-sm font-medium text-muted-foreground">Salario mínimo</label>
                       <Input
                         type="number"
                         placeholder="$ 0"
@@ -247,7 +253,7 @@ const Marketplace = () => {
 
                     {/* Salario máximo */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Salario máximo</label>
+                      <label className="text-sm font-medium text-muted-foreground">Salario máximo</label>
                       <Input
                         type="number"
                         placeholder="$ 0"
