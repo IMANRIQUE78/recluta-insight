@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 import { 
   TrendingUp, 
   Users, 
@@ -99,9 +100,7 @@ export default function Home() {
       <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-accent flex items-center justify-center shadow-lg shadow-primary/30">
-              <Brain className="h-7 w-7 text-primary-foreground" />
-            </div>
+            <img src={vvgiLogo} alt="VVGI Logo" className="h-12 w-12 object-contain" />
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">VVGI</h1>
               <p className="text-xs text-muted-foreground">Powered by AI</p>
@@ -290,9 +289,7 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
-                  <Brain className="h-6 w-6 text-primary-foreground" />
-                </div>
+                <img src={vvgiLogo} alt="VVGI Logo" className="h-10 w-10 object-contain" />
                 <div>
                   <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">VVGI</h3>
                   <p className="text-xs text-muted-foreground">Powered by AI</p>
