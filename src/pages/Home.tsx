@@ -302,6 +302,89 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Recruiter Profile Benefits Section */}
+      <section className="py-20 bg-gradient-to-br from-primary/10 via-background to-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-12">
+              <Badge variant="secondary" className="mb-4 shadow-lg">
+                <Award className="h-4 w-4 mr-2" />
+                Para Reclutadores
+              </Badge>
+              <h3 className="text-3xl md:text-5xl font-bold mb-6">
+                Tu Perfil, Tu Prestigio, <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Siempre Contigo</span>
+              </h3>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                En VVGI, tu perfil profesional es tuyo para siempre. Construye tu reputación, acumula indicadores y mantén tu prestigio sin importar con qué empresa trabajes.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              <Card className="border-2 border-primary/30 bg-background/80 backdrop-blur-sm hover:shadow-2xl transition-all group">
+                <CardContent className="pt-8 pb-6 space-y-4 text-center">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Award className="h-8 w-8 text-primary" />
+                  </div>
+                  <h4 className="text-xl font-bold">100% Gratis</h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Tu perfil de reclutador es completamente gratuito. Sin costos ocultos, sin límites de tiempo.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-accent/30 bg-background/80 backdrop-blur-sm hover:shadow-2xl transition-all group scale-105">
+                <CardContent className="pt-8 pb-6 space-y-4 text-center">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-accent/20 to-accent/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="h-8 w-8 text-accent" />
+                  </div>
+                  <h4 className="text-xl font-bold">Tus Indicadores</h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Todas tus métricas, vacantes cerradas y calificaciones se acumulan en tu perfil personal.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-2 border-primary/30 bg-background/80 backdrop-blur-sm hover:shadow-2xl transition-all group">
+                <CardContent className="pt-8 pb-6 space-y-4 text-center">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <Star className="h-8 w-8 text-primary" />
+                  </div>
+                  <h4 className="text-xl font-bold">Tu Prestigio</h4>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Cambia de empresa cuando quieras. Tu reputación, ranking y logros te acompañan siempre.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="border-2 border-primary/50 bg-gradient-to-br from-primary/5 to-accent/5 backdrop-blur-sm shadow-2xl">
+              <CardContent className="p-8">
+                <div className="flex flex-col md:flex-row items-center gap-6">
+                  <div className="h-20 w-20 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0">
+                    <Rocket className="h-10 w-10 text-primary" />
+                  </div>
+                  <div className="flex-1 text-center md:text-left">
+                    <h4 className="text-2xl font-bold mb-2">Libertad Total para Reclutadores</h4>
+                    <p className="text-muted-foreground text-lg leading-relaxed">
+                      Trabaja con múltiples empresas, construye tu portafolio y haz crecer tu carrera profesional. 
+                      En VVGI, tú eres dueño de tu éxito, no la empresa para la que trabajas.
+                    </p>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    onClick={() => navigate("/auth")} 
+                    className="shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all shrink-0"
+                  >
+                    Crear Mi Perfil Gratis
+                    <ArrowRight className="h-5 w-5 ml-2" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section id="pricing" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
