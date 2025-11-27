@@ -14,7 +14,9 @@ import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
 import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
 import { KPICard } from "@/components/dashboard/KPICard";
+import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
+import { useReclutadorKPIDetails } from "@/hooks/useReclutadorKPIDetails";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
@@ -29,8 +31,14 @@ const ReclutadorDashboard = () => {
   const [asociacionesActivas, setAsociacionesActivas] = useState<any[]>([]);
   const [editarPerfilOpen, setEditarPerfilOpen] = useState(false);
   const [rankingPosition, setRankingPosition] = useState<number | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedKPI, setSelectedKPI] = useState<string>("");
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
+  const { data: detailData, columns: detailColumns, loading: detailLoading } = useReclutadorKPIDetails(
+    selectedKPI, 
+    perfilReclutador?.user_id
+  );
 
   useEffect(() => {
     loadDashboardData();
@@ -292,6 +300,11 @@ const ReclutadorDashboard = () => {
       description: "Has cerrado sesión exitosamente",
     });
     navigate("/auth");
+  };
+
+  const handleKPIClick = (kpiTitle: string) => {
+    setSelectedKPI(kpiTitle);
+    setModalOpen(true);
   };
 
   if (loading) {
@@ -567,23 +580,27 @@ const ReclutadorDashboard = () => {
               value={stats.promedioDiasCierre}
               unit="días"
               icon={<Clock className="h-5 w-5" />}
+              onDoubleClick={() => handleKPIClick("Promedio Cierre")}
             />
             <KPICard
               title="Vacantes Cerradas"
               value={stats.vacantesCerradas}
               icon={<CheckCircle2 className="h-5 w-5" />}
+              onDoubleClick={() => handleKPIClick("Vacantes Cerradas")}
             />
             <KPICard
               title="Entrevistas / Cierre"
               value={stats.porcentajeExito}
               unit="%"
               icon={<TrendingUp className="h-5 w-5" />}
+              onDoubleClick={() => handleKPIClick("Entrevistas / Cierre")}
             />
             <KPICard
               title="Calificación"
               value={stats.calificacionPromedio}
               unit={`★ (${stats.totalCalificaciones})`}
               icon={<Star className="h-5 w-5" />}
+              onDoubleClick={() => handleKPIClick("Calificación")}
             />
           </div>
         </section>
@@ -728,6 +745,17 @@ const ReclutadorDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de detalles de KPI */}
+      <KPIDetailModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={selectedKPI}
+        description="Datos detallados del indicador seleccionado"
+        data={detailData}
+        columns={detailColumns}
+        loading={detailLoading}
+      />
 
       {/* Modal de edición de perfil */}
       {perfilReclutador && (
