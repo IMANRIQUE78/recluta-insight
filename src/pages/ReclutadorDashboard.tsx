@@ -18,6 +18,7 @@ import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
@@ -307,20 +308,20 @@ const ReclutadorDashboard = () => {
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
           <div className="flex items-center justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
-                Dashboard Reclutador
-              </h1>
-              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-                <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                  {perfilReclutador?.nombre_reclutador || "Panel de control"}
-                </p>
-                {rankingPosition && (
-                  <Badge variant="secondary" className="text-xs shrink-0">
-                    <Star className="h-3 w-3 mr-1" />
-                    <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
-                  </Badge>
-                )}
+            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
+              <img src={vvgiLogo} alt="VVGI" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
+                  Oficina de {perfilReclutador?.nombre_reclutador || "Reclutador"}
+                </h1>
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                  {rankingPosition && (
+                    <Badge variant="secondary" className="text-xs shrink-0">
+                      <Star className="h-3 w-3 mr-1" />
+                      <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
             
