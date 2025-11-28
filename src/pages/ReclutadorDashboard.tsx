@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,6 +26,7 @@ import vvgiLogo from "@/assets/vvgi-logo.png";
 const ReclutadorDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const scrollDirection = useScrollDirection();
   const [loading, setLoading] = useState(true);
   const [perfilReclutador, setPerfilReclutador] = useState<any>(null);
   const [invitacionesPendientes, setInvitacionesPendientes] = useState<any[]>([]);
@@ -318,7 +320,9 @@ const ReclutadorDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}>
         <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">

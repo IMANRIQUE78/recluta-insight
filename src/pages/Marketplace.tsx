@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { VacantePublicaCard } from "@/components/marketplace/VacantePublicaCard";
 import { VacantePublicaDetailModal } from "@/components/marketplace/VacantePublicaDetailModal";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import vvgiLogo from "@/assets/vvgi-logo.png";
 const Marketplace = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const scrollDirection = useScrollDirection();
   const [publicaciones, setPublicaciones] = useState<any[]>([]);
   const [filteredPublicaciones, setFilteredPublicaciones] = useState<any[]>([]);
   const [selectedPublicacion, setSelectedPublicacion] = useState<any | null>(null);
@@ -130,7 +132,9 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      <header className={`border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 transition-transform duration-300 ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
