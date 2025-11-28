@@ -26,6 +26,14 @@ export function EditarPerfilReclutadorDialog({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Datos de solo lectura
+  const [nombreReclutador, setNombreReclutador] = useState("");
+  const [tipoReclutador, setTipoReclutador] = useState("");
+  const [empresaAsociada, setEmpresaAsociada] = useState("");
+  const [anosExperiencia, setAnosExperiencia] = useState(0);
+  const [fechaRegistro, setFechaRegistro] = useState("");
+
+  // Datos editables
   const [telefono, setTelefono] = useState("");
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [twitterUrl, setTwitterUrl] = useState("");
@@ -42,21 +50,44 @@ export function EditarPerfilReclutadorDialog({
   const loadPerfilData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Cargar datos del perfil
+      const { data: perfilData, error: perfilError } = await supabase
         .from("perfil_reclutador")
         .select("*")
         .eq("id", reclutadorId)
         .single();
 
-      if (error) throw error;
+      if (perfilError) throw perfilError;
 
-      if (data) {
-        setTelefono(data.telefono || "");
-        setLinkedinUrl(data.linkedin_url || "");
-        setTwitterUrl(data.twitter_url || "");
-        setWebsiteUrl(data.website_url || "");
-        setSemblanza(data.semblanza_profesional || "");
-        setMostrarTelefono(data.mostrar_telefono ?? true);
+      if (perfilData) {
+        // Datos de solo lectura
+        setNombreReclutador(perfilData.nombre_reclutador);
+        setTipoReclutador(perfilData.tipo_reclutador);
+        setAnosExperiencia(perfilData.anos_experiencia || 0);
+        setFechaRegistro(new Date(perfilData.created_at).toLocaleDateString('es-MX'));
+
+        // Si es reclutador interno, buscar empresa asociada
+        if (perfilData.tipo_reclutador === 'interno') {
+          const { data: asociacionData } = await supabase
+            .from("reclutador_empresa")
+            .select("empresa_id, empresas(nombre_empresa)")
+            .eq("reclutador_id", reclutadorId)
+            .eq("estado", "activa")
+            .single();
+
+          if (asociacionData?.empresas) {
+            setEmpresaAsociada(asociacionData.empresas.nombre_empresa);
+          }
+        }
+
+        // Datos editables
+        setTelefono(perfilData.telefono || "");
+        setLinkedinUrl(perfilData.linkedin_url || "");
+        setTwitterUrl(perfilData.twitter_url || "");
+        setWebsiteUrl(perfilData.website_url || "");
+        setSemblanza(perfilData.semblanza_profesional || "");
+        setMostrarTelefono(perfilData.mostrar_telefono ?? true);
       }
     } catch (error) {
       console.error("Error cargando perfil:", error);
@@ -120,27 +151,55 @@ export function EditarPerfilReclutadorDialog({
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="telefono">Teléfono</Label>
-              <Input
-                id="telefono"
-                type="tel"
-                value={telefono}
-                onChange={(e) => setTelefono(e.target.value)}
-                placeholder="+52 55 1234 5678"
-              />
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch
-                  id="mostrar-telefono"
-                  checked={mostrarTelefono}
-                  onCheckedChange={setMostrarTelefono}
-                />
-                <Label htmlFor="mostrar-telefono" className="text-sm font-normal">
-                  Mostrar teléfono en perfil público
-                </Label>
+            {/* Sección de Solo Lectura */}
+            <div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-3">Información de Registro</h3>
+              
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-muted-foreground text-xs">Nombre Registrado</p>
+                  <p className="font-medium text-foreground">{nombreReclutador}</p>
+                </div>
+                
+                <div>
+                  <p className="text-muted-foreground text-xs">Tipo de Reclutador</p>
+                  <p className="font-medium text-foreground">
+                    {tipoReclutador === 'interno' 
+                      ? `Reclutador Interno${empresaAsociada ? ` de ${empresaAsociada}` : ''}`
+                      : 'Reclutador Freelance'
+                    }
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-muted-foreground text-xs">Años de Experiencia</p>
+                  <p className="font-medium text-foreground">{anosExperiencia} años</p>
+                </div>
+                
+                <div>
+                  <p className="text-muted-foreground text-xs">Registrado Desde</p>
+                  <p className="font-medium text-foreground">{fechaRegistro}</p>
+                </div>
               </div>
             </div>
 
+            {/* Semblanza Profesional */}
+            <div className="space-y-2">
+              <Label htmlFor="semblanza">Semblanza Profesional</Label>
+              <Textarea
+                id="semblanza"
+                value={semblanza}
+                onChange={(e) => setSemblanza(e.target.value)}
+                placeholder="Describe brevemente tu trayectoria profesional, experiencia en reclutamiento, sectores en los que te especializas..."
+                rows={6}
+                className="resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Esta información será visible en tu perfil público
+              </p>
+            </div>
+
+            {/* Redes Sociales */}
             <div className="space-y-4">
               <h3 className="text-sm font-medium">Redes Sociales</h3>
               
@@ -187,19 +246,26 @@ export function EditarPerfilReclutadorDialog({
               </div>
             </div>
 
+            {/* Teléfono */}
             <div className="space-y-2">
-              <Label htmlFor="semblanza">Semblanza Profesional</Label>
-              <Textarea
-                id="semblanza"
-                value={semblanza}
-                onChange={(e) => setSemblanza(e.target.value)}
-                placeholder="Describe brevemente tu trayectoria profesional, experiencia en reclutamiento, sectores en los que te especializas..."
-                rows={6}
-                className="resize-none"
+              <Label htmlFor="telefono">Teléfono</Label>
+              <Input
+                id="telefono"
+                type="tel"
+                value={telefono}
+                onChange={(e) => setTelefono(e.target.value)}
+                placeholder="+52 55 1234 5678"
               />
-              <p className="text-xs text-muted-foreground">
-                Esta información será visible en tu perfil público
-              </p>
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch
+                  id="mostrar-telefono"
+                  checked={mostrarTelefono}
+                  onCheckedChange={setMostrarTelefono}
+                />
+                <Label htmlFor="mostrar-telefono" className="text-sm font-normal">
+                  Mostrar teléfono en perfil público
+                </Label>
+              </div>
             </div>
 
             <div className="flex justify-end gap-3 pt-4">
