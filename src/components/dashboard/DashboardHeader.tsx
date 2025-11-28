@@ -1,6 +1,7 @@
 import { LogOut, User, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -32,6 +33,7 @@ export const DashboardHeader = ({
   const { toast } = useToast();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [perfil, setPerfil] = useState<any>(null);
+  const scrollDirection = useScrollDirection();
 
   useEffect(() => {
     loadPerfil();
@@ -85,7 +87,9 @@ export const DashboardHeader = ({
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +18,7 @@ export default function CandidateDashboard() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [userName, setUserName] = useState("");
+  const scrollDirection = useScrollDirection();
   useEffect(() => {
     checkAuth();
   }, []);
@@ -53,7 +55,9 @@ export default function CandidateDashboard() {
       </div>;
   }
   return <div className="min-h-screen bg-background">
-      <header className="border-b">
+      <header className={`sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}>
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-left">Dashboard de Candidato</h1>

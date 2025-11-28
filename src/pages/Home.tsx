@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 import { 
   TrendingUp, 
@@ -25,6 +26,7 @@ import {
 
 export default function Home() {
   const navigate = useNavigate();
+  const scrollDirection = useScrollDirection();
 
   const features = [
     {
@@ -153,7 +155,9 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header/Navbar */}
-      <header className="border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+      <header className={`border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 transition-transform duration-300 ${
+        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      }`}>
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <img src={vvgiLogo} alt="VVGI Logo" className="h-12 w-12 object-contain" />
