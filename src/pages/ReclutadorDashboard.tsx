@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
 import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
@@ -21,6 +21,7 @@ import { useReclutadorKPIDetails } from "@/hooks/useReclutadorKPIDetails";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
+import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
@@ -374,7 +375,7 @@ const ReclutadorDashboard = () => {
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs defaultValue="resumen" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-4 gap-1 h-auto p-1 lg:w-[800px]">
+          <TabsList className="grid w-full grid-cols-5 gap-1 h-auto p-1 lg:w-[1000px]">
             <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
               <Star className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Resumen</span>
@@ -382,6 +383,10 @@ const ReclutadorDashboard = () => {
             <TabsTrigger value="gestion" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
               <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Gestión</span>
+            </TabsTrigger>
+            <TabsTrigger value="marketplace" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+              <Store className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Marketplace</span>
             </TabsTrigger>
             <TabsTrigger value="pool" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -707,6 +712,20 @@ const ReclutadorDashboard = () => {
 
               {/* Postulaciones Recibidas Component */}
               <PostulacionesRecibidas />
+            </div>
+          </TabsContent>
+
+          {/* TAB: MARKETPLACE */}
+          <TabsContent value="marketplace" className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div>
+                <h2 className="text-lg sm:text-2xl font-bold">Mis Vacantes en Marketplace</h2>
+                <p className="text-sm text-muted-foreground">
+                  Visualiza tus vacantes publicadas en el marketplace público
+                </p>
+              </div>
+
+              <MarketplaceReclutador reclutadorUserId={perfilReclutador?.user_id} />
             </div>
           </TabsContent>
 
