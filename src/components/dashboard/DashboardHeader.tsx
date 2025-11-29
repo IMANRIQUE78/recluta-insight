@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfileModal } from "./UserProfileModal";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 interface DashboardHeaderProps {
   clientes: Array<{ id: string; cliente_nombre: string; area: string }>;
@@ -93,15 +94,18 @@ export const DashboardHeader = ({
         <div className="container mx-auto px-4 py-4">
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                  VVGI Light
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {perfil?.nombre_usuario && perfil?.nombre_empresa
-                    ? `Indicadores de ${perfil.nombre_usuario}, de ${perfil.nombre_empresa}`
-                    : "Panel de Control"}
-                </p>
+              <div className="flex items-center gap-3">
+                <img src={vvgiLogo} alt="VVGI" className="h-10 w-10 object-contain" />
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                    VVGI
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    {perfil?.nombre_usuario && perfil?.nombre_empresa
+                      ? `Centro de trabajo de ${perfil.nombre_usuario} de ${perfil.nombre_empresa}`
+                      : "Panel de Control"}
+                  </p>
+                </div>
               </div>
               
               <div className="flex items-center gap-2">
