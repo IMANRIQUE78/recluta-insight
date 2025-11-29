@@ -332,12 +332,17 @@ const ReclutadorDashboard = () => {
                 <h1 className="text-lg sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
                   Oficina de {perfilReclutador?.nombre_reclutador || "Reclutador"}
                 </h1>
-                <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                <div className="flex items-center gap-1 sm:gap-2 flex-wrap mt-1">
                   {rankingPosition && (
-                    <Badge variant="secondary" className="text-xs shrink-0">
-                      <Star className="h-3 w-3 mr-1" />
-                      <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
-                    </Badge>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:shadow-primary/20">
+                      <Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary fill-primary animate-pulse" />
+                      <span className="text-sm sm:text-base font-bold bg-gradient-primary bg-clip-text text-transparent">
+                        <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
+                      </span>
+                      <span className="hidden md:inline text-xs text-muted-foreground ml-1">
+                        / Ranking Global
+                      </span>
+                    </div>
                   )}
                 </div>
               </div>
