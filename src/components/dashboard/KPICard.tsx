@@ -25,10 +25,17 @@ export const KPICard = ({ title, value, trend, unit = "", icon, onDoubleClick }:
     return "";
   };
 
+  const handleClick = () => {
+    if (onDoubleClick) {
+      console.log("KPI Card clicked:", title);
+      onDoubleClick();
+    }
+  };
+
   return (
     <Card 
-      className="hover:shadow-elegant transition-all duration-300 cursor-pointer border-border/50" 
-      onClick={onDoubleClick}
+      className="hover:shadow-elegant transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/50" 
+      onClick={handleClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
