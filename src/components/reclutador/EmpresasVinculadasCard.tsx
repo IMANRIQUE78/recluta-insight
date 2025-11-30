@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, Briefcase, Globe, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Building2, Calendar, Briefcase, Globe, MapPin, ChevronDown, ChevronUp, UserX } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { DesvincularEmpresaDialog } from "./DesvincularEmpresaDialog";
 
 interface EmpresaVinculada {
   id: string;
@@ -28,10 +29,16 @@ interface EmpresaVinculada {
 
 interface EmpresasVinculadasCardProps {
   asociaciones: EmpresaVinculada[];
+  onDesvincularSuccess?: () => void;
 }
 
-export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardProps) => {
+export const EmpresasVinculadasCard = ({ asociaciones, onDesvincularSuccess }: EmpresasVinculadasCardProps) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [desvincularDialog, setDesvincularDialog] = useState<{
+    open: boolean;
+    asociacionId: string;
+    empresaNombre: string;
+  }>({ open: false, asociacionId: "", empresaNombre: "" });
 
   const getTipoVinculacionBadge = (tipo: string) => {
     const badges = {
@@ -116,22 +123,37 @@ export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardP
                         </span>
                       </div>
                       
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => toggleExpand(asociacion.id)}
-                        className="h-8 text-xs"
-                      >
-                        {isExpanded ? (
-                          <>
-                            Ocultar <ChevronUp className="ml-1 h-3 w-3" />
-                          </>
-                        ) : (
-                          <>
-                            Ver más <ChevronDown className="ml-1 h-3 w-3" />
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDesvincularDialog({
+                            open: true,
+                            asociacionId: asociacion.id,
+                            empresaNombre: asociacion.empresas?.nombre_empresa || "Empresa"
+                          })}
+                          className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <UserX className="h-3 w-3 mr-1" />
+                          Desvincular
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleExpand(asociacion.id)}
+                          className="h-8 text-xs"
+                        >
+                          {isExpanded ? (
+                            <>
+                              Ocultar <ChevronUp className="ml-1 h-3 w-3" />
+                            </>
+                          ) : (
+                            <>
+                              Ver más <ChevronDown className="ml-1 h-3 w-3" />
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -199,6 +221,14 @@ export const EmpresasVinculadasCard = ({ asociaciones }: EmpresasVinculadasCardP
           </div>
         )}
       </CardContent>
+
+      <DesvincularEmpresaDialog
+        open={desvincularDialog.open}
+        onOpenChange={(open) => setDesvincularDialog({ ...desvincularDialog, open })}
+        asociacionId={desvincularDialog.asociacionId}
+        empresaNombre={desvincularDialog.empresaNombre}
+        onSuccess={onDesvincularSuccess}
+      />
     </Card>
   );
 };

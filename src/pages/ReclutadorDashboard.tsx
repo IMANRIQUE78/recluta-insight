@@ -505,7 +505,10 @@ const ReclutadorDashboard = () => {
             )}
 
         {/* Empresas Vinculadas - TARJETA PERMANENTE */}
-        <EmpresasVinculadasCard asociaciones={asociacionesActivas} />
+        <EmpresasVinculadasCard 
+          asociaciones={asociacionesActivas} 
+          onDesvincularSuccess={loadDashboardData}
+        />
 
         {/* Perfil y Código Único */}
         <section className="space-y-3 sm:space-y-4">
