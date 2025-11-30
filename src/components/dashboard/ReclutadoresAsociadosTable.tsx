@@ -15,6 +15,7 @@ interface ReclutadorAsociado {
   tipo_vinculacion: string;
   estado: string;
   fecha_inicio: string;
+  fecha_fin?: string;
   especialidades?: string[];
 }
 
@@ -56,12 +57,12 @@ export const ReclutadoresAsociadosTable = () => {
         return;
       }
 
-      // Obtener reclutadores asociados con join manual
+      // Obtener TODAS las asociaciones (historial completo) para auditoría
       const { data: asociaciones, error } = await supabase
         .from("reclutador_empresa")
-        .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio")
+        .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio, fecha_fin")
         .eq("empresa_id", userRoles.empresa_id)
-        .eq("estado", "activa");
+        .order("fecha_inicio", { ascending: false });
 
       console.log("Asociaciones query:", { 
         empresa_id: userRoles.empresa_id,
@@ -110,6 +111,7 @@ export const ReclutadoresAsociadosTable = () => {
             tipo_vinculacion: asoc.tipo_vinculacion,
             estado: asoc.estado,
             fecha_inicio: asoc.fecha_inicio,
+            fecha_fin: asoc.fecha_fin,
             especialidades: perfil.especialidades || [],
           };
         })
@@ -165,10 +167,10 @@ export const ReclutadoresAsociadosTable = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Reclutadores Asociados
+          Historial de Reclutadores Asociados
         </CardTitle>
         <CardDescription>
-          Personal de reclutamiento activo en tu empresa
+          Registro completo de colaboraciones con reclutadores (activas e históricas)
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -186,8 +188,9 @@ export const ReclutadoresAsociadosTable = () => {
                   <TableHead>Nombre</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Especialidades</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead>Fecha Inicio</TableHead>
+                  <TableHead>Fecha Fin</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -212,40 +215,45 @@ export const ReclutadoresAsociadosTable = () => {
                     <TableCell className="text-sm text-muted-foreground">{rec.email}</TableCell>
                     <TableCell>{getTipoVinculacionBadge(rec.tipo_vinculacion)}</TableCell>
                     <TableCell>
-                      {rec.especialidades && rec.especialidades.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {rec.especialidades.slice(0, 3).map((esp, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {esp}
-                            </Badge>
-                          ))}
-                          {rec.especialidades.length > 3 && (
-                            <Badge variant="outline" className="text-xs">
-                              +{rec.especialidades.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">-</span>
-                      )}
+                      <Badge variant={rec.estado === "activa" ? "default" : "secondary"}>
+                        {rec.estado === "activa" ? "Activa" : 
+                         rec.estado === "finalizada" ? "Finalizada" : "Inactiva"}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(rec.fecha_inicio).toLocaleDateString()}
+                      {new Date(rec.fecha_inicio).toLocaleDateString('es-MX', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric' 
+                      })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {rec.fecha_fin 
+                        ? new Date(rec.fecha_fin).toLocaleDateString('es-MX', { 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })
+                        : "-"}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDesvincularDialog({
-                          open: true,
-                          asociacionId: rec.id,
-                          reclutadorNombre: rec.nombre_reclutador
-                        })}
-                        className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      >
-                        <UserX className="h-4 w-4 mr-1" />
-                        Desvincular
-                      </Button>
+                      {rec.estado === "activa" ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDesvincularDialog({
+                            open: true,
+                            asociacionId: rec.id,
+                            reclutadorNombre: rec.nombre_reclutador
+                          })}
+                          className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <UserX className="h-4 w-4 mr-1" />
+                          Desvincular
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -142,7 +142,7 @@ const ReclutadorDashboard = () => {
 
       setInvitacionesPendientes(invitaciones || []);
 
-      // Cargar asociaciones activas con información completa de empresas
+      // Cargar asociaciones con información completa de empresas (todas, no solo activas)
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
         .select(`
@@ -195,72 +195,32 @@ const ReclutadorDashboard = () => {
 
   const handleAceptarInvitacion = async (invitacionId: string, empresaId: string, tipoVinculacion: string) => {
     try {
-      // Verificar si ya existe una asociación
-      const { data: asociacionExistente, error: checkError } = await supabase
+      // Siempre crear una NUEVA asociación para mantener el historial de auditoría
+      // Actualizar estado de invitación
+      const { error: updateError } = await supabase
+        .from("invitaciones_reclutador")
+        .update({ estado: "aceptada" })
+        .eq("id", invitacionId);
+
+      if (updateError) throw updateError;
+
+      // Crear nueva asociación (cada invitación aceptada crea un nuevo registro histórico)
+      const { error: asociacionError } = await supabase
         .from("reclutador_empresa")
-        .select("id, estado")
-        .eq("reclutador_id", perfilReclutador.id)
-        .eq("empresa_id", empresaId)
-        .maybeSingle();
+        .insert([{
+          reclutador_id: perfilReclutador.id,
+          empresa_id: empresaId,
+          tipo_vinculacion: tipoVinculacion as "interno" | "freelance",
+          estado: "activa",
+          es_asociacion_activa: true,
+        }]);
 
-      if (checkError) throw checkError;
+      if (asociacionError) throw asociacionError;
 
-      // Si ya existe una asociación activa, solo actualizar la invitación
-      if (asociacionExistente) {
-        // Actualizar estado de invitación
-        const { error: updateError } = await supabase
-          .from("invitaciones_reclutador")
-          .update({ estado: "aceptada" })
-          .eq("id", invitacionId);
-
-        if (updateError) throw updateError;
-
-        // Si la asociación estaba inactiva, reactivarla
-        if (asociacionExistente.estado !== "activa") {
-          const { error: reactivarError } = await supabase
-            .from("reclutador_empresa")
-            .update({ 
-              estado: "activa",
-              es_asociacion_activa: true,
-              tipo_vinculacion: tipoVinculacion as "interno" | "freelance"
-            })
-            .eq("id", asociacionExistente.id);
-
-          if (reactivarError) throw reactivarError;
-        }
-
-        toast({
-          title: "✅ Invitación aceptada",
-          description: "Ya tenías una asociación con esta empresa, ha sido actualizada",
-        });
-      } else {
-        // No existe asociación, crear una nueva
-        // Actualizar estado de invitación
-        const { error: updateError } = await supabase
-          .from("invitaciones_reclutador")
-          .update({ estado: "aceptada" })
-          .eq("id", invitacionId);
-
-        if (updateError) throw updateError;
-
-        // Crear asociación
-        const { error: asociacionError } = await supabase
-          .from("reclutador_empresa")
-          .insert([{
-            reclutador_id: perfilReclutador.id,
-            empresa_id: empresaId,
-            tipo_vinculacion: tipoVinculacion as "interno" | "freelance",
-            estado: "activa",
-            es_asociacion_activa: true,
-          }]);
-
-        if (asociacionError) throw asociacionError;
-
-        toast({
-          title: "✅ Invitación aceptada",
-          description: "Ahora puedes trabajar con esta empresa",
-        });
-      }
+      toast({
+        title: "✅ Invitación aceptada",
+        description: "Ahora puedes trabajar con esta empresa",
+      });
 
       loadDashboardData();
     } catch (error: any) {
