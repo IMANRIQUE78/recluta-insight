@@ -67,42 +67,63 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
         setAsociacion(asociacionData);
 
         // Cargar estadísticas de esta colaboración específica
-        if (perfilData?.user_id && asociacionData?.empresa_id) {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          // Contar vacantes asignadas a este reclutador por esta empresa
-          const { data: vacantesAsignadas } = await supabase
-            .from("vacantes")
-            .select("id, estatus, fecha_solicitud, fecha_cierre")
-            .eq("reclutador_asignado_id", reclutadorId)
-            .eq("empresa_id", asociacionData.empresa_id);
+        if (asociacionData?.empresa_id) {
+          try {
+            // Contar vacantes asignadas a este reclutador por esta empresa
+            const { data: vacantesAsignadas, error: vacantesError } = await supabase
+              .from("vacantes")
+              .select("id, estatus, fecha_solicitud, fecha_cierre")
+              .eq("reclutador_asignado_id", reclutadorId)
+              .eq("empresa_id", asociacionData.empresa_id);
 
-          const vacantesAbiertas = vacantesAsignadas?.filter(v => v.estatus === 'abierta').length || 0;
-          const vacantesCerradas = vacantesAsignadas?.filter(v => v.estatus === 'cerrada').length || 0;
-          
-          // Calcular promedio de días de cierre
-          const cerradasConFechas = vacantesAsignadas?.filter(
-            v => v.estatus === 'cerrada' && v.fecha_cierre && v.fecha_solicitud
-          ) || [];
-          
-          let promedioDias = 0;
-          if (cerradasConFechas.length > 0) {
-            const totalDias = cerradasConFechas.reduce((sum, v) => {
-              const inicio = new Date(v.fecha_solicitud);
-              const fin = new Date(v.fecha_cierre!);
-              const dias = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
-              return sum + dias;
-            }, 0);
-            promedioDias = Math.round(totalDias / cerradasConFechas.length);
+            if (vacantesError) {
+              console.error("Error consultando vacantes:", vacantesError);
+              throw vacantesError;
+            }
+
+            console.log(`Vacantes encontradas para reclutador ${reclutadorId} en empresa ${asociacionData.empresa_id}:`, vacantesAsignadas);
+
+            const vacantesAbiertas = vacantesAsignadas?.filter(v => v.estatus === 'abierta').length || 0;
+            const vacantesCerradas = vacantesAsignadas?.filter(v => v.estatus === 'cerrada').length || 0;
+            
+            // Calcular promedio de días de cierre
+            const cerradasConFechas = vacantesAsignadas?.filter(
+              v => v.estatus === 'cerrada' && v.fecha_cierre && v.fecha_solicitud
+            ) || [];
+            
+            let promedioDias = 0;
+            if (cerradasConFechas.length > 0) {
+              const totalDias = cerradasConFechas.reduce((sum, v) => {
+                const inicio = new Date(v.fecha_solicitud);
+                const fin = new Date(v.fecha_cierre!);
+                const dias = Math.floor((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+                return sum + dias;
+              }, 0);
+              promedioDias = Math.round(totalDias / cerradasConFechas.length);
+            }
+
+            const stats = {
+              vacantesAsignadas: vacantesAsignadas?.length || 0,
+              vacantesAbiertas,
+              vacantesCerradas,
+              promedioDias,
+            };
+
+            console.log("Estadísticas de colaboración calculadas:", stats);
+            setEstadisticasColaboracion(stats);
+          } catch (error) {
+            console.error("Error cargando estadísticas de colaboración:", error);
+            // Establecer valores en 0 si hay error
+            setEstadisticasColaboracion({
+              vacantesAsignadas: 0,
+              vacantesAbiertas: 0,
+              vacantesCerradas: 0,
+              promedioDias: 0,
+            });
           }
-
-          setEstadisticasColaboracion({
-            vacantesAsignadas: vacantesAsignadas?.length || 0,
-            vacantesAbiertas,
-            vacantesCerradas,
-            promedioDias,
-          });
         }
+      } else {
+        console.log("No se proporcionó asociacionId, saltando estadísticas de colaboración");
       }
 
       // Cargar estadísticas globales
