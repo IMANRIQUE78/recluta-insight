@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [reclutadorProfileOpen, setReclutadorProfileOpen] = useState(false);
   const [selectedReclutadorId, setSelectedReclutadorId] = useState<string>("");
+  const [selectedAsociacionId, setSelectedAsociacionId] = useState<string | undefined>(undefined);
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -52,8 +53,9 @@ const Dashboard = () => {
 
     // Escuchar evento para abrir perfil de reclutador
     const handleOpenReclutadorProfile = (event: any) => {
-      const { reclutadorId } = event.detail;
+      const { reclutadorId, asociacionId } = event.detail;
       setSelectedReclutadorId(reclutadorId);
+      setSelectedAsociacionId(asociacionId);
       setReclutadorProfileOpen(true);
     };
 
@@ -289,6 +291,7 @@ const Dashboard = () => {
         open={reclutadorProfileOpen}
         onOpenChange={setReclutadorProfileOpen}
         reclutadorId={selectedReclutadorId}
+        asociacionId={selectedAsociacionId}
       />
     </div>
   );
