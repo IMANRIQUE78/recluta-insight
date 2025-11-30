@@ -4,12 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Loader2, Building2, Users, UserCircle } from "lucide-react";
 import { z } from "zod";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const authSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
@@ -122,11 +123,17 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 p-4">
-      <Card className="w-full max-w-md shadow-elegant">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">VVGI</CardTitle>
-          <CardDescription className="text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4">
+      <Card className="w-full max-w-md shadow-elegant border-primary/10">
+        <CardHeader className="space-y-4 pb-8">
+          <div className="flex justify-center">
+            <img 
+              src={vvgiLogo} 
+              alt="VVGI Logo" 
+              className="h-16 w-auto animate-in zoom-in-50 duration-1000 hover:scale-110 transition-transform"
+            />
+          </div>
+          <CardDescription className="text-center text-base text-foreground/80">
             Bienvenido a la mejor experiencia de reclutamiento en Latinoamérica
           </CardDescription>
         </CardHeader>
