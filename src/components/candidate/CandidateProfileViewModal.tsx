@@ -26,6 +26,7 @@ interface CandidateProfileViewModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   candidatoUserId: string;
+  hasFullAccess?: boolean;
 }
 
 interface CandidateProfile {
@@ -54,6 +55,7 @@ export const CandidateProfileViewModal = ({
   open,
   onOpenChange,
   candidatoUserId,
+  hasFullAccess = true,
 }: CandidateProfileViewModalProps) => {
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,8 +139,13 @@ export const CandidateProfileViewModal = ({
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
             <User className="h-6 w-6" />
-            {profile.nombre_completo}
+            {hasFullAccess ? profile.nombre_completo : "Candidato [Nombre Oculto]"}
           </DialogTitle>
+          {!hasFullAccess && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Los datos de contacto están ocultos. Necesitas una asociación activa con empresa y vacantes abiertas para ver información completa.
+            </p>
+          )}
         </DialogHeader>
 
         <ScrollArea className="h-[calc(90vh-8rem)] pr-4">
@@ -147,12 +154,12 @@ export const CandidateProfileViewModal = ({
             <div className="space-y-3">
               <div className="flex items-center gap-2 text-sm">
                 <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{profile.email}</span>
+                <span>{hasFullAccess ? profile.email : "***@*****.***"}</span>
               </div>
               {profile.telefono && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.telefono}</span>
+                  <span>{hasFullAccess ? profile.telefono : "*** *** ****"}</span>
                 </div>
               )}
               {profile.ubicacion && (
