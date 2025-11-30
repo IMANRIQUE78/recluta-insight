@@ -46,7 +46,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [educacionFilter, setEducacionFilter] = useState<string>("all");
   const [experienciaFilter, setExperienciaFilter] = useState<string>("all");
-  const [habilidadFilter, setHabilidadFilter] = useState<string>("");
+  const [habilidadFilter, setHabilidadFilter] = useState<string>("all");
   const [allHabilidades, setAllHabilidades] = useState<string[]>([]);
 
   useEffect(() => {
@@ -157,7 +157,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     }
 
     // Filtro por habilidad
-    if (habilidadFilter) {
+    if (habilidadFilter && habilidadFilter !== "all") {
       filtered = filtered.filter(c => 
         c.habilidades_tecnicas?.includes(habilidadFilter) ||
         c.habilidades_blandas?.includes(habilidadFilter)
@@ -171,7 +171,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     setSearchTerm("");
     setEducacionFilter("all");
     setExperienciaFilter("all");
-    setHabilidadFilter("");
+    setHabilidadFilter("all");
   };
 
   const formatSalario = (min: number | null, max: number | null) => {
@@ -265,7 +265,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                   <Filter className="h-4 w-4" />
                   Filtros de Búsqueda
                 </h3>
-                {(searchTerm || educacionFilter !== "all" || experienciaFilter !== "all" || habilidadFilter) && (
+                {(searchTerm || educacionFilter !== "all" || experienciaFilter !== "all" || habilidadFilter !== "all") && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
                     <X className="h-4 w-4 mr-2" />
                     Limpiar Filtros
@@ -319,7 +319,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                     <SelectValue placeholder="Habilidades" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las habilidades</SelectItem>
+                    <SelectItem value="all">Todas las habilidades</SelectItem>
                     {allHabilidades.slice(0, 50).map((hab) => (
                       <SelectItem key={hab} value={hab}>
                         #{hab}
