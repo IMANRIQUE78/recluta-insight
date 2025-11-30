@@ -69,12 +69,18 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
         // Cargar estadísticas de esta colaboración específica
         if (asociacionData?.empresa_id) {
           try {
-            // Contar vacantes asignadas a este reclutador por esta empresa
+            // IMPORTANTE: Filtrar vacantes por el rango de fechas de la colaboración
+            const fechaInicio = new Date(asociacionData.fecha_inicio);
+            const fechaFin = asociacionData.fecha_fin ? new Date(asociacionData.fecha_fin) : new Date();
+            
+            // Contar vacantes asignadas a este reclutador por esta empresa EN ESTE PERÍODO
             const { data: vacantesAsignadas, error: vacantesError } = await supabase
               .from("vacantes")
               .select("id, estatus, fecha_solicitud, fecha_cierre")
               .eq("reclutador_asignado_id", reclutadorId)
-              .eq("empresa_id", asociacionData.empresa_id);
+              .eq("empresa_id", asociacionData.empresa_id)
+              .gte("fecha_solicitud", fechaInicio.toISOString())
+              .lte("fecha_solicitud", fechaFin.toISOString());
 
             if (vacantesError) {
               console.error("Error consultando vacantes:", vacantesError);
@@ -254,9 +260,22 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Estado</p>
                     <Badge variant={asociacion.estado === 'activa' ? 'default' : 'secondary'}>
-                      {asociacion.estado === 'activa' ? 'Activa' : asociacion.estado}
+                      {asociacion.estado === 'activa' ? 'Activa' : 
+                       asociacion.estado === 'finalizada' ? 'Finalizada' : 'Inactiva'}
                     </Badge>
                   </div>
+                  
+                  {asociacion.fecha_fin && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Finalizó
+                      </p>
+                      <p className="font-medium">
+                        {format(new Date(asociacion.fecha_fin), "d 'de' MMMM, yyyy", { locale: es })}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Estadísticas de esta colaboración */}
@@ -301,22 +320,39 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
             </Card>
           )}
 
-          {/* Semblanza Profesional */}
-          {perfil.semblanza_profesional && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Semblanza Profesional</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                  {perfil.semblanza_profesional}
+          {/* Alerta si colaboración finalizada - NO mostrar perfil público */}
+          {asociacion && asociacion.estado === "finalizada" && (
+            <Card className="border-muted bg-muted/30">
+              <CardContent className="pt-6 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Esta colaboración ha finalizado. El perfil público del reclutador no está disponible.
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Las estadísticas mostradas corresponden únicamente al período de colaboración.
                 </p>
               </CardContent>
             </Card>
           )}
 
-          {/* Redes Sociales */}
-          {(perfil.linkedin_url || perfil.twitter_url || perfil.website_url) && (
+          {/* Perfil Público - SOLO si NO hay colaboración O si la colaboración está ACTIVA */}
+          {(!asociacion || asociacion.estado === "activa") && (
+            <>
+              {/* Semblanza Profesional */}
+              {perfil.semblanza_profesional && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Semblanza Profesional</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {perfil.semblanza_profesional}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Redes Sociales */}
+              {(perfil.linkedin_url || perfil.twitter_url || perfil.website_url) && (
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg">Redes Sociales y Enlaces</CardTitle>
@@ -364,11 +400,11 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
                   </div>
                 )}
               </CardContent>
-            </Card>
-          )}
+              </Card>
+            )}
 
-          {/* Información de Contacto */}
-          <Card>
+            {/* Información de Contacto */}
+            <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Mail className="h-5 w-5 text-primary" />
@@ -411,10 +447,12 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
                   ))}
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+            )}
+          </>
           )}
 
-          {/* Estadísticas Globales */}
+          {/* Estadísticas Globales - SIEMPRE MOSTRAR */}
           {estadisticas && (
             <Card>
               <CardHeader>
