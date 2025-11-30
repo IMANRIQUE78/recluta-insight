@@ -92,35 +92,64 @@ export const ReclutadoresAsociadosTable = () => {
             .map(a => a.reclutador_id)
         );
 
-        const nuevasAsociaciones = invitacionesAceptadas
-          .filter(inv => inv.reclutador_id && !activasPorReclutador.has(inv.reclutador_id))
-          .map(inv => ({
-            reclutador_id: inv.reclutador_id as string,
-            empresa_id: userRoles.empresa_id as string,
-            tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance",
-            estado: "activa" as "activa",
-            es_asociacion_activa: true,
-          }));
+        const invitacionesSinActivar = invitacionesAceptadas.filter(
+          inv => inv.reclutador_id && !activasPorReclutador.has(inv.reclutador_id)
+        );
 
-        if (nuevasAsociaciones.length > 0) {
-          console.log("Creando asociaciones faltantes desde invitaciones aceptadas:", nuevasAsociaciones);
-          const { error: insertError } = await supabase
-            .from("reclutador_empresa")
-            .insert(nuevasAsociaciones);
+        if (invitacionesSinActivar.length > 0) {
+          console.log("Invitaciones aceptadas sin asociación activa:", invitacionesSinActivar);
+          
+          // Para cada invitación sin activar, reactivar o crear asociación
+          for (const inv of invitacionesSinActivar) {
+            // Buscar si ya existe una asociación histórica (finalizada)
+            const asociacionExistente = asociaciones?.find(
+              a => a.reclutador_id === inv.reclutador_id
+            );
 
-          if (insertError) {
-            console.error("Error creando asociaciones desde invitaciones:", insertError);
-          } else {
-            // Volver a cargar asociaciones ya sincronizadas
-            const { data: asociacionesSync, error: errorSync } = await supabase
-              .from("reclutador_empresa")
-              .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio, fecha_fin")
-              .eq("empresa_id", userRoles.empresa_id)
-              .order("fecha_inicio", { ascending: false });
+            if (asociacionExistente) {
+              // Reactivar la asociación existente
+              console.log(`Reactivando asociación existente ${asociacionExistente.id}`);
+              const { error: updateError } = await supabase
+                .from("reclutador_empresa")
+                .update({
+                  estado: "activa" as "activa",
+                  es_asociacion_activa: true,
+                  fecha_fin: null,
+                  tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance"
+                })
+                .eq("id", asociacionExistente.id);
 
-            if (!errorSync && asociacionesSync) {
-              asociaciones = asociacionesSync;
+              if (updateError) {
+                console.error("Error reactivando asociación:", updateError);
+              }
+            } else {
+              // Crear nueva asociación
+              console.log(`Creando nueva asociación para reclutador ${inv.reclutador_id}`);
+              const { error: insertError } = await supabase
+                .from("reclutador_empresa")
+                .insert({
+                  reclutador_id: inv.reclutador_id as string,
+                  empresa_id: userRoles.empresa_id as string,
+                  tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance",
+                  estado: "activa" as "activa",
+                  es_asociacion_activa: true,
+                });
+
+              if (insertError) {
+                console.error("Error creando nueva asociación:", insertError);
+              }
             }
+          }
+
+          // Volver a cargar asociaciones después de la sincronización
+          const { data: asociacionesSync, error: errorSync } = await supabase
+            .from("reclutador_empresa")
+            .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio, fecha_fin")
+            .eq("empresa_id", userRoles.empresa_id)
+            .order("fecha_inicio", { ascending: false });
+
+          if (!errorSync && asociacionesSync) {
+            asociaciones = asociacionesSync;
           }
         }
       }
