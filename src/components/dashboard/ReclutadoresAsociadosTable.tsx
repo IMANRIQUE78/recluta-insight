@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Users } from "lucide-react";
+import { Loader2, Users, UserX } from "lucide-react";
+import { DesvincularReclutadorDialog } from "./DesvincularReclutadorDialog";
 
 interface ReclutadorAsociado {
   id: string;
@@ -19,6 +21,11 @@ interface ReclutadorAsociado {
 export const ReclutadoresAsociadosTable = () => {
   const [reclutadores, setReclutadores] = useState<ReclutadorAsociado[]>([]);
   const [loading, setLoading] = useState(true);
+  const [desvincularDialog, setDesvincularDialog] = useState<{
+    open: boolean;
+    asociacionId: string;
+    reclutadorNombre: string;
+  }>({ open: false, asociacionId: "", reclutadorNombre: "" });
 
   useEffect(() => {
     loadReclutadores();
@@ -181,6 +188,7 @@ export const ReclutadoresAsociadosTable = () => {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Especialidades</TableHead>
                   <TableHead>Fecha Inicio</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,6 +227,21 @@ export const ReclutadoresAsociadosTable = () => {
                     <TableCell className="text-sm text-muted-foreground">
                       {new Date(rec.fecha_inicio).toLocaleDateString()}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDesvincularDialog({
+                          open: true,
+                          asociacionId: rec.id,
+                          reclutadorNombre: rec.nombre_reclutador
+                        })}
+                        className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      >
+                        <UserX className="h-4 w-4 mr-1" />
+                        Desvincular
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -226,6 +249,14 @@ export const ReclutadoresAsociadosTable = () => {
           </div>
         )}
       </CardContent>
+
+      <DesvincularReclutadorDialog
+        open={desvincularDialog.open}
+        onOpenChange={(open) => setDesvincularDialog({ ...desvincularDialog, open })}
+        asociacionId={desvincularDialog.asociacionId}
+        reclutadorNombre={desvincularDialog.reclutadorNombre}
+        onSuccess={loadReclutadores}
+      />
     </Card>
   );
 };
