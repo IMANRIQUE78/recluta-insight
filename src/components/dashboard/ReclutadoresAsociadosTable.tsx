@@ -58,13 +58,13 @@ export const ReclutadoresAsociadosTable = () => {
       }
 
       // Obtener TODAS las asociaciones (historial completo) para auditoría
-      const { data: asociaciones, error } = await supabase
+      let { data: asociaciones, error } = await supabase
         .from("reclutador_empresa")
         .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio, fecha_fin")
         .eq("empresa_id", userRoles.empresa_id)
         .order("fecha_inicio", { ascending: false });
 
-      console.log("Asociaciones query:", { 
+      console.log("Asociaciones query (antes de sync):", { 
         empresa_id: userRoles.empresa_id,
         asociaciones,
         error 
@@ -76,8 +76,57 @@ export const ReclutadoresAsociadosTable = () => {
         return;
       }
 
+      // Sincronizar invitaciones aceptadas que aún NO tengan asociación ACTIVA
+      const { data: invitacionesAceptadas, error: invitacionesError } = await supabase
+        .from("invitaciones_reclutador")
+        .select("id, reclutador_id, tipo_vinculacion, estado")
+        .eq("empresa_id", userRoles.empresa_id)
+        .eq("estado", "aceptada");
+
+      if (invitacionesError) {
+        console.error("Error cargando invitaciones aceptadas:", invitacionesError);
+      } else if (invitacionesAceptadas && invitacionesAceptadas.length > 0) {
+        const activasPorReclutador = new Set(
+          (asociaciones || [])
+            .filter(a => a.estado === "activa")
+            .map(a => a.reclutador_id)
+        );
+
+        const nuevasAsociaciones = invitacionesAceptadas
+          .filter(inv => inv.reclutador_id && !activasPorReclutador.has(inv.reclutador_id))
+          .map(inv => ({
+            reclutador_id: inv.reclutador_id as string,
+            empresa_id: userRoles.empresa_id as string,
+            tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance",
+            estado: "activa" as "activa",
+            es_asociacion_activa: true,
+          }));
+
+        if (nuevasAsociaciones.length > 0) {
+          console.log("Creando asociaciones faltantes desde invitaciones aceptadas:", nuevasAsociaciones);
+          const { error: insertError } = await supabase
+            .from("reclutador_empresa")
+            .insert(nuevasAsociaciones);
+
+          if (insertError) {
+            console.error("Error creando asociaciones desde invitaciones:", insertError);
+          } else {
+            // Volver a cargar asociaciones ya sincronizadas
+            const { data: asociacionesSync, error: errorSync } = await supabase
+              .from("reclutador_empresa")
+              .select("id, reclutador_id, tipo_vinculacion, estado, fecha_inicio, fecha_fin")
+              .eq("empresa_id", userRoles.empresa_id)
+              .order("fecha_inicio", { ascending: false });
+
+            if (!errorSync && asociacionesSync) {
+              asociaciones = asociacionesSync;
+            }
+          }
+        }
+      }
+
       if (!asociaciones || asociaciones.length === 0) {
-        console.log("No asociaciones found");
+        console.log("No asociaciones found después de sync");
         setLoading(false);
         return;
       }
