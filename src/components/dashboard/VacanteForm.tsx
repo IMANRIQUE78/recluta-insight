@@ -143,6 +143,14 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
+      // Obtener empresa_id del usuario
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
       const fechaSolicitud = new Date().toISOString().split('T')[0];
 
       // Insertar vacante
@@ -162,6 +170,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
           perfil_requerido: values.perfil_requerido,
           observaciones: values.observaciones || null,
           user_id: user.id,
+          empresa_id: userRoles?.empresa_id || null,
           folio: "", // El trigger lo generará
         }])
         .select()
