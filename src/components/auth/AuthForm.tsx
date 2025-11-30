@@ -123,7 +123,7 @@ export const AuthForm = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 gap-8">
       <Card className="w-full max-w-md shadow-elegant border-primary/10">
         <CardHeader className="space-y-4 pb-8">
           <div className="flex justify-center">
@@ -254,6 +254,15 @@ export const AuthForm = () => {
           </Tabs>
         </CardContent>
       </Card>
+      
+      <div className="text-center space-y-2 animate-in fade-in duration-1000 delay-300">
+        <h2 className="text-3xl font-bold text-primary">VVGI</h2>
+        <p className="text-sm text-muted-foreground">un proyecto de Israel Manrique</p>
+        <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+          hecho en México con <span className="text-red-500 animate-pulse">❤️</span> para toda Latinoamérica
+        </p>
+        <p className="text-xs text-muted-foreground/70">todos los derechos reservados 2025</p>
+      </div>
     </div>
   );
 };
