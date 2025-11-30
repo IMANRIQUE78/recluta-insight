@@ -197,7 +197,12 @@ export const ReclutadoresAsociadosTable = () => {
                     <TableCell className="font-medium">
                       <button
                         onClick={() => {
-                          window.dispatchEvent(new CustomEvent('openReclutadorProfile', { detail: { reclutadorId: rec.reclutador_id } }));
+                          window.dispatchEvent(new CustomEvent('openReclutadorProfile', { 
+                            detail: { 
+                              reclutadorId: rec.reclutador_id,
+                              asociacionId: rec.id 
+                            } 
+                          }));
                         }}
                         className="text-primary hover:underline font-medium"
                       >
