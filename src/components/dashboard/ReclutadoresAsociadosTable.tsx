@@ -99,45 +99,21 @@ export const ReclutadoresAsociadosTable = () => {
         if (invitacionesSinActivar.length > 0) {
           console.log("Invitaciones aceptadas sin asociación activa:", invitacionesSinActivar);
           
-          // Para cada invitación sin activar, reactivar o crear asociación
+          // SIEMPRE crear NUEVA asociación - NUNCA actualizar registros históricos
           for (const inv of invitacionesSinActivar) {
-            // Buscar si ya existe una asociación histórica (finalizada)
-            const asociacionExistente = asociaciones?.find(
-              a => a.reclutador_id === inv.reclutador_id
-            );
+            console.log(`Creando NUEVA asociación para reclutador ${inv.reclutador_id}`);
+            const { error: insertError } = await supabase
+              .from("reclutador_empresa")
+              .insert({
+                reclutador_id: inv.reclutador_id as string,
+                empresa_id: userRoles.empresa_id as string,
+                tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance",
+                estado: "activa" as "activa",
+                es_asociacion_activa: true,
+              });
 
-            if (asociacionExistente) {
-              // Reactivar la asociación existente
-              console.log(`Reactivando asociación existente ${asociacionExistente.id}`);
-              const { error: updateError } = await supabase
-                .from("reclutador_empresa")
-                .update({
-                  estado: "activa" as "activa",
-                  es_asociacion_activa: true,
-                  fecha_fin: null,
-                  tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance"
-                })
-                .eq("id", asociacionExistente.id);
-
-              if (updateError) {
-                console.error("Error reactivando asociación:", updateError);
-              }
-            } else {
-              // Crear nueva asociación
-              console.log(`Creando nueva asociación para reclutador ${inv.reclutador_id}`);
-              const { error: insertError } = await supabase
-                .from("reclutador_empresa")
-                .insert({
-                  reclutador_id: inv.reclutador_id as string,
-                  empresa_id: userRoles.empresa_id as string,
-                  tipo_vinculacion: inv.tipo_vinculacion as "interno" | "freelance",
-                  estado: "activa" as "activa",
-                  es_asociacion_activa: true,
-                });
-
-              if (insertError) {
-                console.error("Error creando nueva asociación:", insertError);
-              }
+            if (insertError) {
+              console.error("Error creando nueva asociación:", insertError);
             }
           }
 
