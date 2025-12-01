@@ -57,11 +57,12 @@ export const DesvincularEmpresaDialog = ({
         return;
       }
 
-      // Contar vacantes asignadas (solo abiertas)
+      // Contar vacantes asignadas (solo abiertas) DE ESTA EMPRESA específica
       const { data: vacantes, count, error: vacantesError } = await supabase
         .from("vacantes")
         .select("id", { count: "exact", head: false })
         .eq("reclutador_asignado_id", asociacion.reclutador_id)
+        .eq("empresa_id", asociacion.empresa_id)
         .eq("estatus", "abierta");
 
       if (vacantesError) {
@@ -72,6 +73,7 @@ export const DesvincularEmpresaDialog = ({
         const totalVacantes = count ?? vacantes?.length ?? 0;
         console.log("Vacantes abiertas encontradas para desvinculación (reclutador):", {
           asociacion,
+          empresa_id: asociacion.empresa_id,
           totalVacantes,
           vacantes,
         });
