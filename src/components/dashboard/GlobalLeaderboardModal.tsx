@@ -208,7 +208,11 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
             </span>
           </DialogTitle>
           <DialogDescription className="text-base mt-2">
-            Clasificación mundial basada en desempeño: vacantes cerradas y tiempo de cierre
+            Índice de Productividad: (Vacantes Cerradas / Promedio de Días) × 100
+            <br />
+            <span className="text-xs text-muted-foreground">
+              Resultados publicados mensualmente del periodo anterior
+            </span>
           </DialogDescription>
         </DialogHeader>
 
