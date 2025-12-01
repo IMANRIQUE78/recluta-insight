@@ -67,10 +67,17 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Obtener datos de todos los reclutadores
+      // Calcular fecha hace 28 días para análisis dinámico
+      const hace28Dias = new Date();
+      hace28Dias.setDate(hace28Dias.getDate() - 28);
+      const fechaLimite = hace28Dias.toISOString().split('T')[0];
+
+      console.log("📊 Calculando ranking para últimos 28 días desde:", fechaLimite);
+
+      // Obtener datos de todos los reclutadores con sus IDs de perfil
       const { data: perfiles, error: perfilesError } = await supabase
         .from('perfil_reclutador')
-        .select('user_id, nombre_reclutador');
+        .select('id, user_id, nombre_reclutador');
 
       if (perfilesError) {
         console.error("Error cargando perfiles:", perfilesError);
@@ -79,10 +86,11 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         return;
       }
 
-      // Obtener estadísticas de vacantes para cada reclutador
+      // Obtener vacantes de los últimos 28 días
       const { data: vacantes, error: vacantesError } = await supabase
         .from('vacantes')
-        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud');
+        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud')
+        .gte('fecha_solicitud', fechaLimite);
 
       if (vacantesError) {
         console.error("Error cargando vacantes:", vacantesError);
@@ -91,11 +99,15 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         return;
       }
 
+      console.log(`📦 Reclutadores encontrados: ${perfiles?.length || 0}`);
+      console.log(`📋 Vacantes últimos 28 días: ${vacantes?.length || 0}`);
+
       // Calcular estadísticas por reclutador
       const statsMap = new Map();
       
       perfiles?.forEach(perfil => {
-        const vacantesReclutador = vacantes?.filter((v: any) => v.reclutador_asignado_id === perfil.user_id) || [];
+        // IMPORTANTE: Filtrar por perfil.id, NO por user_id
+        const vacantesReclutador = vacantes?.filter((v: any) => v.reclutador_asignado_id === perfil.id) || [];
         const cerradas = vacantesReclutador.filter((v: any) => v.estatus === 'cerrada' && v.fecha_cierre);
         
         let promedioDias = 0;
@@ -111,6 +123,8 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
           }, 0);
           promedioDias = totalDias / cerradas.length;
         }
+        
+        console.log(`👤 ${perfil.nombre_reclutador}: ${cerradas.length} vacantes cerradas, ${Math.round(promedioDias)} días promedio`);
         
         statsMap.set(perfil.user_id, {
           user_id: perfil.user_id,
@@ -250,7 +264,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
             Índice de Productividad: (Vacantes Cerradas / Promedio de Días) × 100
             <br />
             <span className="text-xs text-muted-foreground">
-              Resultados publicados mensualmente del periodo anterior
+              📅 Análisis dinámico de los últimos 28 días
             </span>
           </DialogDescription>
         </DialogHeader>
@@ -411,7 +425,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
               <strong className="text-foreground">Índice de Productividad:</strong> (Vacantes Cerradas / Promedio de Días) × 100
               <br />
               <span className="text-xs">
-                Mayor índice = más vacantes cerradas en menos tiempo. Resultados publicados mensualmente.
+                📅 Mayor índice = más vacantes cerradas en menos tiempo. Análisis dinámico de últimos 28 días.
               </span>
             </p>
           </div>

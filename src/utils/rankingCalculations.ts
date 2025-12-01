@@ -14,8 +14,10 @@
  * - Vacantes > 0 pero días = 0/null → Índice = vacantes × 10000
  *   (caso teórico: cierre instantáneo o datos incompletos)
  * 
- * NOTA: Los resultados se publican mensualmente del periodo anterior
- *       (ej: en noviembre se visualizan datos de octubre)
+ * ANÁLISIS DINÁMICO:
+ * - Se calculan los últimos 28 días de forma dinámica (rolling window)
+ * - NO se cierra por mes específico, siempre son los últimos 28 días
+ * - Esto permite tener métricas actualizadas en tiempo real
  */
 
 /**

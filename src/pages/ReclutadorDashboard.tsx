@@ -59,15 +59,21 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Obtener datos de todos los reclutadores
+      // Calcular fecha hace 28 días
+      const hace28Dias = new Date();
+      hace28Dias.setDate(hace28Dias.getDate() - 28);
+      const fechaLimite = hace28Dias.toISOString().split('T')[0];
+
+      // Obtener datos de todos los reclutadores con sus IDs
       const { data: perfiles } = await supabase
         .from('perfil_reclutador')
-        .select('user_id, nombre_reclutador');
+        .select('id, user_id, nombre_reclutador');
 
-      // Obtener estadísticas de vacantes
+      // Obtener vacantes de los últimos 28 días
       const { data: vacantes } = await supabase
         .from('vacantes')
-        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud');
+        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud')
+        .gte('fecha_solicitud', fechaLimite);
 
       if (!perfiles || !vacantes) return;
 
@@ -75,7 +81,8 @@ const ReclutadorDashboard = () => {
       const statsMap = new Map();
       
       perfiles.forEach(perfil => {
-        const vacantesReclutador = vacantes.filter(v => v.reclutador_asignado_id === perfil.user_id);
+        // Filtrar por perfil.id, NO por user_id
+        const vacantesReclutador = vacantes.filter(v => v.reclutador_asignado_id === perfil.id);
         const cerradas = vacantesReclutador.filter(v => v.estatus === 'cerrada' && v.fecha_cierre);
         
         let promedioDias = 0;
