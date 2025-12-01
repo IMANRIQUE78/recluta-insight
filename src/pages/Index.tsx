@@ -46,22 +46,23 @@ const Index = () => {
       return;
     }
 
-    // Verificar si tiene rol de empresa
+    // Verificar si tiene rol de empresa CON empresa_id asignado
     const { data: userRoles } = await supabase
       .from("user_roles")
       .select("*")
       .eq("user_id", user.id);
 
     if (userRoles && userRoles.length > 0) {
-      const hasEmpresaRole = userRoles.some(r => r.role === "admin_empresa");
-      if (hasEmpresaRole) {
+      // Solo considerar válido si tiene rol admin_empresa Y empresa_id asignado
+      const validEmpresaRole = userRoles.find(r => r.role === "admin_empresa" && r.empresa_id);
+      if (validEmpresaRole) {
         navigate("/dashboard");
         setChecking(false);
         return;
       }
     }
 
-    // Si no tiene ningún perfil, ir a onboarding
+    // Si no tiene ningún perfil completo, ir a onboarding
     navigate("/onboarding");
     setChecking(false);
   };

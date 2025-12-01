@@ -56,24 +56,8 @@ export const AuthForm = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("No se pudo crear el usuario");
 
-      // 2. Asignar rol según tipo de perfil
-      const roleMap: Record<TipoPerfil, "admin_empresa" | "reclutador" | "candidato"> = {
-        empresa: "admin_empresa",
-        reclutador: "reclutador",
-        candidato: "candidato"
-      };
-
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: roleMap[tipoPerfil]
-        });
-
-      if (roleError) {
-        console.error("Error al asignar rol:", roleError);
-        // No bloqueamos el registro si falla la asignación de rol
-      }
+      // NO creamos roles aquí - OnboardingFlow se encarga de crear el perfil completo
+      // El tipo de perfil se guarda en user metadata para usarlo en onboarding
 
       toast.success("Cuenta creada exitosamente. Completa tu perfil para continuar.");
       navigate("/onboarding");

@@ -69,18 +69,27 @@ const OnboardingFlow = () => {
         return;
       }
 
-      // 1. Verificar si ya existe un rol de empresa
+      // 1. Verificar si ya existe un rol de empresa COMPLETO (con empresa_id)
       const { data: existingRole } = await supabase
         .from("user_roles")
-        .select("id")
+        .select("id, empresa_id")
         .eq("user_id", user.id)
         .eq("role", "admin_empresa")
         .maybeSingle();
 
-      if (existingRole) {
+      // Solo redirigir si tiene un rol CON empresa_id (perfil completo)
+      if (existingRole?.empresa_id) {
         toast.error("Ya tienes un perfil de empresa creado");
         navigate("/dashboard");
         return;
+      }
+
+      // Si existe un rol sin empresa_id, lo eliminaremos para crear uno nuevo
+      if (existingRole && !existingRole.empresa_id) {
+        await supabase
+          .from("user_roles")
+          .delete()
+          .eq("id", existingRole.id);
       }
 
       // 2. Crear la empresa
@@ -153,7 +162,7 @@ const OnboardingFlow = () => {
         return;
       }
 
-      // 1. Verificar si ya existe un perfil de reclutador
+      // 1. Verificar si ya existe un perfil de reclutador COMPLETO
       const { data: existingProfile } = await supabase
         .from("perfil_reclutador")
         .select("id")
@@ -165,6 +174,13 @@ const OnboardingFlow = () => {
         navigate("/reclutador-dashboard");
         return;
       }
+
+      // Eliminar roles de reclutador huérfanos (sin perfil)
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("role", "reclutador");
 
       // 2. Crear perfil de reclutador
       const { data: reclutadorData, error: reclutadorError } = await supabase
@@ -209,6 +225,7 @@ const OnboardingFlow = () => {
           publicacion_destacada: true,
         });
 
+
       if (suscripcionError) throw suscripcionError;
 
       toast.success(`¡Perfil de reclutador creado! Código único: ${reclutadorData.codigo_reclutador}. Todas las features premium disponibles.`);
@@ -234,7 +251,7 @@ const OnboardingFlow = () => {
         return;
       }
 
-      // 1. Verificar si ya existe un perfil de candidato
+      // 1. Verificar si ya existe un perfil de candidato COMPLETO
       const { data: existingProfile } = await supabase
         .from("perfil_candidato")
         .select("id")
@@ -246,6 +263,13 @@ const OnboardingFlow = () => {
         navigate("/candidate-dashboard");
         return;
       }
+
+      // Eliminar roles de candidato huérfanos (sin perfil)
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("role", "candidato");
 
       // 2. Crear perfil de candidato
       const { error: candidatoError } = await supabase
