@@ -65,12 +65,20 @@ export const DesvincularEmpresaDialog = ({
         return;
       }
 
-      // Contar vacantes asignadas (solo abiertas) DE ESTA EMPRESA específica
-      const { data: vacantes, count, error: vacantesError } = await supabase
-        .from("vacantes")
-        .select("id", { count: "exact", head: false })
-        .eq("reclutador_asignado_id", asociacion.reclutador_id)
+      // Obtener usuarios que pertenecen a esta empresa (para verificar vacantes sin empresa_id)
+      const { data: empresaUsers } = await supabase
+        .from("user_roles")
+        .select("user_id")
         .eq("empresa_id", asociacion.empresa_id)
+        .in("role", ["admin_empresa", "rrhh"]);
+
+      const empresaUserIds = empresaUsers?.map(u => u.user_id) || [];
+
+      // Obtener todas las vacantes abiertas asignadas al reclutador
+      const { data: vacantes, error: vacantesError } = await supabase
+        .from("vacantes")
+        .select("id, empresa_id, user_id")
+        .eq("reclutador_asignado_id", asociacion.reclutador_id)
         .eq("estatus", "abierta");
 
       if (vacantesError) {
@@ -78,12 +86,21 @@ export const DesvincularEmpresaDialog = ({
         setVacantesAsignadas(0);
         setCanDesvincular(false);
       } else {
-        const totalVacantes = count ?? vacantes?.length ?? 0;
+        // Filtrar vacantes que pertenecen a esta empresa:
+        // 1. Vacantes con empresa_id que coincide
+        // 2. Vacantes sin empresa_id pero creadas por usuarios de esta empresa
+        const vacantesDeEmpresa = vacantes?.filter(v => 
+          v.empresa_id === asociacion.empresa_id ||
+          (v.empresa_id === null && empresaUserIds.includes(v.user_id))
+        ) || [];
+
+        const totalVacantes = vacantesDeEmpresa.length;
         console.log("Vacantes abiertas encontradas para desvinculación (reclutador):", {
           asociacion,
           empresa_id: asociacion.empresa_id,
+          empresaUserIds,
           totalVacantes,
-          vacantes,
+          vacantesDeEmpresa,
         });
         setVacantesAsignadas(totalVacantes);
         setCanDesvincular(totalVacantes === 0);
