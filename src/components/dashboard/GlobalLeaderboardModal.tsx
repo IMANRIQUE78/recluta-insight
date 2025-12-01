@@ -252,15 +252,16 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                     </Button>
                   </TableHead>
                   <TableHead className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleSort("ranking_score")}
-                      className="w-full justify-end font-bold hover:bg-primary/10"
-                    >
-                      Score
-                      <ArrowUpDown className="ml-2 h-4 w-4" />
-                    </Button>
+                     <Button
+                       variant="ghost"
+                       size="sm"
+                       onClick={() => handleSort("ranking_score")}
+                       className="w-full justify-end font-bold hover:bg-primary/10"
+                       title="Índice de Productividad: (Vacantes / Días) × 100"
+                     >
+                       Índice
+                       <ArrowUpDown className="ml-2 h-4 w-4" />
+                     </Button>
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -351,7 +352,11 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         {!loading && leaderboard.length > 0 && (
           <div className="mt-4 p-4 bg-muted/30 rounded-lg border border-border/50">
             <p className="text-sm text-muted-foreground">
-              <strong className="text-foreground">Fórmula de Score:</strong> (Vacantes Cerradas × 100) - (Promedio Días × 0.5) = Mayor puntaje indica mejor desempeño
+              <strong className="text-foreground">Índice de Productividad:</strong> (Vacantes Cerradas / Promedio de Días) × 100
+              <br />
+              <span className="text-xs">
+                Mayor índice = más vacantes cerradas en menos tiempo. Resultados publicados mensualmente.
+              </span>
             </p>
           </div>
         )}
