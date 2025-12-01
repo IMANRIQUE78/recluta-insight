@@ -18,6 +18,7 @@ import { KPICard } from "@/components/dashboard/KPICard";
 import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 import { useReclutadorKPIDetails } from "@/hooks/useReclutadorKPIDetails";
+import { calcularRankingGlobal } from "@/utils/rankingCalculations";
 import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerfilReclutadorDialog";
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
@@ -58,16 +59,53 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Llamar a la función centralizada que calcula el ranking global para TODOS los reclutadores
-      const { data: ranking, error } = await supabase.rpc('get_reclutador_ranking');
-      
-      if (error) {
-        console.error("Error obteniendo ranking:", error);
-        return;
-      }
+      // Obtener datos de todos los reclutadores
+      const { data: perfiles } = await supabase
+        .from('perfil_reclutador')
+        .select('user_id, nombre_reclutador');
 
-      // Encontrar la posición del usuario actual en el ranking global
-      const userRanking = ranking?.find((r: any) => r.user_id === user.id);
+      // Obtener estadísticas de vacantes
+      const { data: vacantes } = await supabase
+        .from('vacantes')
+        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud');
+
+      if (!perfiles || !vacantes) return;
+
+      // Calcular estadísticas por reclutador
+      const statsMap = new Map();
+      
+      perfiles.forEach(perfil => {
+        const vacantesReclutador = vacantes.filter(v => v.reclutador_asignado_id === perfil.user_id);
+        const cerradas = vacantesReclutador.filter(v => v.estatus === 'cerrada' && v.fecha_cierre);
+        
+        let promedioDias = 0;
+        if (cerradas.length > 0) {
+          const totalDias = cerradas.reduce((sum, v) => {
+            if (v.fecha_cierre && v.fecha_solicitud) {
+              const dias = Math.floor(
+                (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              return sum + dias;
+            }
+            return sum;
+          }, 0);
+          promedioDias = totalDias / cerradas.length;
+        }
+        
+        statsMap.set(perfil.user_id, {
+          user_id: perfil.user_id,
+          nombre_reclutador: perfil.nombre_reclutador,
+          vacantes_cerradas: cerradas.length,
+          promedio_dias_cierre: promedioDias
+        });
+      });
+
+      // Calcular ranking con nuevo algoritmo
+      const reclutadoresData = Array.from(statsMap.values());
+      const rankingCalculado = calcularRankingGlobal(reclutadoresData);
+
+      // Encontrar la posición del usuario actual
+      const userRanking = rankingCalculado.find(r => r.user_id === user.id);
       if (userRanking) {
         setRankingPosition(userRanking.posicion);
       }

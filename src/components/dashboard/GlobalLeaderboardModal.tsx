@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Medal, Award, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calcularRankingGlobal } from "@/utils/rankingCalculations";
 
 interface LeaderboardEntry {
   id: string;
@@ -43,7 +44,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [sortColumn, setSortColumn] = useState<"promedio_dias_cierre" | "vacantes_cerradas" | "ranking_score">("vacantes_cerradas");
+  const [sortColumn, setSortColumn] = useState<"promedio_dias_cierre" | "vacantes_cerradas" | "ranking_score">("ranking_score");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
@@ -66,26 +67,66 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Llamar a la función centralizada que calcula el ranking global para TODOS los reclutadores
-      const { data: ranking, error } = await supabase.rpc('get_reclutador_ranking');
+      // Obtener datos de todos los reclutadores
+      const { data: perfiles, error: perfilesError } = await supabase
+        .from('perfil_reclutador')
+        .select('user_id, nombre_reclutador');
 
-      if (error) {
-        console.error("Error fetching ranking:", error);
+      if (perfilesError) {
+        console.error("Error cargando perfiles:", perfilesError);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      if (!ranking || ranking.length === 0) {
-        console.log("No hay reclutadores en el ranking");
+      // Obtener estadísticas de vacantes para cada reclutador
+      const { data: vacantes, error: vacantesError } = await supabase
+        .from('vacantes')
+        .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud');
+
+      if (vacantesError) {
+        console.error("Error cargando vacantes:", vacantesError);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      // Construir el leaderboard con los datos ya ordenados de la función
-      const leaderboardData: LeaderboardEntry[] = ranking.map((entry: any) => {
-        // Formatear nombre - ocultar apellido para otros usuarios
+      // Calcular estadísticas por reclutador
+      const statsMap = new Map();
+      
+      perfiles?.forEach(perfil => {
+        const vacantesReclutador = vacantes?.filter((v: any) => v.reclutador_asignado_id === perfil.user_id) || [];
+        const cerradas = vacantesReclutador.filter((v: any) => v.estatus === 'cerrada' && v.fecha_cierre);
+        
+        let promedioDias = 0;
+        if (cerradas.length > 0) {
+          const totalDias = cerradas.reduce((sum, v: any) => {
+            if (v.fecha_cierre && v.fecha_solicitud) {
+              const dias = Math.floor(
+                (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
+              );
+              return sum + dias;
+            }
+            return sum;
+          }, 0);
+          promedioDias = totalDias / cerradas.length;
+        }
+        
+        statsMap.set(perfil.user_id, {
+          user_id: perfil.user_id,
+          nombre_reclutador: perfil.nombre_reclutador,
+          vacantes_cerradas: cerradas.length,
+          promedio_dias_cierre: promedioDias
+        });
+      });
+
+      // Convertir a array y calcular ranking con nuevo algoritmo
+      const reclutadoresData = Array.from(statsMap.values());
+      const rankingCalculado = calcularRankingGlobal(reclutadoresData);
+
+      // Formatear los datos para la tabla
+      const formattedData: LeaderboardEntry[] = rankingCalculado.map((entry) => {
+        // Si NO es el usuario actual, ofuscar apellido
         let nombreFormateado = entry.nombre_reclutador || "Reclutador";
         if (user && entry.user_id !== user.id) {
           const parts = nombreFormateado.trim().split(' ');
@@ -106,8 +147,8 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         };
       });
 
-      console.log("Leaderboard data completo:", leaderboardData);
-      setLeaderboard(leaderboardData);
+      console.log("Leaderboard data completo:", formattedData);
+      setLeaderboard(formattedData);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
       setLeaderboard([]);
@@ -161,8 +202,6 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       setSortDirection(column === "vacantes_cerradas" || column === "ranking_score" ? "desc" : "asc");
     }
   };
-
-  // La función formatNombre ya no es necesaria porque formateamos en loadLeaderboard
 
   const getRankingBadge = (index: number) => {
     const position = index + 1;
