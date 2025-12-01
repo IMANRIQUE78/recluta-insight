@@ -58,69 +58,18 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Obtener todos los reclutadores
-      const { data: reclutadores } = await supabase
-        .from("perfil_reclutador")
-        .select("user_id");
-
-      if (!reclutadores) return;
-
-      // Recalcular estadísticas de TODOS los reclutadores para tener ranking actualizado
-      const recalcularPromesas = reclutadores.map(async (reclutador) => {
-        try {
-          await supabase.rpc('recalcular_estadisticas_reclutador', { 
-            p_user_id: reclutador.user_id 
-          });
-        } catch (error) {
-          console.error(`Error recalculando stats para ${reclutador.user_id}:`, error);
-        }
-      });
+      // Llamar a la función centralizada que calcula el ranking global para TODOS los reclutadores
+      const { data: ranking, error } = await supabase.rpc('get_reclutador_ranking');
       
-      await Promise.all(recalcularPromesas);
+      if (error) {
+        console.error("Error obteniendo ranking:", error);
+        return;
+      }
 
-      // Pequeña pausa para asegurar que la BD se actualice
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Obtener estadísticas ACTUALIZADAS de todos los reclutadores
-      const { data: estadisticas } = await supabase
-        .from("estadisticas_reclutador")
-        .select("user_id, vacantes_cerradas, promedio_dias_cierre");
-
-      if (!estadisticas) return;
-
-      // Combinar y calcular ranking_score usando la misma fórmula del modal
-      const rankings = reclutadores
-        .map(r => {
-          const stats = estadisticas.find(e => e.user_id === r.user_id);
-          const vacantesCerradas = stats?.vacantes_cerradas || 0;
-          const promedioDias = stats?.promedio_dias_cierre || 0;
-          
-          // Calcular ranking_score: (Vacantes Cerradas * 100) - (Promedio Días * 0.5)
-          let rankingScore = 0;
-          if (vacantesCerradas > 0) {
-            const puntosVacantes = vacantesCerradas * 100;
-            const penalizacionDias = promedioDias > 0 ? promedioDias * 0.5 : 0;
-            rankingScore = Math.max(0, puntosVacantes - penalizacionDias);
-          }
-          
-          return {
-            user_id: r.user_id,
-            vacantes_cerradas: vacantesCerradas,
-            promedio_dias_cierre: promedioDias,
-            ranking_score: rankingScore,
-          };
-        })
-        .sort((a, b) => {
-          // Ordenar por ranking_score (mayor es mejor)
-          const scoreA = a.ranking_score ?? 0;
-          const scoreB = b.ranking_score ?? 0;
-          return scoreB - scoreA;
-        });
-
-      // Encontrar posición del usuario actual
-      const position = rankings.findIndex(r => r.user_id === user.id);
-      if (position !== -1) {
-        setRankingPosition(position + 1); // +1 porque el índice empieza en 0
+      // Encontrar la posición del usuario actual en el ranking global
+      const userRanking = ranking?.find((r: any) => r.user_id === user.id);
+      if (userRanking) {
+        setRankingPosition(userRanking.posicion);
       }
     } catch (error) {
       console.error("Error loading ranking position:", error);

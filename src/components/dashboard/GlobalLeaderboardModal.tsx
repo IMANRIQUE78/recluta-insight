@@ -66,96 +66,48 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Obtener todos los perfiles de reclutadores
-      const { data: reclutadores, error: reclutadoresError } = await supabase
-        .from("perfil_reclutador")
-        .select("user_id, nombre_reclutador");
+      // Llamar a la función centralizada que calcula el ranking global para TODOS los reclutadores
+      const { data: ranking, error } = await supabase.rpc('get_reclutador_ranking');
 
-      if (reclutadoresError) {
-        console.error("Error fetching reclutadores:", reclutadoresError);
+      if (error) {
+        console.error("Error fetching ranking:", error);
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      if (!reclutadores || reclutadores.length === 0) {
-        console.log("No hay reclutadores registrados");
+      if (!ranking || ranking.length === 0) {
+        console.log("No hay reclutadores en el ranking");
         setLeaderboard([]);
         setLoading(false);
         return;
       }
 
-      // Recalcular estadísticas para todos los reclutadores
-      console.log("Recalculando estadísticas de", reclutadores.length, "reclutadores...");
-      const recalcularPromesas = reclutadores.map(async (reclutador) => {
-        try {
-          await supabase.rpc('recalcular_estadisticas_reclutador', { 
-            p_user_id: reclutador.user_id 
-          });
-        } catch (error) {
-          console.error(`Error recalculando stats para ${reclutador.user_id}:`, error);
-        }
-      });
-      
-      await Promise.all(recalcularPromesas);
-      console.log("Estadísticas recalculadas");
-
-      // Pequeña pausa para asegurar que la BD se actualice
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Obtener estadísticas ACTUALIZADAS de todos los reclutadores
-      const { data: estadisticas, error: estadisticasError } = await supabase
-        .from("estadisticas_reclutador")
-        .select("user_id, vacantes_cerradas, promedio_dias_cierre, ranking_score");
-
-      if (estadisticasError) {
-        console.error("Error fetching estadisticas:", estadisticasError);
-      }
-
-      console.log("Estadísticas obtenidas:", estadisticas);
-
-      const leaderboardData: LeaderboardEntry[] = reclutadores.map((reclutador: any) => {
-        const stats = estadisticas?.find(e => e.user_id === reclutador.user_id);
-        
-        // Formatear nombre
-        const nombreCompleto = reclutador.nombre_reclutador || "Reclutador";
-        let nombreFormateado = nombreCompleto;
-        if (reclutador.user_id !== user?.id) {
-          const parts = nombreCompleto.trim().split(' ');
+      // Construir el leaderboard con los datos ya ordenados de la función
+      const leaderboardData: LeaderboardEntry[] = ranking.map((entry: any) => {
+        // Formatear nombre - ocultar apellido para otros usuarios
+        let nombreFormateado = entry.nombre_reclutador || "Reclutador";
+        if (user && entry.user_id !== user.id) {
+          const parts = nombreFormateado.trim().split(' ');
           if (parts.length > 1) {
             nombreFormateado = `${parts[0]} ${parts[parts.length - 1].charAt(0)}.`;
           }
         }
         
-        const vacantesCerradas = stats?.vacantes_cerradas || 0;
-        const promedioDias = stats?.promedio_dias_cierre || 0;
-        
-        // Calcular ranking_score mejorado:
-        // Score = (Vacantes Cerradas * 100) - (Promedio Días * 0.5)
-        let rankingScore = 0;
-        if (vacantesCerradas > 0) {
-          const puntosVacantes = vacantesCerradas * 100;
-          const penalizacionDias = promedioDias > 0 ? promedioDias * 0.5 : 0;
-          rankingScore = Math.max(0, puntosVacantes - penalizacionDias);
-        }
-        
-        console.log(`Reclutador ${nombreFormateado}: ${vacantesCerradas} vacantes, ${promedioDias} días promedio, score: ${rankingScore}`);
-        
         return {
-          id: reclutador.user_id,
-          user_id: reclutador.user_id,
+          id: entry.user_id,
+          user_id: entry.user_id,
           nombre: nombreFormateado,
           pais: "México",
           empresa: "Independiente",
-          promedio_dias_cierre: promedioDias,
-          vacantes_cerradas: vacantesCerradas,
-          ranking_score: rankingScore > 0 ? rankingScore : null,
+          promedio_dias_cierre: entry.promedio_dias_cierre || 0,
+          vacantes_cerradas: entry.vacantes_cerradas || 0,
+          ranking_score: entry.ranking_score > 0 ? entry.ranking_score : null,
         };
       });
 
       console.log("Leaderboard data completo:", leaderboardData);
       setLeaderboard(leaderboardData);
-      sortLeaderboard(leaderboardData);
     } catch (error) {
       console.error("Error loading leaderboard:", error);
       setLeaderboard([]);
