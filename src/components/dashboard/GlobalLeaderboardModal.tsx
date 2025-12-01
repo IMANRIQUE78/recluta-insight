@@ -268,29 +268,31 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                   <TableHead className="w-[140px] font-bold">Posición</TableHead>
                   <TableHead className="w-[60px]">País</TableHead>
                   <TableHead className="font-bold">Reclutador</TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-right w-[150px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("vacantes_cerradas")}
                       className="w-full justify-end font-bold hover:bg-primary/10"
+                      title="Total de vacantes cerradas"
                     >
-                      Vacantes Cerradas
+                      Vacantes
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-right w-[150px]">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleSort("promedio_dias_cierre")}
                       className="w-full justify-end font-bold hover:bg-primary/10"
+                      title="Promedio de días para cerrar vacantes"
                     >
-                      Promedio Días
+                      Días Prom.
                       <ArrowUpDown className="ml-2 h-4 w-4" />
                     </Button>
                   </TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="text-right w-[150px]">
                      <Button
                        variant="ghost"
                        size="sm"
@@ -345,38 +347,53 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
                         </TableCell>
                         <TableCell className="text-right">
                           {entry.vacantes_cerradas > 0 ? (
-                            <span className="font-semibold text-lg">
-                              {entry.vacantes_cerradas}
-                            </span>
+                            <div className="flex flex-col items-end">
+                              <span className="font-bold text-lg text-foreground">
+                                {entry.vacantes_cerradas}
+                              </span>
+                              <span className="text-xs text-muted-foreground">cerradas</span>
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <div className="flex flex-col items-end">
+                              <span className="text-muted-foreground text-lg">0</span>
+                              <span className="text-xs text-muted-foreground">cerradas</span>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
                           {entry.promedio_dias_cierre > 0 ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <span className={`font-semibold ${
+                            <div className="flex flex-col items-end">
+                              <span className={`font-bold text-lg ${
                                 entry.promedio_dias_cierre <= 30 
                                   ? "text-success" 
                                   : entry.promedio_dias_cierre <= 45 
-                                  ? "text-chart-5" 
-                                  : "text-muted-foreground"
+                                  ? "text-warning" 
+                                  : "text-destructive"
                               }`}>
                                 {Math.round(entry.promedio_dias_cierre)}
                               </span>
                               <span className="text-xs text-muted-foreground">días</span>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <div className="flex flex-col items-end">
+                              <span className="text-muted-foreground text-lg">-</span>
+                              <span className="text-xs text-muted-foreground">sin datos</span>
+                            </div>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          {entry.ranking_score ? (
-                            <span className="font-bold text-primary text-lg">
-                              {Math.round(entry.ranking_score)}
-                            </span>
+                          {entry.ranking_score !== null && entry.ranking_score > 0 ? (
+                            <div className="flex flex-col items-end">
+                              <span className="font-bold text-primary text-xl">
+                                {entry.ranking_score.toFixed(2)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">productividad</span>
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <div className="flex flex-col items-end">
+                              <span className="text-muted-foreground text-xl">0.00</span>
+                              <span className="text-xs text-muted-foreground">sin actividad</span>
+                            </div>
                           )}
                         </TableCell>
                       </TableRow>
