@@ -52,8 +52,8 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
         throw new Error("No se encontró la empresa asociada. Por favor completa tu perfil de empresa primero.");
       }
 
-      // Buscar reclutador por código (normalizar: trim, lowercase, sin espacios)
-      const codigoNormalizado = codigoReclutador.trim().toLowerCase().replace(/\s+/g, '');
+      // Buscar reclutador por código (normalizar: trim, uppercase, sin espacios)
+      const codigoNormalizado = codigoReclutador.trim().toUpperCase().replace(/\s+/g, '');
       
       console.log("Código normalizado para búsqueda:", codigoNormalizado);
       
@@ -73,7 +73,7 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
       }
 
       if (!reclutador) {
-        throw new Error(`No se encontró un reclutador con el código "${codigoNormalizado}". Verifica que el código sea correcto (8 caracteres).`);
+        throw new Error(`No se encontró un reclutador con el código "${codigoNormalizado}". Verifica que el código sea correcto (formato: REC-XXXXXX).`);
       }
 
       console.log("Reclutador encontrado:", reclutador);
@@ -137,16 +137,16 @@ export const InvitarReclutadorDialog = ({ open, onOpenChange, onSuccess }: Invit
             <Label htmlFor="codigo">Código del Reclutador *</Label>
             <Input
               id="codigo"
-              placeholder="a3959259"
+              placeholder="REC-ABC123"
               value={codigoReclutador}
-              onChange={(e) => setCodigoReclutador(e.target.value.trim().toLowerCase().replace(/\s+/g, ''))}
+              onChange={(e) => setCodigoReclutador(e.target.value.trim().toUpperCase().replace(/\s+/g, ''))}
               required
               disabled={loading}
-              maxLength={8}
-              className="font-mono"
+              maxLength={10}
+              className="font-mono uppercase"
             />
             <p className="text-xs text-muted-foreground">
-              Ingresa el código único del reclutador (8 caracteres, sin espacios)
+              Ingresa el código único del reclutador (formato: REC-XXXXXX)
             </p>
           </div>
 
