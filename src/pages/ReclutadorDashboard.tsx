@@ -58,21 +58,30 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Recalcular estadísticas del usuario actual primero
-      await supabase.rpc('recalcular_estadisticas_reclutador', { 
-        p_user_id: user.id 
-      });
-
-      // Pequeña pausa para asegurar que la BD se actualice
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Obtener todos los reclutadores con sus estadísticas
+      // Obtener todos los reclutadores
       const { data: reclutadores } = await supabase
         .from("perfil_reclutador")
         .select("user_id");
 
       if (!reclutadores) return;
 
+      // Recalcular estadísticas de TODOS los reclutadores para tener ranking actualizado
+      const recalcularPromesas = reclutadores.map(async (reclutador) => {
+        try {
+          await supabase.rpc('recalcular_estadisticas_reclutador', { 
+            p_user_id: reclutador.user_id 
+          });
+        } catch (error) {
+          console.error(`Error recalculando stats para ${reclutador.user_id}:`, error);
+        }
+      });
+      
+      await Promise.all(recalcularPromesas);
+
+      // Pequeña pausa para asegurar que la BD se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Obtener estadísticas ACTUALIZADAS de todos los reclutadores
       const { data: estadisticas } = await supabase
         .from("estadisticas_reclutador")
         .select("user_id, vacantes_cerradas, promedio_dias_cierre");
