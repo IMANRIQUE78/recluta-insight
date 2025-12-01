@@ -86,11 +86,13 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         return;
       }
 
-      // Obtener vacantes de los últimos 28 días
+      // Obtener vacantes CERRADAS en los últimos 28 días (basado en fecha_cierre)
       const { data: vacantes, error: vacantesError } = await supabase
         .from('vacantes')
         .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud')
-        .gte('fecha_solicitud', fechaLimite);
+        .eq('estatus', 'cerrada')
+        .not('fecha_cierre', 'is', null)
+        .gte('fecha_cierre', fechaLimite);
 
       if (vacantesError) {
         console.error("Error cargando vacantes:", vacantesError);
@@ -100,19 +102,19 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
       }
 
       console.log(`📦 Reclutadores encontrados: ${perfiles?.length || 0}`);
-      console.log(`📋 Vacantes últimos 28 días: ${vacantes?.length || 0}`);
+      console.log(`📋 Vacantes cerradas últimos 28 días: ${vacantes?.length || 0}`);
 
       // Calcular estadísticas por reclutador
       const statsMap = new Map();
       
       perfiles?.forEach(perfil => {
         // IMPORTANTE: Filtrar por perfil.id, NO por user_id
+        // Ya solo tenemos vacantes cerradas con fecha_cierre
         const vacantesReclutador = vacantes?.filter((v: any) => v.reclutador_asignado_id === perfil.id) || [];
-        const cerradas = vacantesReclutador.filter((v: any) => v.estatus === 'cerrada' && v.fecha_cierre);
         
         let promedioDias = 0;
-        if (cerradas.length > 0) {
-          const totalDias = cerradas.reduce((sum, v: any) => {
+        if (vacantesReclutador.length > 0) {
+          const totalDias = vacantesReclutador.reduce((sum, v: any) => {
             if (v.fecha_cierre && v.fecha_solicitud) {
               const dias = Math.floor(
                 (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
@@ -121,15 +123,15 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
             }
             return sum;
           }, 0);
-          promedioDias = totalDias / cerradas.length;
+          promedioDias = totalDias / vacantesReclutador.length;
         }
         
-        console.log(`👤 ${perfil.nombre_reclutador}: ${cerradas.length} vacantes cerradas, ${Math.round(promedioDias)} días promedio`);
+        console.log(`👤 ${perfil.nombre_reclutador}: ${vacantesReclutador.length} vacantes cerradas, ${Math.round(promedioDias)} días promedio`);
         
         statsMap.set(perfil.user_id, {
           user_id: perfil.user_id,
           nombre_reclutador: perfil.nombre_reclutador,
-          vacantes_cerradas: cerradas.length,
+          vacantes_cerradas: vacantesReclutador.length,
           promedio_dias_cierre: promedioDias
         });
       });
