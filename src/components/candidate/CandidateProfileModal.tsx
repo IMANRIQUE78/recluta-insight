@@ -112,6 +112,8 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   const [loading, setLoading] = useState(false);
   const [porcentajeLlenado, setPorcentajeLlenado] = useState(0);
   
+  const [codigoCandidato, setCodigoCandidato] = useState<string>("");
+  
   const [formData, setFormData] = useState({
     nombre_completo: "",
     email: "",
@@ -167,6 +169,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
       .maybeSingle();
 
     if (data) {
+      setCodigoCandidato((data as any).codigo_candidato || "");
       setFormData({
         nombre_completo: data.nombre_completo || "",
         email: data.email || session.user.email || "",
@@ -282,10 +285,20 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl">Mi Perfil de Candidato</DialogTitle>
-          <DialogDescription>
-            No usamos documentos por cuestiones de espacio y eficiencia. El reclutador puede descargar tu perfil como PDF. No es necesario subir ningún documento.
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-2xl">Mi Perfil de Candidato</DialogTitle>
+              <DialogDescription>
+                No usamos documentos por cuestiones de espacio y eficiencia. El reclutador puede descargar tu perfil como PDF.
+              </DialogDescription>
+            </div>
+            {codigoCandidato && (
+              <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+                <span className="text-xs text-muted-foreground">Código único:</span>
+                <span className="font-mono font-bold text-primary">{codigoCandidato}</span>
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Progress Bar */}

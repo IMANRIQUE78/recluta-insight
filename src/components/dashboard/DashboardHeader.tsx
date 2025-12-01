@@ -67,12 +67,16 @@ export const DashboardHeader = ({
     if (userRole?.empresa_id) {
       const { data: empresa } = await supabase
         .from("empresas")
-        .select("nombre_empresa")
+        .select("nombre_empresa, codigo_empresa")
         .eq("id", userRole.empresa_id)
         .single();
 
       if (empresa) {
-        setPerfil({ nombre_empresa: empresa.nombre_empresa, nombre_usuario: user.email?.split('@')[0] });
+        setPerfil({ 
+          nombre_empresa: empresa.nombre_empresa, 
+          nombre_usuario: user.email?.split('@')[0],
+          codigo_empresa: empresa.codigo_empresa 
+        });
       }
     }
   };
@@ -97,9 +101,16 @@ export const DashboardHeader = ({
               <div className="flex items-center gap-3">
                 <img src={vvgiLogo} alt="VVGI" className="h-10 w-10 object-contain" />
                 <div>
-                  <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    VVGI
-                  </h1>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+                      VVGI
+                    </h1>
+                    {perfil?.codigo_empresa && (
+                      <span className="font-mono text-xs bg-primary/10 px-2 py-1 rounded text-primary">
+                        {perfil.codigo_empresa}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {perfil?.nombre_usuario && perfil?.nombre_empresa
                       ? `Centro de trabajo de ${perfil.nombre_usuario} de ${perfil.nombre_empresa}`

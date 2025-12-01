@@ -18,6 +18,7 @@ export default function CandidateDashboard() {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [userName, setUserName] = useState("");
+  const [codigoCandidato, setCodigoCandidato] = useState("");
   const scrollDirection = useScrollDirection();
   useEffect(() => {
     checkAuth();
@@ -36,10 +37,11 @@ export default function CandidateDashboard() {
     // Verificar si tiene perfil de candidato
     const {
       data: profile
-    } = await supabase.from("perfil_candidato").select("nombre_completo").eq("user_id", session.user.id).maybeSingle();
+    } = await supabase.from("perfil_candidato").select("nombre_completo, codigo_candidato").eq("user_id", session.user.id).maybeSingle();
     if (profile) {
       setHasProfile(true);
       setUserName(profile.nombre_completo);
+      setCodigoCandidato((profile as any).codigo_candidato || "");
     } else {
       setProfileModalOpen(true); // Abrir modal si no tiene perfil
     }
@@ -61,7 +63,14 @@ export default function CandidateDashboard() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-left">Dashboard de Candidato</h1>
-            {hasProfile && <p className="text-muted-foreground">Bienvenido, {userName}</p>}
+            {hasProfile && (
+              <div className="flex items-center gap-3">
+                <p className="text-muted-foreground">Bienvenido, {userName}</p>
+                {codigoCandidato && (
+                  <span className="font-mono text-xs bg-primary/10 px-2 py-1 rounded text-primary">{codigoCandidato}</span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setProfileModalOpen(true)}>
