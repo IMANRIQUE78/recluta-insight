@@ -58,6 +58,14 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Recalcular estadísticas del usuario actual primero
+      await supabase.rpc('recalcular_estadisticas_reclutador', { 
+        p_user_id: user.id 
+      });
+
+      // Pequeña pausa para asegurar que la BD se actualice
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Obtener todos los reclutadores con sus estadísticas
       const { data: reclutadores } = await supabase
         .from("perfil_reclutador")
@@ -71,25 +79,33 @@ const ReclutadorDashboard = () => {
 
       if (!estadisticas) return;
 
-      // Combinar y ordenar por vacantes cerradas (descendente)
+      // Combinar y calcular ranking_score usando la misma fórmula del modal
       const rankings = reclutadores
         .map(r => {
           const stats = estadisticas.find(e => e.user_id === r.user_id);
+          const vacantesCerradas = stats?.vacantes_cerradas || 0;
+          const promedioDias = stats?.promedio_dias_cierre || 0;
+          
+          // Calcular ranking_score: (Vacantes Cerradas * 100) - (Promedio Días * 0.5)
+          let rankingScore = 0;
+          if (vacantesCerradas > 0) {
+            const puntosVacantes = vacantesCerradas * 100;
+            const penalizacionDias = promedioDias > 0 ? promedioDias * 0.5 : 0;
+            rankingScore = Math.max(0, puntosVacantes - penalizacionDias);
+          }
+          
           return {
             user_id: r.user_id,
-            vacantes_cerradas: stats?.vacantes_cerradas || 0,
-            promedio_dias_cierre: stats?.promedio_dias_cierre || 0,
+            vacantes_cerradas: vacantesCerradas,
+            promedio_dias_cierre: promedioDias,
+            ranking_score: rankingScore,
           };
         })
         .sort((a, b) => {
-          // Ordenar por vacantes cerradas descendente
-          const diff = b.vacantes_cerradas - a.vacantes_cerradas;
-          if (diff !== 0) return diff;
-          // En caso de empate, ordenar por promedio de días (menor es mejor)
-          if (a.promedio_dias_cierre === 0 && b.promedio_dias_cierre === 0) return 0;
-          if (a.promedio_dias_cierre === 0) return 1;
-          if (b.promedio_dias_cierre === 0) return -1;
-          return a.promedio_dias_cierre - b.promedio_dias_cierre;
+          // Ordenar por ranking_score (mayor es mejor)
+          const scoreA = a.ranking_score ?? 0;
+          const scoreB = b.ranking_score ?? 0;
+          return scoreB - scoreA;
         });
 
       // Encontrar posición del usuario actual
