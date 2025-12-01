@@ -143,7 +143,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
 
-      // Obtener empresa_id del usuario
+      // Obtener empresa_id del usuario - ES OBLIGATORIO
       const { data: userRoles } = await supabase
         .from("user_roles")
         .select("empresa_id")
@@ -151,9 +151,14 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
         .eq("role", "admin_empresa")
         .maybeSingle();
 
+      // Validar que el usuario tenga una empresa asociada
+      if (!userRoles?.empresa_id) {
+        throw new Error("No tienes una empresa asociada. Debes completar el registro de empresa antes de crear vacantes.");
+      }
+
       const fechaSolicitud = new Date().toISOString().split('T')[0];
 
-      // Insertar vacante
+      // Insertar vacante - empresa_id es OBLIGATORIO
       const { data: vacanteData, error: vacanteError } = await supabase
         .from("vacantes")
         .insert([{
@@ -170,7 +175,7 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
           perfil_requerido: values.perfil_requerido,
           observaciones: values.observaciones || null,
           user_id: user.id,
-          empresa_id: userRoles?.empresa_id || null,
+          empresa_id: userRoles.empresa_id, // Siempre obligatorio
           folio: "", // El trigger lo generará
         }])
         .select()
