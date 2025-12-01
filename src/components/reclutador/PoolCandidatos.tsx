@@ -60,7 +60,17 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
       // 1. Asociación activa con alguna empresa
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
-        .select("*")
+        .select(`
+          *,
+          empresas:empresa_id (
+            id,
+            nombre_empresa,
+            suscripcion_empresa (
+              plan,
+              activa
+            )
+          )
+        `)
         .eq("reclutador_id", reclutadorId)
         .eq("estado", "activa");
 
@@ -71,21 +81,40 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
         return;
       }
 
-      // 2. Vacante asignada y abierta
-      const { data: vacantes } = await supabase
-        .from("vacantes")
-        .select("*")
-        .eq("reclutador_asignado_id", reclutadorId)
-        .eq("estatus", "abierta");
+      // 2. Verificar que al menos una empresa tenga plan premium (enterprise)
+      const empresasConPremium = asociaciones.filter((asoc: any) => {
+        const empresa = asoc.empresas;
+        return empresa?.suscripcion_empresa?.some(
+          (sub: any) => sub.plan === 'enterprise' && sub.activa
+        );
+      });
 
-      if (!vacantes || vacantes.length === 0) {
+      if (empresasConPremium.length === 0) {
         setHasAccess(false);
-        setAccessReason("No tienes vacantes asignadas y abiertas");
+        setAccessReason("Las empresas asociadas no tienen plan premium activo");
         setLoading(false);
         return;
       }
 
-      // Si pasa las verificaciones, tiene acceso
+      // Obtener IDs de empresas con premium
+      const empresasConPremiumIds = empresasConPremium.map((asoc: any) => asoc.empresa_id);
+
+      // 3. Verificar que tenga vacantes asignadas y abiertas de alguna empresa con premium
+      const { data: vacantes } = await supabase
+        .from("vacantes")
+        .select("*")
+        .eq("reclutador_asignado_id", reclutadorId)
+        .eq("estatus", "abierta")
+        .in("empresa_id", empresasConPremiumIds);
+
+      if (!vacantes || vacantes.length === 0) {
+        setHasAccess(false);
+        setAccessReason("No tienes vacantes asignadas y abiertas de empresas con plan premium");
+        setLoading(false);
+        return;
+      }
+
+      // Si pasa todas las verificaciones, tiene acceso
       setHasAccess(true);
       await loadCandidatos();
     } catch (error: any) {
@@ -231,11 +260,11 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                 Para acceder al pool de candidatos necesitas:
               </p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-muted-foreground">
-                <li>Tener una asociación activa con una empresa</li>
-                <li>Tener al menos una vacante asignada y abierta</li>
+                <li>Tener una asociación activa con una empresa con plan premium</li>
+                <li>Tener al menos una vacante asignada y abierta de esa empresa</li>
               </ul>
               <p className="text-sm text-muted-foreground mt-3">
-                En el futuro, también podrás acceder con un plan de suscripción premium.
+                Actualmente todas las empresas registradas tienen plan premium activo.
               </p>
             </AlertDescription>
           </Alert>
