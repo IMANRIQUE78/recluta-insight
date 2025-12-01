@@ -85,9 +85,9 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         return;
       }
 
-      // Recalcular estadísticas para todos los reclutadores antes de mostrar el ranking
-      console.log("Recalculando estadísticas de reclutadores...");
-      for (const reclutador of reclutadores) {
+      // Recalcular estadísticas para todos los reclutadores
+      console.log("Recalculando estadísticas de", reclutadores.length, "reclutadores...");
+      const recalcularPromesas = reclutadores.map(async (reclutador) => {
         try {
           await supabase.rpc('recalcular_estadisticas_reclutador', { 
             p_user_id: reclutador.user_id 
@@ -95,9 +95,15 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         } catch (error) {
           console.error(`Error recalculando stats para ${reclutador.user_id}:`, error);
         }
-      }
+      });
+      
+      await Promise.all(recalcularPromesas);
+      console.log("Estadísticas recalculadas");
 
-      // Obtener estadísticas actualizadas de todos los reclutadores
+      // Pequeña pausa para asegurar que la BD se actualice
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Obtener estadísticas ACTUALIZADAS de todos los reclutadores
       const { data: estadisticas, error: estadisticasError } = await supabase
         .from("estadisticas_reclutador")
         .select("user_id, vacantes_cerradas, promedio_dias_cierre, ranking_score");
@@ -106,25 +112,10 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         console.error("Error fetching estadisticas:", estadisticasError);
       }
 
-      // Obtener asociaciones para determinar empresa
-      const { data: asociaciones } = await supabase
-        .from("reclutador_empresa")
-        .select(`
-          reclutador_id,
-          estado,
-          empresas (nombre_empresa)
-        `)
-        .eq("estado", "activa")
-        .eq("es_asociacion_activa", true);
+      console.log("Estadísticas obtenidas:", estadisticas);
 
       const leaderboardData: LeaderboardEntry[] = reclutadores.map((reclutador: any) => {
         const stats = estadisticas?.find(e => e.user_id === reclutador.user_id);
-        
-        // Encontrar empresa activa
-        const asociacion = asociaciones?.find((a: any) => {
-          // Necesitamos encontrar el perfil_reclutador.id para este user_id
-          return reclutadores.find(r => r.user_id === reclutador.user_id);
-        });
         
         // Formatear nombre
         const nombreCompleto = reclutador.nombre_reclutador || "Reclutador";
@@ -141,13 +132,14 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         
         // Calcular ranking_score mejorado:
         // Score = (Vacantes Cerradas * 100) - (Promedio Días * 0.5)
-        // Esto premia las vacantes cerradas y penaliza los días de cierre altos
         let rankingScore = 0;
         if (vacantesCerradas > 0) {
           const puntosVacantes = vacantesCerradas * 100;
           const penalizacionDias = promedioDias > 0 ? promedioDias * 0.5 : 0;
           rankingScore = Math.max(0, puntosVacantes - penalizacionDias);
         }
+        
+        console.log(`Reclutador ${nombreFormateado}: ${vacantesCerradas} vacantes, ${promedioDias} días promedio, score: ${rankingScore}`);
         
         return {
           id: reclutador.user_id,
@@ -161,7 +153,7 @@ export const GlobalLeaderboardModal = ({ open, onOpenChange }: GlobalLeaderboard
         };
       });
 
-      console.log("Total reclutadores:", leaderboardData.length);
+      console.log("Leaderboard data completo:", leaderboardData);
       setLeaderboard(leaderboardData);
       sortLeaderboard(leaderboardData);
     } catch (error) {
