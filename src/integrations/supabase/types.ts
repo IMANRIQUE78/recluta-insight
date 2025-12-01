@@ -428,6 +428,7 @@ export type Database = {
         Row: {
           carrera: string | null
           certificaciones: Json | null
+          codigo_candidato: string | null
           created_at: string
           disponibilidad: string | null
           educacion: Json | null
@@ -457,6 +458,7 @@ export type Database = {
         Insert: {
           carrera?: string | null
           certificaciones?: Json | null
+          codigo_candidato?: string | null
           created_at?: string
           disponibilidad?: string | null
           educacion?: Json | null
@@ -486,6 +488,7 @@ export type Database = {
         Update: {
           carrera?: string | null
           certificaciones?: Json | null
+          codigo_candidato?: string | null
           created_at?: string
           disponibilidad?: string | null
           educacion?: Json | null
@@ -1050,6 +1053,7 @@ export type Database = {
         Returns: string
       }
       encrypt_sensitive_data: { Args: { data: string }; Returns: string }
+      generate_unique_code: { Args: { prefix: string }; Returns: string }
       get_empresa_decrypted: {
         Args: { empresa_id: string }
         Returns: {
