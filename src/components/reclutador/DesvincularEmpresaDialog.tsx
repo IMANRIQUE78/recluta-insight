@@ -37,7 +37,15 @@ export const DesvincularEmpresaDialog = ({
 
   useEffect(() => {
     if (open && asociacionId) {
+      // Reset states when dialog opens or asociacionId changes
+      setChecking(true);
+      setVacantesAsignadas(0);
+      setCanDesvincular(false);
       checkVacantesAsignadas();
+    } else if (!open) {
+      // Reset states when dialog closes
+      setVacantesAsignadas(0);
+      setCanDesvincular(false);
     }
   }, [open, asociacionId]);
 
