@@ -69,11 +69,13 @@ const ReclutadorDashboard = () => {
         .from('perfil_reclutador')
         .select('id, user_id, nombre_reclutador');
 
-      // Obtener vacantes de los últimos 28 días
+      // Obtener vacantes CERRADAS en los últimos 28 días (basado en fecha_cierre)
       const { data: vacantes } = await supabase
         .from('vacantes')
         .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud')
-        .gte('fecha_solicitud', fechaLimite);
+        .eq('estatus', 'cerrada')
+        .not('fecha_cierre', 'is', null)
+        .gte('fecha_cierre', fechaLimite);
 
       if (!perfiles || !vacantes) return;
 
@@ -82,12 +84,12 @@ const ReclutadorDashboard = () => {
       
       perfiles.forEach(perfil => {
         // Filtrar por perfil.id, NO por user_id
+        // Ya solo tenemos vacantes cerradas con fecha_cierre
         const vacantesReclutador = vacantes.filter(v => v.reclutador_asignado_id === perfil.id);
-        const cerradas = vacantesReclutador.filter(v => v.estatus === 'cerrada' && v.fecha_cierre);
         
         let promedioDias = 0;
-        if (cerradas.length > 0) {
-          const totalDias = cerradas.reduce((sum, v) => {
+        if (vacantesReclutador.length > 0) {
+          const totalDias = vacantesReclutador.reduce((sum, v) => {
             if (v.fecha_cierre && v.fecha_solicitud) {
               const dias = Math.floor(
                 (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
@@ -96,13 +98,13 @@ const ReclutadorDashboard = () => {
             }
             return sum;
           }, 0);
-          promedioDias = totalDias / cerradas.length;
+          promedioDias = totalDias / vacantesReclutador.length;
         }
         
         statsMap.set(perfil.user_id, {
           user_id: perfil.user_id,
           nombre_reclutador: perfil.nombre_reclutador,
-          vacantes_cerradas: cerradas.length,
+          vacantes_cerradas: vacantesReclutador.length,
           promedio_dias_cierre: promedioDias
         });
       });
