@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
+import { VacantesGestionCard } from "@/components/reclutador/VacantesGestionCard";
 import { EntrevistasCalendarioCard } from "@/components/reclutador/EntrevistasCalendarioCard";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
@@ -602,19 +602,14 @@ const ReclutadorDashboard = () => {
           </div>
         </section>
 
-        {/* Gestión de Vacantes y Entrevistas - Layout optimizado para desktop */}
+        {/* Gestión de Vacantes - Sección Principal */}
         <section className="space-y-3 sm:space-y-4">
-          <h2 className="text-base sm:text-xl font-bold">Mi Trabajo</h2>
-          <div className="grid gap-4 lg:grid-cols-5">
-            {/* Vacantes - 2 columnas en desktop */}
-            <div className="lg:col-span-2">
-              <VacantesAsignadasCard reclutadorId={perfilReclutador?.id} />
-            </div>
-            {/* Calendario de Entrevistas - 3 columnas en desktop */}
-            <div className="lg:col-span-3">
-              <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
-            </div>
-          </div>
+          <VacantesGestionCard reclutadorId={perfilReclutador?.id} />
+        </section>
+
+        {/* Calendario de Entrevistas - Espacio completo */}
+        <section className="space-y-3 sm:space-y-4">
+          <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
         </section>
 
         {/* Estadísticas Rápidas */}
