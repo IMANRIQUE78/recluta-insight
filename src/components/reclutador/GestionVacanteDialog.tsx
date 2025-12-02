@@ -9,9 +9,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Upload, Users, Calendar, Share2, Copy, Check } from "lucide-react";
+import { FileText, Upload, Users, Calendar, Share2, Copy, Check, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { PostulacionesVacanteTab } from "./PostulacionesVacanteTab";
 
 interface GestionVacanteDialogProps {
@@ -36,6 +37,10 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
   const [lugarTrabajo, setLugarTrabajo] = useState<"remoto" | "hibrido" | "presencial">("presencial");
   const [mostrarEmpresa, setMostrarEmpresa] = useState(true);
   const [copiedLink, setCopiedLink] = useState(false);
+  
+  // Solicitud de cierre
+  const [showCierreForm, setShowCierreForm] = useState(false);
+  const [motivoCierre, setMotivoCierre] = useState("");
 
   useEffect(() => {
     if (open && vacante) {
@@ -185,6 +190,48 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
         description: "No se pudo copiar el enlace",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSolicitarCierre = async () => {
+    if (!motivoCierre.trim()) {
+      toast({
+        title: "Error",
+        description: "Debes indicar el motivo de la solicitud de cierre",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("vacantes")
+        .update({
+          solicitud_cierre: true,
+          motivo_solicitud_cierre: motivoCierre,
+          fecha_solicitud_cierre: new Date().toISOString(),
+        })
+        .eq("id", vacante.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "✅ Solicitud enviada",
+        description: "La empresa ha sido notificada de tu solicitud de cierre. Solo ellos pueden cambiar el estatus de la requisición.",
+      });
+
+      setShowCierreForm(false);
+      setMotivoCierre("");
+      onSuccess();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -360,6 +407,82 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
                   onCheckedChange={setMostrarEmpresa}
                 />
               </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            {/* Sección de Solicitud de Cierre */}
+            <div className="space-y-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Gestión del Estatus de Vacante
+              </h3>
+              
+              {vacante.solicitud_cierre ? (
+                <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                  <CheckCircle2 className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-200">Solicitud de cierre enviada</AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-300">
+                    Has solicitado el cierre de esta vacante el {vacante.fecha_solicitud_cierre ? new Date(vacante.fecha_solicitud_cierre).toLocaleDateString() : "recientemente"}.
+                    <br />
+                    <span className="font-medium">Motivo:</span> {vacante.motivo_solicitud_cierre || "No especificado"}
+                    <br />
+                    <span className="text-xs mt-2 block">La empresa debe aprobar y cerrar la requisición.</span>
+                  </AlertDescription>
+                </Alert>
+              ) : showCierreForm ? (
+                <div className="p-4 border rounded-lg space-y-3 bg-muted/50">
+                  <Label htmlFor="motivoCierre">Motivo de solicitud de cierre *</Label>
+                  <Select value={motivoCierre} onValueChange={setMotivoCierre}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecciona el motivo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Candidato seleccionado y contratado">Candidato seleccionado y contratado</SelectItem>
+                      <SelectItem value="Candidato en proceso de contratación">Candidato en proceso de contratación</SelectItem>
+                      <SelectItem value="Sin candidatos viables">Sin candidatos viables</SelectItem>
+                      <SelectItem value="Vacante cancelada por la empresa">Vacante cancelada por la empresa</SelectItem>
+                      <SelectItem value="Otro motivo">Otro motivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Al solicitar el cierre, la empresa será notificada y solo ella puede cambiar el estatus de la requisición.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        setShowCierreForm(false);
+                        setMotivoCierre("");
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={handleSolicitarCierre} 
+                      disabled={isSubmitting || !motivoCierre}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      {isSubmitting ? "Enviando..." : "Enviar Solicitud"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCierreForm(true)}
+                  className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950"
+                >
+                  <AlertTriangle className="mr-2 h-4 w-4" />
+                  Solicitar Cierre de Vacante
+                </Button>
+              )}
+              
+              <p className="text-xs text-muted-foreground">
+                Nota: Solo la empresa puede cerrar o cancelar la requisición. Como reclutador, puedes solicitar el cierre cuando hayas concluido el proceso.
+              </p>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">

@@ -957,14 +957,17 @@ export type Database = {
           estatus: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre: string | null
           fecha_solicitud: string
+          fecha_solicitud_cierre: string | null
           folio: string
           id: string
           lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo: Database["public"]["Enums"]["motivo_vacante"]
+          motivo_solicitud_cierre: string | null
           observaciones: string | null
           perfil_requerido: string | null
           reclutador_asignado_id: string | null
           reclutador_id: string | null
+          solicitud_cierre: boolean | null
           sueldo_bruto_aprobado: number | null
           titulo_puesto: string
           updated_at: string
@@ -978,14 +981,17 @@ export type Database = {
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre?: string | null
           fecha_solicitud: string
+          fecha_solicitud_cierre?: string | null
           folio: string
           id?: string
           lugar_trabajo: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo: Database["public"]["Enums"]["motivo_vacante"]
+          motivo_solicitud_cierre?: string | null
           observaciones?: string | null
           perfil_requerido?: string | null
           reclutador_asignado_id?: string | null
           reclutador_id?: string | null
+          solicitud_cierre?: boolean | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto: string
           updated_at?: string
@@ -999,14 +1005,17 @@ export type Database = {
           estatus?: Database["public"]["Enums"]["estatus_vacante"]
           fecha_cierre?: string | null
           fecha_solicitud?: string
+          fecha_solicitud_cierre?: string | null
           folio?: string
           id?: string
           lugar_trabajo?: Database["public"]["Enums"]["modalidad_trabajo"]
           motivo?: Database["public"]["Enums"]["motivo_vacante"]
+          motivo_solicitud_cierre?: string | null
           observaciones?: string | null
           perfil_requerido?: string | null
           reclutador_asignado_id?: string | null
           reclutador_id?: string | null
+          solicitud_cierre?: boolean | null
           sueldo_bruto_aprobado?: number | null
           titulo_puesto?: string
           updated_at?: string

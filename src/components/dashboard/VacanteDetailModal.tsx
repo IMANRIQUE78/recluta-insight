@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Users, Calendar } from "lucide-react";
+import { Loader2, Lock, Users, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface VacanteDetailModalProps {
@@ -267,9 +268,13 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         observaciones: formData.observaciones || null,
       };
 
-      // Si está cambiando a cerrada o cancelada, establecer fecha_cierre
+      // Si está cambiando a cerrada o cancelada, establecer fecha_cierre y limpiar solicitud
       if ((formData.estatus === "cerrada" || formData.estatus === "cancelada") && !formData.fecha_cierre) {
         updateData.fecha_cierre = new Date().toISOString().split('T')[0];
+        // Limpiar la solicitud de cierre ya que fue procesada
+        updateData.solicitud_cierre = false;
+        updateData.motivo_solicitud_cierre = null;
+        updateData.fecha_solicitud_cierre = null;
       }
 
       const { error } = await supabase
@@ -360,6 +365,25 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
               Esta vacante ha sido {vacante?.estatus === "cerrada" ? "cerrada" : "cancelada"} y ya no puede modificarse ni está visible en el marketplace.
             </p>
           </div>
+        )}
+
+        {/* Alerta de solicitud de cierre del reclutador */}
+        {vacante?.solicitud_cierre && !isLocked && (
+          <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-700">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200 flex items-center gap-2">
+              Solicitud de Cierre Pendiente
+            </AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300">
+              El reclutador asignado ha solicitado cerrar esta vacante.
+              <br />
+              <span className="font-medium">Motivo:</span> {vacante?.motivo_solicitud_cierre || "No especificado"}
+              <br />
+              <span className="font-medium">Fecha:</span> {vacante?.fecha_solicitud_cierre ? new Date(vacante.fecha_solicitud_cierre).toLocaleDateString() : "Reciente"}
+              <br />
+              <span className="text-xs mt-2 block">Para cerrar la vacante, cambia el estatus a "Cerrada" en el formulario de abajo.</span>
+            </AlertDescription>
+          </Alert>
         )}
 
         {/* Métricas de la vacante */}

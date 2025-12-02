@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AlertTriangle } from "lucide-react";
 
 interface VacantesTableProps {
   onSelectVacante: (vacante: any) => void;
@@ -256,9 +257,16 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                     </TableCell>
                     <TableCell>{formatDate(vacante.fecha_solicitud)}</TableCell>
                     <TableCell>
-                      <Badge className={getEstatusColor(vacante.estatus)}>
-                        {getEstatusLabel(vacante.estatus)}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getEstatusColor(vacante.estatus)}>
+                          {getEstatusLabel(vacante.estatus)}
+                        </Badge>
+                        {vacante.solicitud_cierre && vacante.estatus === "abierta" && (
+                          <span title="Solicitud de cierre pendiente" className="text-amber-600">
+                            <AlertTriangle className="h-4 w-4" />
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       {vacante.perfil_reclutador?.nombre_reclutador ? (
