@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesAsignadasCard } from "@/components/reclutador/VacantesAsignadasCard";
-import { EntrevistasReclutadorCard } from "@/components/reclutador/EntrevistasReclutadorCard";
+import { EntrevistasCalendarioCard } from "@/components/reclutador/EntrevistasCalendarioCard";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
 import { VacantesPublicadasCard } from "@/components/reclutador/VacantesPublicadasCard";
 import { PostulacionesRecibidas } from "@/components/dashboard/PostulacionesRecibidas";
@@ -602,12 +602,18 @@ const ReclutadorDashboard = () => {
           </div>
         </section>
 
-        {/* Gestión de Vacantes y Entrevistas */}
+        {/* Gestión de Vacantes y Entrevistas - Layout optimizado para desktop */}
         <section className="space-y-3 sm:space-y-4">
           <h2 className="text-base sm:text-xl font-bold">Mi Trabajo</h2>
-          <div className="grid gap-3 sm:gap-4 lg:grid-cols-2">
-            <VacantesAsignadasCard reclutadorId={perfilReclutador?.id} />
-            <EntrevistasReclutadorCard reclutadorUserId={perfilReclutador?.user_id} />
+          <div className="grid gap-4 lg:grid-cols-5">
+            {/* Vacantes - 2 columnas en desktop */}
+            <div className="lg:col-span-2">
+              <VacantesAsignadasCard reclutadorId={perfilReclutador?.id} />
+            </div>
+            {/* Calendario de Entrevistas - 3 columnas en desktop */}
+            <div className="lg:col-span-3">
+              <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
+            </div>
           </div>
         </section>
 
