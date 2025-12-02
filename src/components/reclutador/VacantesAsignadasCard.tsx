@@ -136,6 +136,22 @@ export const VacantesAsignadasCard = ({ reclutadorId }: VacantesAsignadasCardPro
             <div className="space-y-3 max-h-[400px] overflow-y-auto">
               {vacantesAsignadas.map((vacante: any) => (
                 <div key={vacante.id} className="p-3 border rounded-lg space-y-2">
+                  {/* Folio prominente para trazabilidad */}
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="font-mono text-xs bg-primary/10">
+                      {vacante.folio}
+                    </Badge>
+                    <div className="flex items-center gap-1">
+                      {vacante.solicitud_cierre && (
+                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                          Cierre solicitado
+                        </Badge>
+                      )}
+                      <Badge variant={vacante.publicada ? "default" : "secondary"}>
+                        {vacante.publicada ? "Publicada" : "Por publicar"}
+                      </Badge>
+                    </div>
+                  </div>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-semibold">{vacante.titulo_puesto}</p>
@@ -143,9 +159,6 @@ export const VacantesAsignadasCard = ({ reclutadorId }: VacantesAsignadasCardPro
                         {vacante.empresas?.nombre_empresa || `${vacante.clientes_areas?.cliente_nombre} - ${vacante.clientes_areas?.area}`}
                       </p>
                     </div>
-                    <Badge variant={vacante.publicada ? "default" : "secondary"}>
-                      {vacante.publicada ? "Publicada" : "Por publicar"}
-                    </Badge>
                   </div>
                   <Separator />
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
