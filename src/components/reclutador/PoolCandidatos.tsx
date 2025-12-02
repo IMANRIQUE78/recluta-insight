@@ -82,12 +82,22 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
       }
 
       // 2. Verificar que al menos una empresa tenga plan premium (enterprise)
+      // suscripcion_empresa es relación 1:1, puede ser objeto o array según Supabase
       const empresasConPremium = asociaciones.filter((asoc: any) => {
         const empresa = asoc.empresas;
-        return empresa?.suscripcion_empresa?.some(
-          (sub: any) => sub.plan === 'enterprise' && sub.activa
-        );
+        const suscripcion = empresa?.suscripcion_empresa;
+        
+        // Manejar tanto array como objeto
+        if (Array.isArray(suscripcion)) {
+          return suscripcion.some((sub: any) => sub.plan === 'enterprise' && sub.activa);
+        } else if (suscripcion) {
+          return suscripcion.plan === 'enterprise' && suscripcion.activa;
+        }
+        return false;
       });
+
+      console.log("Asociaciones:", asociaciones);
+      console.log("Empresas con premium:", empresasConPremium);
 
       if (empresasConPremium.length === 0) {
         setHasAccess(false);
