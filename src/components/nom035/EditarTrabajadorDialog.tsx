@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -19,18 +19,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock } from "lucide-react";
+import { differenceInMonths, differenceInYears, format, parseISO } from "date-fns";
 
 interface Trabajador {
   id: string;
   codigo_trabajador: string;
   nombre_completo: string;
+  email: string | null;
+  telefono: string | null;
   puesto: string;
   area: string;
   centro_trabajo: string;
   antiguedad_meses: number;
   tipo_jornada: string;
   modalidad_contratacion: string;
+  fecha_ingreso?: string | null;
 }
 
 interface EditarTrabajadorDialogProps {
@@ -49,31 +53,58 @@ export const EditarTrabajadorDialog = ({
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     nombre_completo: "",
+    email: "",
+    telefono: "",
     puesto: "",
     area: "",
     centro_trabajo: "",
-    antiguedad_anos: 0,
-    antiguedad_meses: 0,
+    fecha_ingreso: "",
     tipo_jornada: "completa",
     modalidad_contratacion: "indefinido",
   });
 
   useEffect(() => {
     if (trabajador) {
-      const years = Math.floor(trabajador.antiguedad_meses / 12);
-      const months = trabajador.antiguedad_meses % 12;
       setFormData({
         nombre_completo: trabajador.nombre_completo,
+        email: trabajador.email || "",
+        telefono: trabajador.telefono || "",
         puesto: trabajador.puesto,
         area: trabajador.area,
         centro_trabajo: trabajador.centro_trabajo,
-        antiguedad_anos: years,
-        antiguedad_meses: months,
+        fecha_ingreso: trabajador.fecha_ingreso || "",
         tipo_jornada: trabajador.tipo_jornada,
         modalidad_contratacion: trabajador.modalidad_contratacion,
       });
     }
   }, [trabajador]);
+
+  // Calcular antigüedad automáticamente
+  const antiguedadCalculada = useMemo(() => {
+    if (!formData.fecha_ingreso) return null;
+    
+    try {
+      const fechaIngreso = parseISO(formData.fecha_ingreso);
+      const hoy = new Date();
+      
+      if (fechaIngreso > hoy) return null;
+      
+      const anos = differenceInYears(hoy, fechaIngreso);
+      const mesesTotales = differenceInMonths(hoy, fechaIngreso);
+      const mesesRestantes = mesesTotales % 12;
+      
+      return {
+        anos,
+        meses: mesesRestantes,
+        totalMeses: mesesTotales,
+        texto: anos > 0 
+          ? `${anos} año${anos !== 1 ? 's' : ''} y ${mesesRestantes} mes${mesesRestantes !== 1 ? 'es' : ''}`
+          : `${mesesRestantes} mes${mesesRestantes !== 1 ? 'es' : ''}`
+      };
+    } catch {
+      return null;
+    }
+  }, [formData.fecha_ingreso]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,21 +126,43 @@ export const EditarTrabajadorDialog = ({
       return;
     }
 
+    // Validación de email si se proporciona
+    if (formData.email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast.error("El formato del correo electrónico no es válido");
+        return;
+      }
+    }
+
+    // Validación de teléfono si se proporciona
+    const telefonoLimpio = formData.telefono.replace(/\D/g, '');
+    if (formData.telefono && telefonoLimpio.length < 10) {
+      toast.error("El teléfono debe tener al menos 10 dígitos");
+      return;
+    }
+
     setLoading(true);
     try {
-      const totalMeses = (formData.antiguedad_anos * 12) + formData.antiguedad_meses;
+      const updateData: any = {
+        nombre_completo: formData.nombre_completo.trim(),
+        email: formData.email.trim().toLowerCase() || null,
+        telefono: telefonoLimpio || null,
+        puesto: formData.puesto.trim(),
+        area: formData.area.trim(),
+        centro_trabajo: formData.centro_trabajo.trim(),
+        tipo_jornada: formData.tipo_jornada,
+        modalidad_contratacion: formData.modalidad_contratacion,
+      };
+
+      if (formData.fecha_ingreso) {
+        updateData.fecha_ingreso = formData.fecha_ingreso;
+        updateData.antiguedad_meses = antiguedadCalculada?.totalMeses || 0;
+      }
 
       const { error } = await supabase
         .from("trabajadores_nom035")
-        .update({
-          nombre_completo: formData.nombre_completo.trim(),
-          puesto: formData.puesto.trim(),
-          area: formData.area.trim(),
-          centro_trabajo: formData.centro_trabajo.trim(),
-          antiguedad_meses: totalMeses,
-          tipo_jornada: formData.tipo_jornada,
-          modalidad_contratacion: formData.modalidad_contratacion,
-        })
+        .update(updateData)
         .eq("id", trabajador.id);
 
       if (error) throw error;
@@ -146,6 +199,29 @@ export const EditarTrabajadorDialog = ({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="trabajador@email.com"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="telefono">WhatsApp / Teléfono</Label>
+              <Input
+                id="telefono"
+                type="tel"
+                placeholder="55 1234 5678"
+                value={formData.telefono}
+                onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="puesto">Puesto *</Label>
               <Input
                 id="puesto"
@@ -173,35 +249,23 @@ export const EditarTrabajadorDialog = ({
           </div>
 
           <div className="space-y-2">
-            <Label>Antigüedad en la Empresa</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center gap-2">
+            <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
+            <div className="flex gap-4 items-end">
+              <div className="flex-1">
                 <Input
-                  type="number"
-                  min="0"
-                  value={formData.antiguedad_anos}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    antiguedad_anos: parseInt(e.target.value) || 0 
-                  }))}
-                  className="w-20"
+                  id="fecha_ingreso"
+                  type="date"
+                  max={format(new Date(), 'yyyy-MM-dd')}
+                  value={formData.fecha_ingreso}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
                 />
-                <span className="text-sm text-muted-foreground">años</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  max="11"
-                  value={formData.antiguedad_meses}
-                  onChange={(e) => setFormData(prev => ({ 
-                    ...prev, 
-                    antiguedad_meses: Math.min(11, parseInt(e.target.value) || 0)
-                  }))}
-                  className="w-20"
-                />
-                <span className="text-sm text-muted-foreground">meses</span>
-              </div>
+              {antiguedadCalculada && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md text-sm">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{antiguedadCalculada.texto}</span>
+                </div>
+              )}
             </div>
           </div>
 

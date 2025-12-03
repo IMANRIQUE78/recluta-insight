@@ -15,6 +15,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { 
@@ -25,16 +26,22 @@ import {
   FileText,
   ClipboardList,
   Trash2,
-  Edit
+  Edit,
+  Link2,
+  Mail,
+  Phone
 } from "lucide-react";
 import { toast } from "sonner";
 import { EditarTrabajadorDialog } from "./EditarTrabajadorDialog";
 import { AvisoPrivacidadNOM035 } from "./AvisoPrivacidadNOM035";
+import { GenerarEnlaceDialog } from "./cuestionarios/GenerarEnlaceDialog";
 
 interface Trabajador {
   id: string;
   codigo_trabajador: string;
   nombre_completo: string;
+  email: string | null;
+  telefono: string | null;
   puesto: string;
   area: string;
   centro_trabajo: string;
@@ -63,6 +70,7 @@ export const TrabajadoresNOM035Table = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [avisoDialogOpen, setAvisoDialogOpen] = useState(false);
+  const [enlaceDialogOpen, setEnlaceDialogOpen] = useState(false);
   const [selectedTrabajador, setSelectedTrabajador] = useState<Trabajador | null>(null);
 
   useEffect(() => {
@@ -156,11 +164,21 @@ export const TrabajadoresNOM035Table = ({
     return modalidades[modalidad] || modalidad;
   };
 
+  const formatTelefono = (telefono: string | null) => {
+    if (!telefono) return null;
+    const digits = telefono.replace(/\D/g, '');
+    if (digits.length === 10) {
+      return `${digits.slice(0,2)} ${digits.slice(2,6)} ${digits.slice(6)}`;
+    }
+    return telefono;
+  };
+
   const filteredTrabajadores = trabajadores.filter(t =>
     t.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.codigo_trabajador.toLowerCase().includes(searchTerm.toLowerCase()) ||
     t.puesto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    t.area.toLowerCase().includes(searchTerm.toLowerCase())
+    t.area.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (t.email && t.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (loading) {
@@ -177,7 +195,7 @@ export const TrabajadoresNOM035Table = ({
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nombre, código, puesto..."
+          placeholder="Buscar por nombre, código, puesto, email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9"
@@ -196,13 +214,12 @@ export const TrabajadoresNOM035Table = ({
               <TableRow>
                 <TableHead>Código</TableHead>
                 <TableHead>Nombre</TableHead>
+                <TableHead>Contacto</TableHead>
                 <TableHead>Puesto</TableHead>
                 <TableHead>Área</TableHead>
-                <TableHead>Centro de Trabajo</TableHead>
+                <TableHead>Centro</TableHead>
                 <TableHead>Antigüedad</TableHead>
-                <TableHead>Jornada</TableHead>
-                <TableHead>Contratación</TableHead>
-                <TableHead>Aviso Privacidad</TableHead>
+                <TableHead>Aviso</TableHead>
                 <TableHead className="w-[50px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -215,19 +232,32 @@ export const TrabajadoresNOM035Table = ({
                   <TableCell className="font-medium">
                     {trabajador.nombre_completo}
                   </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {trabajador.email && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Mail className="h-3 w-3" />
+                          <span className="truncate max-w-[150px]">{trabajador.email}</span>
+                        </div>
+                      )}
+                      {trabajador.telefono && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3" />
+                          <span>{formatTelefono(trabajador.telefono)}</span>
+                        </div>
+                      )}
+                      {!trabajador.email && !trabajador.telefono && (
+                        <span className="text-xs text-muted-foreground">Sin datos</span>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{trabajador.puesto}</TableCell>
                   <TableCell>{trabajador.area}</TableCell>
-                  <TableCell>{trabajador.centro_trabajo}</TableCell>
+                  <TableCell className="text-sm">{trabajador.centro_trabajo}</TableCell>
                   <TableCell>{formatAntiguedad(trabajador.antiguedad_meses)}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{formatJornada(trabajador.tipo_jornada)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{formatContratacion(trabajador.modalidad_contratacion)}</Badge>
-                  </TableCell>
-                  <TableCell>
                     {trabajador.acepto_aviso_privacidad ? (
-                      <Badge className="bg-success/10 text-success border-success/20">
+                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20">
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Aceptado
                       </Badge>
@@ -241,7 +271,7 @@ export const TrabajadoresNOM035Table = ({
                         }}
                       >
                         <FileText className="h-3 w-3 mr-1" />
-                        Mostrar Aviso
+                        Mostrar
                       </Button>
                     )}
                   </TableCell>
@@ -262,13 +292,18 @@ export const TrabajadoresNOM035Table = ({
                           <Edit className="h-4 w-4 mr-2" />
                           Editar
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem 
-                          disabled={!trabajador.acepto_aviso_privacidad}
-                          onClick={() => toast.info("Próximamente: Iniciar evaluación")}
+                          disabled={!trabajador.email && !trabajador.telefono}
+                          onClick={() => {
+                            setSelectedTrabajador(trabajador);
+                            setEnlaceDialogOpen(true);
+                          }}
                         >
-                          <ClipboardList className="h-4 w-4 mr-2" />
-                          Iniciar Evaluación
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Generar Enlace Cuestionario
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => handleDelete(trabajador)}
                           className="text-destructive focus:text-destructive"
@@ -303,6 +338,12 @@ export const TrabajadoresNOM035Table = ({
             onOpenChange={setAvisoDialogOpen}
             nombreTrabajador={selectedTrabajador.nombre_completo}
             onAceptar={handleAceptarAviso}
+          />
+          <GenerarEnlaceDialog
+            open={enlaceDialogOpen}
+            onOpenChange={setEnlaceDialogOpen}
+            trabajador={selectedTrabajador}
+            empresaId={empresaId}
           />
         </>
       )}
