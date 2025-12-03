@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import ReclutadorDashboard from "./pages/ReclutadorDashboard";
 import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
+import NOM035Dashboard from "./pages/NOM035Dashboard";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -63,6 +64,11 @@ const App = () => (
           <Route path="/reclutador-dashboard" element={
             <ProtectedRoute>
               <ReclutadorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/nom035" element={
+            <ProtectedRoute>
+              <NOM035Dashboard />
             </ProtectedRoute>
           } />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
