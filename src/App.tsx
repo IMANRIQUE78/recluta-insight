@@ -13,6 +13,7 @@ import ReclutadorDashboard from "./pages/ReclutadorDashboard";
 import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import NOM035Dashboard from "./pages/NOM035Dashboard";
+import CuestionarioPublico from "./pages/CuestionarioPublico";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -71,6 +72,8 @@ const App = () => (
               <NOM035Dashboard />
             </ProtectedRoute>
           } />
+          {/* Ruta pública para cuestionarios NOM-035 */}
+          <Route path="/cuestionario/:token" element={<CuestionarioPublico />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1099,6 +1099,54 @@ export type Database = {
           },
         ]
       }
+      tokens_cuestionario_nom035: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          fecha_expiracion: string
+          id: string
+          tipo_guia: string
+          token: string
+          trabajador_id: string
+          usado: boolean
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          fecha_expiracion?: string
+          id?: string
+          tipo_guia: string
+          token?: string
+          trabajador_id: string
+          usado?: boolean
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          fecha_expiracion?: string
+          id?: string
+          tipo_guia?: string
+          token?: string
+          trabajador_id?: string
+          usado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tokens_cuestionario_nom035_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tokens_cuestionario_nom035_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores_nom035"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trabajadores_nom035: {
         Row: {
           acepto_aviso_privacidad: boolean
@@ -1108,12 +1156,15 @@ export type Database = {
           centro_trabajo: string
           codigo_trabajador: string
           created_at: string
+          email: string | null
           empresa_id: string
           fecha_acepto_aviso: string | null
+          fecha_ingreso: string | null
           id: string
           modalidad_contratacion: string
           nombre_completo: string
           puesto: string
+          telefono: string | null
           tipo_jornada: string
           updated_at: string
         }
@@ -1125,12 +1176,15 @@ export type Database = {
           centro_trabajo: string
           codigo_trabajador: string
           created_at?: string
+          email?: string | null
           empresa_id: string
           fecha_acepto_aviso?: string | null
+          fecha_ingreso?: string | null
           id?: string
           modalidad_contratacion?: string
           nombre_completo: string
           puesto: string
+          telefono?: string | null
           tipo_jornada?: string
           updated_at?: string
         }
@@ -1142,12 +1196,15 @@ export type Database = {
           centro_trabajo?: string
           codigo_trabajador?: string
           created_at?: string
+          email?: string | null
           empresa_id?: string
           fecha_acepto_aviso?: string | null
+          fecha_ingreso?: string | null
           id?: string
           modalidad_contratacion?: string
           nombre_completo?: string
           puesto?: string
+          telefono?: string | null
           tipo_jornada?: string
           updated_at?: string
         }
