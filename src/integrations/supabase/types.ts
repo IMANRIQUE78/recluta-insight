@@ -293,6 +293,69 @@ export type Database = {
         }
         Relationships: []
       }
+      evaluaciones_nom035: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          estado: string
+          fecha_fin: string | null
+          fecha_inicio: string | null
+          id: string
+          nivel_riesgo: string | null
+          periodo_evaluacion: string | null
+          puntaje_total: number | null
+          requiere_accion: boolean | null
+          tipo_guia: string
+          trabajador_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          estado?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          nivel_riesgo?: string | null
+          periodo_evaluacion?: string | null
+          puntaje_total?: number | null
+          requiere_accion?: boolean | null
+          tipo_guia: string
+          trabajador_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          estado?: string
+          fecha_fin?: string | null
+          fecha_inicio?: string | null
+          id?: string
+          nivel_riesgo?: string | null
+          periodo_evaluacion?: string | null
+          puntaje_total?: number | null
+          requiere_accion?: boolean | null
+          tipo_guia?: string
+          trabajador_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "evaluaciones_nom035_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "evaluaciones_nom035_trabajador_id_fkey"
+            columns: ["trabajador_id"]
+            isOneToOne: false
+            referencedRelation: "trabajadores_nom035"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback_candidato: {
         Row: {
           aspectos_mejora: string[] | null
@@ -640,6 +703,47 @@ export type Database = {
         }
         Relationships: []
       }
+      politica_prevencion_nom035: {
+        Row: {
+          contenido_politica: string
+          created_at: string
+          empresa_id: string
+          fecha_publicacion: string | null
+          id: string
+          responsables: Json | null
+          updated_at: string
+          vigente: boolean
+        }
+        Insert: {
+          contenido_politica: string
+          created_at?: string
+          empresa_id: string
+          fecha_publicacion?: string | null
+          id?: string
+          responsables?: Json | null
+          updated_at?: string
+          vigente?: boolean
+        }
+        Update: {
+          contenido_politica?: string
+          created_at?: string
+          empresa_id?: string
+          fecha_publicacion?: string | null
+          id?: string
+          responsables?: Json | null
+          updated_at?: string
+          vigente?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "politica_prevencion_nom035_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       postulaciones: {
         Row: {
           candidato_user_id: string
@@ -804,6 +908,85 @@ export type Database = {
           },
         ]
       }
+      respuestas_nom035: {
+        Row: {
+          created_at: string
+          dimension: string | null
+          evaluacion_id: string
+          id: string
+          numero_pregunta: number
+          respuesta_texto: string | null
+          respuesta_valor: number
+          seccion: string
+        }
+        Insert: {
+          created_at?: string
+          dimension?: string | null
+          evaluacion_id: string
+          id?: string
+          numero_pregunta: number
+          respuesta_texto?: string | null
+          respuesta_valor: number
+          seccion: string
+        }
+        Update: {
+          created_at?: string
+          dimension?: string | null
+          evaluacion_id?: string
+          id?: string
+          numero_pregunta?: number
+          respuesta_texto?: string | null
+          respuesta_valor?: number
+          seccion?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "respuestas_nom035_evaluacion_id_fkey"
+            columns: ["evaluacion_id"]
+            isOneToOne: false
+            referencedRelation: "evaluaciones_nom035"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resultados_dimension_nom035: {
+        Row: {
+          categoria: string
+          created_at: string
+          dimension: string
+          evaluacion_id: string
+          id: string
+          nivel_riesgo: string
+          puntaje: number
+        }
+        Insert: {
+          categoria: string
+          created_at?: string
+          dimension: string
+          evaluacion_id: string
+          id?: string
+          nivel_riesgo: string
+          puntaje: number
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          dimension?: string
+          evaluacion_id?: string
+          id?: string
+          nivel_riesgo?: string
+          puntaje?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resultados_dimension_nom035_evaluacion_id_fkey"
+            columns: ["evaluacion_id"]
+            isOneToOne: false
+            referencedRelation: "evaluaciones_nom035"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suscripcion_empresa: {
         Row: {
           acceso_analytics_avanzado: boolean | null
@@ -912,6 +1095,68 @@ export type Database = {
             columns: ["reclutador_id"]
             isOneToOne: true
             referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trabajadores_nom035: {
+        Row: {
+          acepto_aviso_privacidad: boolean
+          activo: boolean
+          antiguedad_meses: number
+          area: string
+          centro_trabajo: string
+          codigo_trabajador: string
+          created_at: string
+          empresa_id: string
+          fecha_acepto_aviso: string | null
+          id: string
+          modalidad_contratacion: string
+          nombre_completo: string
+          puesto: string
+          tipo_jornada: string
+          updated_at: string
+        }
+        Insert: {
+          acepto_aviso_privacidad?: boolean
+          activo?: boolean
+          antiguedad_meses?: number
+          area: string
+          centro_trabajo: string
+          codigo_trabajador: string
+          created_at?: string
+          empresa_id: string
+          fecha_acepto_aviso?: string | null
+          id?: string
+          modalidad_contratacion?: string
+          nombre_completo: string
+          puesto: string
+          tipo_jornada?: string
+          updated_at?: string
+        }
+        Update: {
+          acepto_aviso_privacidad?: boolean
+          activo?: boolean
+          antiguedad_meses?: number
+          area?: string
+          centro_trabajo?: string
+          codigo_trabajador?: string
+          created_at?: string
+          empresa_id?: string
+          fecha_acepto_aviso?: string | null
+          id?: string
+          modalidad_contratacion?: string
+          nombre_completo?: string
+          puesto?: string
+          tipo_jornada?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trabajadores_nom035_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]
