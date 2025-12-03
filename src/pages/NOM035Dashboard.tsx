@@ -20,6 +20,7 @@ import {
 import { TrabajadoresNOM035Table } from "@/components/nom035/TrabajadoresNOM035Table";
 import { RegistroTrabajadorDialog } from "@/components/nom035/RegistroTrabajadorDialog";
 import { AvisoPrivacidadNOM035 } from "@/components/nom035/AvisoPrivacidadNOM035";
+import { SelectorCuestionario } from "@/components/nom035/cuestionarios/SelectorCuestionario";
 import { toast } from "sonner";
 
 const NOM035Dashboard = () => {
@@ -336,14 +337,17 @@ const NOM035Dashboard = () => {
               <CardHeader>
                 <CardTitle>Cuestionarios Oficiales</CardTitle>
                 <CardDescription>
-                  Aplicación de los cuestionarios oficiales de la NOM-035-STPS-2018
+                  Aplicación de los cuestionarios oficiales de la NOM-035-STPS-2018. 
+                  Selecciona un trabajador y el tipo de cuestionario a aplicar.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center py-12">
-                <ClipboardList className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Próximamente: Implementación de Guía I y Guía III
-                </p>
+              <CardContent>
+                {empresaId && (
+                  <SelectorCuestionario 
+                    empresaId={empresaId}
+                    onEvaluacionCompleta={() => setRefreshTrigger(prev => prev + 1)}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
