@@ -20,6 +20,19 @@ const Index = () => {
       return;
     }
 
+    // Verificar si tiene perfil de verificador
+    const { data: perfilVerificador } = await supabase
+      .from("perfil_verificador")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (perfilVerificador) {
+      navigate("/verificador-dashboard");
+      setChecking(false);
+      return;
+    }
+
     // Verificar si tiene perfil de candidato
     const { data: perfilCandidato } = await supabase
       .from("perfil_candidato")
