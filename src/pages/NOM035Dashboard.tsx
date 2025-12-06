@@ -21,6 +21,8 @@ import { TrabajadoresNOM035Table } from "@/components/nom035/TrabajadoresNOM035T
 import { RegistroTrabajadorDialog } from "@/components/nom035/RegistroTrabajadorDialog";
 import { AvisoPrivacidadNOM035 } from "@/components/nom035/AvisoPrivacidadNOM035";
 import { SelectorCuestionario } from "@/components/nom035/cuestionarios/SelectorCuestionario";
+import { ResultadosNOM035 } from "@/components/nom035/ResultadosNOM035";
+import { ReportesNOM035 } from "@/components/nom035/ReportesNOM035";
 import { toast } from "sonner";
 
 const NOM035Dashboard = () => {
@@ -360,11 +362,13 @@ const NOM035Dashboard = () => {
                   Visualización de resultados por dimensión y nivel de riesgo
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center py-12">
-                <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Próximamente: Dashboard de análisis y métricas
-                </p>
+              <CardContent>
+                {empresaId && (
+                  <ResultadosNOM035 
+                    empresaId={empresaId}
+                    refreshTrigger={refreshTrigger}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -377,11 +381,14 @@ const NOM035Dashboard = () => {
                   Generación de reportes para inspecciones STPS y auditorías
                 </CardDescription>
               </CardHeader>
-              <CardContent className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Próximamente: Reportes individuales y globales
-                </p>
+              <CardContent>
+                {empresaId && (
+                  <ReportesNOM035 
+                    empresaId={empresaId}
+                    empresaNombre={empresaNombre}
+                    refreshTrigger={refreshTrigger}
+                  />
+                )}
               </CardContent>
             </Card>
           </TabsContent>
