@@ -93,6 +93,41 @@ export type Database = {
           },
         ]
       }
+      calificaciones_estudio: {
+        Row: {
+          calificacion: number
+          calificador_user_id: string
+          comentario: string | null
+          created_at: string
+          estudio_id: string
+          id: string
+        }
+        Insert: {
+          calificacion: number
+          calificador_user_id: string
+          comentario?: string | null
+          created_at?: string
+          estudio_id: string
+          id?: string
+        }
+        Update: {
+          calificacion?: number
+          calificador_user_id?: string
+          comentario?: string | null
+          created_at?: string
+          estudio_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calificaciones_estudio_estudio_id_fkey"
+            columns: ["estudio_id"]
+            isOneToOne: false
+            referencedRelation: "estudios_socioeconomicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clientes_areas: {
         Row: {
           area: string
@@ -292,6 +327,169 @@ export type Database = {
           vacantes_cerradas?: number
         }
         Relationships: []
+      }
+      estadisticas_verificador: {
+        Row: {
+          calificacion_promedio: number | null
+          created_at: string
+          estudios_completados: number | null
+          id: string
+          porcentaje_a_tiempo: number | null
+          tiempo_respuesta_promedio_horas: number | null
+          ultima_actualizacion: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calificacion_promedio?: number | null
+          created_at?: string
+          estudios_completados?: number | null
+          id?: string
+          porcentaje_a_tiempo?: number | null
+          tiempo_respuesta_promedio_horas?: number | null
+          ultima_actualizacion?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calificacion_promedio?: number | null
+          created_at?: string
+          estudios_completados?: number | null
+          id?: string
+          porcentaje_a_tiempo?: number | null
+          tiempo_respuesta_promedio_horas?: number | null
+          ultima_actualizacion?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      estudios_socioeconomicos: {
+        Row: {
+          borrador: boolean | null
+          calificacion_riesgo: string | null
+          candidato_presente: boolean | null
+          candidato_user_id: string
+          created_at: string
+          datos_economicos: Json | null
+          datos_laborales: Json | null
+          datos_referencias: Json | null
+          datos_sociodemograficos: Json | null
+          datos_vivienda: Json | null
+          direccion_visita: string
+          empresa_id: string | null
+          estatus: string
+          evidencias: Json | null
+          fecha_asignacion: string | null
+          fecha_entrega: string | null
+          fecha_limite: string
+          fecha_solicitud: string
+          fecha_visita: string | null
+          folio: string
+          hora_visita: string | null
+          id: string
+          motivo_ausencia: string | null
+          nombre_candidato: string
+          observaciones_finales: string | null
+          observaciones_visita: string | null
+          postulacion_id: string | null
+          resultado_general: string | null
+          solicitante_user_id: string
+          updated_at: string
+          vacante_puesto: string
+          verificador_id: string | null
+        }
+        Insert: {
+          borrador?: boolean | null
+          calificacion_riesgo?: string | null
+          candidato_presente?: boolean | null
+          candidato_user_id: string
+          created_at?: string
+          datos_economicos?: Json | null
+          datos_laborales?: Json | null
+          datos_referencias?: Json | null
+          datos_sociodemograficos?: Json | null
+          datos_vivienda?: Json | null
+          direccion_visita: string
+          empresa_id?: string | null
+          estatus?: string
+          evidencias?: Json | null
+          fecha_asignacion?: string | null
+          fecha_entrega?: string | null
+          fecha_limite: string
+          fecha_solicitud?: string
+          fecha_visita?: string | null
+          folio: string
+          hora_visita?: string | null
+          id?: string
+          motivo_ausencia?: string | null
+          nombre_candidato: string
+          observaciones_finales?: string | null
+          observaciones_visita?: string | null
+          postulacion_id?: string | null
+          resultado_general?: string | null
+          solicitante_user_id: string
+          updated_at?: string
+          vacante_puesto: string
+          verificador_id?: string | null
+        }
+        Update: {
+          borrador?: boolean | null
+          calificacion_riesgo?: string | null
+          candidato_presente?: boolean | null
+          candidato_user_id?: string
+          created_at?: string
+          datos_economicos?: Json | null
+          datos_laborales?: Json | null
+          datos_referencias?: Json | null
+          datos_sociodemograficos?: Json | null
+          datos_vivienda?: Json | null
+          direccion_visita?: string
+          empresa_id?: string | null
+          estatus?: string
+          evidencias?: Json | null
+          fecha_asignacion?: string | null
+          fecha_entrega?: string | null
+          fecha_limite?: string
+          fecha_solicitud?: string
+          fecha_visita?: string | null
+          folio?: string
+          hora_visita?: string | null
+          id?: string
+          motivo_ausencia?: string | null
+          nombre_candidato?: string
+          observaciones_finales?: string | null
+          observaciones_visita?: string | null
+          postulacion_id?: string | null
+          resultado_general?: string | null
+          solicitante_user_id?: string
+          updated_at?: string
+          vacante_puesto?: string
+          verificador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estudios_socioeconomicos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estudios_socioeconomicos_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "postulaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estudios_socioeconomicos_verificador_id_fkey"
+            columns: ["verificador_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_verificador"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       evaluaciones_nom035: {
         Row: {
@@ -700,6 +898,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           vacantes_promedio_mes?: number
+        }
+        Relationships: []
+      }
+      perfil_verificador: {
+        Row: {
+          codigo_verificador: string
+          created_at: string
+          disponible: boolean | null
+          email: string
+          id: string
+          nombre_verificador: string
+          telefono: string | null
+          updated_at: string
+          user_id: string
+          zona_cobertura: string[] | null
+        }
+        Insert: {
+          codigo_verificador?: string
+          created_at?: string
+          disponible?: boolean | null
+          email: string
+          id?: string
+          nombre_verificador: string
+          telefono?: string | null
+          updated_at?: string
+          user_id: string
+          zona_cobertura?: string[] | null
+        }
+        Update: {
+          codigo_verificador?: string
+          created_at?: string
+          disponible?: boolean | null
+          email?: string
+          id?: string
+          nombre_verificador?: string
+          telefono?: string | null
+          updated_at?: string
+          user_id?: string
+          zona_cobertura?: string[] | null
         }
         Relationships: []
       }
@@ -1408,6 +1645,7 @@ export type Database = {
         | "admin_empresa"
         | "reclutador"
         | "candidato"
+        | "verificador"
       estado_asociacion: "activa" | "inactiva" | "finalizada"
       estado_invitacion: "pendiente" | "aceptada" | "rechazada" | "expirada"
       estatus_vacante: "abierta" | "cerrada" | "cancelada"
@@ -1561,6 +1799,7 @@ export const Constants = {
         "admin_empresa",
         "reclutador",
         "candidato",
+        "verificador",
       ],
       estado_asociacion: ["activa", "inactiva", "finalizada"],
       estado_invitacion: ["pendiente", "aceptada", "rechazada", "expirada"],
