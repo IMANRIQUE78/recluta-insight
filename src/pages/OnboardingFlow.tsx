@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ArrowRight, Building2, UserCircle, Code } from "lucide-react";
+import { ArrowRight, Building2, UserCircle, Code, ClipboardCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
 const sectoresLatam = [
@@ -23,7 +23,7 @@ const OnboardingFlow = () => {
   const navigate = useNavigate();
   
   const [step, setStep] = useState(1);
-  const [userType, setUserType] = useState<"empresa" | "reclutador" | "candidato" | "">("");
+  const [userType, setUserType] = useState<"empresa" | "reclutador" | "candidato" | "verificador" | "">("");
   
   // Datos Empresa
   const [nombreEmpresa, setNombreEmpresa] = useState("");
@@ -45,6 +45,12 @@ const OnboardingFlow = () => {
   const [nombreCandidato, setNombreCandidato] = useState("");
   const [emailCandidato, setEmailCandidato] = useState("");
   const [telefonoCandidato, setTelefonoCandidato] = useState("");
+
+  // Datos Verificador
+  const [nombreVerificador, setNombreVerificador] = useState("");
+  const [emailVerificador, setEmailVerificador] = useState("");
+  const [telefonoVerificador, setTelefonoVerificador] = useState("");
+  const [zonasCobertura, setZonasCobertura] = useState("");
 
   // Protección de ruta - redirigir si no está autenticado
   useEffect(() => {
@@ -304,6 +310,85 @@ const OnboardingFlow = () => {
     }
   };
 
+  const handleSubmitVerificador = async () => {
+    if (!user) {
+      toast.error("Debes iniciar sesión primero");
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Tu sesión ha expirado. Por favor inicia sesión nuevamente.");
+        navigate("/auth");
+        return;
+      }
+
+      // Verificar si ya existe un perfil de verificador
+      const { data: existingProfile } = await supabase
+        .from("perfil_verificador")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error("Ya tienes un perfil de verificador creado");
+        navigate("/verificador-dashboard");
+        return;
+      }
+
+      // Eliminar roles de verificador huérfanos
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("role", "verificador");
+
+      // Crear perfil de verificador
+      const zonas = zonasCobertura.split(",").map(z => z.trim()).filter(z => z);
+      
+      const { data: verificadorData, error: verificadorError } = await supabase
+        .from("perfil_verificador")
+        .insert([{
+          user_id: user.id,
+          nombre_verificador: nombreVerificador,
+          email: emailVerificador || user.email || "",
+          telefono: telefonoVerificador || null,
+          zona_cobertura: zonas.length > 0 ? zonas : null,
+        }])
+        .select()
+        .single();
+
+      if (verificadorError) {
+        console.error("Error creando perfil verificador:", verificadorError);
+        throw verificadorError;
+      }
+
+      // Crear rol de verificador
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({
+          user_id: user.id,
+          role: "verificador",
+        });
+
+      if (roleError) throw roleError;
+
+      // Crear estadísticas iniciales
+      await supabase
+        .from("estadisticas_verificador")
+        .insert({
+          user_id: user.id,
+        });
+
+      toast.success(`¡Perfil de verificador creado! Código: ${verificadorData.codigo_verificador}`);
+      navigate("/verificador-dashboard");
+    } catch (error: any) {
+      console.error("Error:", error);
+      toast.error("Error al crear perfil: " + error.message);
+    }
+  };
+
   // Mostrar loading mientras verifica autenticación
   if (loading) {
     return (
@@ -328,13 +413,14 @@ const OnboardingFlow = () => {
             {step === 2 && userType === "empresa" && "Datos de tu Empresa"}
             {step === 2 && userType === "reclutador" && "Datos del Reclutador"}
             {step === 2 && userType === "candidato" && "Datos del Candidato"}
+            {step === 2 && userType === "verificador" && "Datos del Técnico Verificador"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* PASO 1: Selección de tipo de usuario */}
           {step === 1 && (
             <div className="space-y-6 animate-fade-in">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card 
                   className={`cursor-pointer transition-all hover:shadow-lg ${
                     userType === "empresa" ? "ring-2 ring-primary" : ""
@@ -343,10 +429,9 @@ const OnboardingFlow = () => {
                 >
                   <CardHeader>
                     <Building2 className="h-12 w-12 mb-2 text-primary" />
-                    <CardTitle>Soy Empresa</CardTitle>
-                    <CardDescription>
-                      Necesito gestionar requisiciones de personal, solicitar reclutadores
-                      y medir indicadores de mi equipo de RRHH
+                    <CardTitle className="text-base">Soy Empresa</CardTitle>
+                    <CardDescription className="text-xs">
+                      Gestionar requisiciones y medir indicadores de RRHH
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -359,10 +444,9 @@ const OnboardingFlow = () => {
                 >
                   <CardHeader>
                     <UserCircle className="h-12 w-12 mb-2 text-primary" />
-                    <CardTitle>Soy Reclutador</CardTitle>
-                    <CardDescription>
-                      Quiero publicar vacantes en el marketplace, gestionar entrevistas
-                      y llevar mis estadísticas personales
+                    <CardTitle className="text-base">Soy Reclutador</CardTitle>
+                    <CardDescription className="text-xs">
+                      Publicar vacantes y gestionar entrevistas
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -375,9 +459,24 @@ const OnboardingFlow = () => {
                 >
                   <CardHeader>
                     <UserCircle className="h-12 w-12 mb-2 text-accent" />
-                    <CardTitle>Soy Candidato</CardTitle>
-                    <CardDescription>
-                      Busco oportunidades laborales y quiero postularme a vacantes
+                    <CardTitle className="text-base">Soy Candidato</CardTitle>
+                    <CardDescription className="text-xs">
+                      Buscar oportunidades y postularme a vacantes
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card 
+                  className={`cursor-pointer transition-all hover:shadow-lg ${
+                    userType === "verificador" ? "ring-2 ring-primary" : ""
+                  }`}
+                  onClick={() => setUserType("verificador")}
+                >
+                  <CardHeader>
+                    <ClipboardCheck className="h-12 w-12 mb-2 text-green-600" />
+                    <CardTitle className="text-base">Técnico Verificador</CardTitle>
+                    <CardDescription className="text-xs">
+                      Realizar estudios socioeconómicos a domicilio
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -620,6 +719,65 @@ const OnboardingFlow = () => {
                 <Button 
                   onClick={handleSubmitCandidato}
                   disabled={!nombreCandidato || !emailCandidato}
+                >
+                  Crear Perfil
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 2: Formulario Verificador */}
+          {step === 2 && userType === "verificador" && (
+            <div className="space-y-4 animate-fade-in">
+              <div className="space-y-2">
+                <Label htmlFor="nombre_verificador">Nombre Completo*</Label>
+                <Input
+                  id="nombre_verificador"
+                  value={nombreVerificador}
+                  onChange={(e) => setNombreVerificador(e.target.value)}
+                  placeholder="Tu nombre completo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_verificador">Correo Electrónico*</Label>
+                <Input
+                  id="email_verificador"
+                  type="email"
+                  value={emailVerificador}
+                  onChange={(e) => setEmailVerificador(e.target.value)}
+                  placeholder="tu@email.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="telefono_verificador">Teléfono*</Label>
+                <Input
+                  id="telefono_verificador"
+                  value={telefonoVerificador}
+                  onChange={(e) => setTelefonoVerificador(e.target.value)}
+                  placeholder="+52 55 1234 5678"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="zonas_cobertura">Zonas de Cobertura (separadas por coma)</Label>
+                <Input
+                  id="zonas_cobertura"
+                  value={zonasCobertura}
+                  onChange={(e) => setZonasCobertura(e.target.value)}
+                  placeholder="CDMX, Estado de México, Querétaro"
+                />
+              </div>
+
+              <div className="flex justify-between pt-4">
+                <Button variant="outline" onClick={() => setStep(1)}>
+                  Atrás
+                </Button>
+                <Button 
+                  onClick={handleSubmitVerificador}
+                  disabled={!nombreVerificador || !emailVerificador || !telefonoVerificador}
                 >
                   Crear Perfil
                   <ArrowRight className="ml-2 h-4 w-4" />
