@@ -302,6 +302,7 @@ export const CuestionarioGuiaIII = ({
         </CardHeader>
         <CardContent>
           <RadioGroup
+            key={preguntaActual.id}
             value={respuestas[preguntaActual.id]?.toString()}
             onValueChange={(value) => handleRespuesta(parseInt(value))}
             className="space-y-2"
@@ -311,8 +312,8 @@ export const CuestionarioGuiaIII = ({
                 key={index}
                 className="flex items-center space-x-3 p-3 rounded-lg border hover:bg-muted/50 cursor-pointer"
               >
-                <RadioGroupItem value={index.toString()} id={`opcion-${index}`} />
-                <Label htmlFor={`opcion-${index}`} className="flex-1 cursor-pointer">
+                <RadioGroupItem value={index.toString()} id={`opcion-${preguntaActual.id}-${index}`} />
+                <Label htmlFor={`opcion-${preguntaActual.id}-${index}`} className="flex-1 cursor-pointer">
                   {opcion.texto}
                 </Label>
               </div>
