@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
 import ReclutadorDashboard from "./pages/ReclutadorDashboard";
+import VerificadorDashboard from "./pages/VerificadorDashboard";
 import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import NOM035Dashboard from "./pages/NOM035Dashboard";
@@ -70,6 +71,11 @@ const App = () => (
           <Route path="/nom035" element={
             <ProtectedRoute>
               <NOM035Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/verificador-dashboard" element={
+            <ProtectedRoute>
+              <VerificadorDashboard />
             </ProtectedRoute>
           } />
           {/* Ruta pública para cuestionarios NOM-035 */}
