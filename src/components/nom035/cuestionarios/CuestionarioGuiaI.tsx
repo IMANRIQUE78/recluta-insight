@@ -165,17 +165,18 @@ export const CuestionarioGuiaI = ({
         </CardHeader>
         <CardContent>
           <RadioGroup
+            key={preguntaActual.id}
             value={respuestas[preguntaActual.id]?.toString()}
             onValueChange={(value) => handleRespuesta(value === "true")}
             className="space-y-3"
           >
             <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
-              <RadioGroupItem value="true" id="si" />
-              <Label htmlFor="si" className="flex-1 cursor-pointer text-base">Sí</Label>
+              <RadioGroupItem value="true" id={`si-${preguntaActual.id}`} />
+              <Label htmlFor={`si-${preguntaActual.id}`} className="flex-1 cursor-pointer text-base">Sí</Label>
             </div>
             <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-muted/50 cursor-pointer">
-              <RadioGroupItem value="false" id="no" />
-              <Label htmlFor="no" className="flex-1 cursor-pointer text-base">No</Label>
+              <RadioGroupItem value="false" id={`no-${preguntaActual.id}`} />
+              <Label htmlFor={`no-${preguntaActual.id}`} className="flex-1 cursor-pointer text-base">No</Label>
             </div>
           </RadioGroup>
         </CardContent>
