@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -23,10 +24,12 @@ import {
   AlertTriangle, 
   CheckCircle2,
   Clock,
-  FileText
+  FileText,
+  Eye
 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { DetalleEvaluacionModal } from "./DetalleEvaluacionModal";
 
 interface ResultadosNOM035Props {
   empresaId: string;
@@ -79,6 +82,8 @@ export const ResultadosNOM035 = ({ empresaId, refreshTrigger }: ResultadosNOM035
     pendientes: 0,
     tasaCompletado: 0
   });
+  const [selectedEvaluacion, setSelectedEvaluacion] = useState<Evaluacion | null>(null);
+  const [detalleModalOpen, setDetalleModalOpen] = useState(false);
 
   useEffect(() => {
     loadResultados();
@@ -339,13 +344,23 @@ export const ResultadosNOM035 = ({ empresaId, refreshTrigger }: ResultadosNOM035
                   <TableHead>Estado</TableHead>
                   <TableHead>Nivel Riesgo</TableHead>
                   <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {evaluaciones.map((evaluacion) => (
                   <TableRow key={evaluacion.id}>
-                    <TableCell className="font-medium">
-                      {evaluacion.trabajador.nombre_completo}
+                    <TableCell>
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto font-medium text-primary hover:underline"
+                        onClick={() => {
+                          setSelectedEvaluacion(evaluacion);
+                          setDetalleModalOpen(true);
+                        }}
+                      >
+                        {evaluacion.trabajador.nombre_completo}
+                      </Button>
                     </TableCell>
                     <TableCell>{evaluacion.trabajador.area}</TableCell>
                     <TableCell>{evaluacion.trabajador.puesto}</TableCell>
@@ -384,6 +399,20 @@ export const ResultadosNOM035 = ({ empresaId, refreshTrigger }: ResultadosNOM035
                         <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedEvaluacion(evaluacion);
+                          setDetalleModalOpen(true);
+                        }}
+                        disabled={evaluacion.estado !== "completada"}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Ver
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -391,6 +420,17 @@ export const ResultadosNOM035 = ({ empresaId, refreshTrigger }: ResultadosNOM035
           </div>
         </CardContent>
       </Card>
+
+      {/* Modal de detalle */}
+      {selectedEvaluacion && (
+        <DetalleEvaluacionModal
+          open={detalleModalOpen}
+          onOpenChange={setDetalleModalOpen}
+          evaluacionId={selectedEvaluacion.id}
+          trabajadorNombre={selectedEvaluacion.trabajador.nombre_completo}
+          tipoGuia={selectedEvaluacion.tipo_guia}
+        />
+      )}
     </div>
   );
 };
