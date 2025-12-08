@@ -17,7 +17,8 @@ import {
   MapPin,
   Building,
   User,
-  LogOut
+  LogOut,
+  Plus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,6 +59,7 @@ export default function VerificadorDashboard() {
   const [selectedEstudio, setSelectedEstudio] = useState<any>(null);
   const [modalSubirDatos, setModalSubirDatos] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalTestSubir, setModalTestSubir] = useState(false);
 
   // Fetch verificador profile
   const { data: perfilVerificador } = useQuery({
@@ -206,6 +208,29 @@ export default function VerificadorDashboard() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              onClick={() => {
+                setSelectedEstudio(null);
+                setModalTestSubir(true);
+              }}
+              className="hidden sm:flex"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Probar Modal
+            </Button>
+            <Button 
+              variant="default" 
+              size="icon"
+              onClick={() => {
+                setSelectedEstudio(null);
+                setModalTestSubir(true);
+              }}
+              className="sm:hidden"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                 {perfilVerificador?.nombre_verificador?.charAt(0) || "V"}
@@ -529,6 +554,24 @@ export default function VerificadorDashboard() {
         open={modalDetalle}
         onOpenChange={setModalDetalle}
         estudio={selectedEstudio}
+      />
+
+      {/* Modal de prueba para visualizar */}
+      <SubirDatosEstudioModal
+        open={modalTestSubir}
+        onOpenChange={setModalTestSubir}
+        estudio={{
+          id: "test-id",
+          folio: "ESE-TEST01",
+          nombre_candidato: "Juan Pérez García",
+          vacante_puesto: "Desarrollador Senior",
+          direccion_visita: "Av. Insurgentes Sur 1234, Col. Del Valle, CDMX",
+          fecha_solicitud: new Date().toISOString(),
+          fecha_limite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          estatus: "asignado",
+          empresas: { nombre_empresa: "VVGI Reclutamiento LATAM" },
+        }}
+        onSuccess={() => setModalTestSubir(false)}
       />
     </div>
   );
