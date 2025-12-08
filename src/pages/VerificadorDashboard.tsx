@@ -36,6 +36,7 @@ import { format, differenceInDays, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 import SubirDatosEstudioModal from "@/components/verificador/SubirDatosEstudioModal";
 import EstudioDetalleModal from "@/components/verificador/EstudioDetalleModal";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const estatusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   solicitado: { label: "Solicitado", color: "bg-blue-100 text-blue-800", icon: <Clock className="h-3 w-3" /> },
@@ -195,7 +196,7 @@ export default function VerificadorDashboard() {
       >
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/lovable-uploads/vvgi-logo.png" alt="VVGI" className="h-8" />
+            <img src={vvgiLogo} alt="VVGI" className="h-8 object-contain" />
             <div className="hidden sm:block">
               <h1 className="font-semibold text-foreground">
                 Oficina de {perfilVerificador?.nombre_verificador || "Verificador"}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { VacantesGestionCard } from "@/components/reclutador/VacantesGestionCard";
 import { EntrevistasCalendarioCard } from "@/components/reclutador/EntrevistasCalendarioCard";
@@ -23,6 +23,7 @@ import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerf
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
+import { SolicitarEstudioDialog } from "@/components/reclutador/SolicitarEstudioDialog";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
@@ -37,6 +38,7 @@ const ReclutadorDashboard = () => {
   const [rankingPosition, setRankingPosition] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
+  const [solicitarEstudioOpen, setSolicitarEstudioOpen] = useState(false);
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
   const { data: detailData, columns: detailColumns, loading: detailLoading } = useReclutadorKPIDetails(
@@ -329,6 +331,23 @@ const ReclutadorDashboard = () => {
             </div>
             
             <div className="flex items-center gap-1 sm:gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setSolicitarEstudioOpen(true)}
+                className="hidden sm:flex"
+              >
+                <FileSearch className="mr-2 h-4 w-4" />
+                Solicitar Estudio
+              </Button>
+              <Button
+                variant="default"
+                size="icon"
+                onClick={() => setSolicitarEstudioOpen(true)}
+                className="sm:hidden"
+              >
+                <FileSearch className="h-4 w-4" />
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -776,6 +795,15 @@ const ReclutadorDashboard = () => {
           onOpenChange={setEditarPerfilOpen}
           reclutadorId={perfilReclutador.id}
           onUpdate={loadDashboardData}
+        />
+      )}
+
+      {/* Modal de solicitar estudio socioeconómico */}
+      {perfilReclutador && (
+        <SolicitarEstudioDialog
+          open={solicitarEstudioOpen}
+          onOpenChange={setSolicitarEstudioOpen}
+          reclutadorId={perfilReclutador.user_id}
         />
       )}
     </div>
