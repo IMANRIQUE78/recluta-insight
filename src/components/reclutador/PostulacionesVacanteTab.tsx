@@ -213,6 +213,7 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
           open={showProfileModal}
           onOpenChange={setShowProfileModal}
           candidatoUserId={selectedCandidatoUserId}
+          hasFullAccess={true}
         />
       )}
     </>

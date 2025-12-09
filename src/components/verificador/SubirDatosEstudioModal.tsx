@@ -579,42 +579,86 @@ export default function SubirDatosEstudioModal({
                     </CardContent>
                   </Card>
 
-                  {/* Datos del candidato precargados */}
+                  {/* Información Personal del candidato precargada */}
                   <Card className="bg-muted/30 border-primary/20">
                     <CardHeader className="py-3">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-primary" />
-                        <CardTitle className="text-sm">Datos del Candidato</CardTitle>
+                        <CardTitle className="text-sm">Información Personal</CardTitle>
                         <Badge variant="secondary" className="text-xs">Desde perfil</Badge>
                       </div>
+                      <CardDescription className="text-xs">
+                        Datos de contacto del candidato precargados
+                      </CardDescription>
                     </CardHeader>
                     <CardContent>
                       {candidatoData ? (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Nombre Completo</Label>
-                            <p className="text-sm font-medium">{candidatoData.nombre_completo}</p>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                Nombre Completo
+                              </Label>
+                              <p className="text-sm font-medium">{candidatoData.nombre_completo}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                Email
+                              </Label>
+                              <p className="text-sm font-medium">{candidatoData.email}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                Teléfono
+                              </Label>
+                              <p className="text-sm font-medium">{candidatoData.telefono || "—"}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <MapPin className="h-3 w-3" />
+                                Ubicación
+                              </Label>
+                              <p className="text-sm font-medium">{candidatoData.ubicacion || "—"}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Nivel Educación</Label>
+                              <p className="text-sm font-medium">{candidatoData.nivel_educacion || "—"}</p>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Código Candidato</Label>
+                              <p className="text-sm font-mono font-medium">{candidatoData.codigo_candidato}</p>
+                            </div>
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Email</Label>
-                            <p className="text-sm font-medium">{candidatoData.email}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Teléfono</Label>
-                            <p className="text-sm font-medium">{candidatoData.telefono || "—"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Ubicación</Label>
-                            <p className="text-sm font-medium">{candidatoData.ubicacion || "—"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Nivel Educación</Label>
-                            <p className="text-sm font-medium">{candidatoData.nivel_educacion || "—"}</p>
-                          </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground">Código Candidato</Label>
-                            <p className="text-sm font-mono font-medium">{candidatoData.codigo_candidato}</p>
-                          </div>
+                          
+                          {/* Información profesional adicional */}
+                          {(candidatoData.puesto_actual || candidatoData.empresa_actual) && (
+                            <>
+                              <Separator />
+                              <div className="grid grid-cols-2 gap-4">
+                                {candidatoData.puesto_actual && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Briefcase className="h-3 w-3" />
+                                      Puesto Actual
+                                    </Label>
+                                    <p className="text-sm font-medium">{candidatoData.puesto_actual}</p>
+                                  </div>
+                                )}
+                                {candidatoData.empresa_actual && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Building className="h-3 w-3" />
+                                      Empresa Actual
+                                    </Label>
+                                    <p className="text-sm font-medium">{candidatoData.empresa_actual}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </>
+                          )}
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">Cargando datos del candidato...</p>
