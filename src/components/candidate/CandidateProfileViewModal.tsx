@@ -150,24 +150,30 @@ export const CandidateProfileViewModal = ({
 
         <ScrollArea className="h-[calc(90vh-8rem)] pr-4">
           <div className="space-y-6">
-            {/* Información de contacto */}
+            {/* Información Personal */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span>{hasFullAccess ? profile.email : "***@*****.***"}</span>
+              <h3 className="font-semibold flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Información Personal
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span>{hasFullAccess ? profile.email : "***@*****.***"}</span>
+                </div>
+                {profile.telefono && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Phone className="h-4 w-4 text-muted-foreground" />
+                    <span>{hasFullAccess ? profile.telefono : "*** *** ****"}</span>
+                  </div>
+                )}
+                {profile.ubicacion && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <span>{profile.ubicacion}</span>
+                  </div>
+                )}
               </div>
-              {profile.telefono && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{hasFullAccess ? profile.telefono : "*** *** ****"}</span>
-                </div>
-              )}
-              {profile.ubicacion && (
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>{profile.ubicacion}</span>
-                </div>
-              )}
             </div>
 
             {/* Estado de actividad */}
