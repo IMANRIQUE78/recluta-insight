@@ -564,12 +564,14 @@ export default function VerificadorDashboard() {
           id: "test-id",
           folio: "ESE-TEST01",
           nombre_candidato: "Juan Pérez García",
+          candidato_user_id: "00000000-0000-0000-0000-000000000000", // ID de prueba
           vacante_puesto: "Desarrollador Senior",
           direccion_visita: "Av. Insurgentes Sur 1234, Col. Del Valle, CDMX",
           fecha_solicitud: new Date().toISOString(),
           fecha_limite: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           estatus: "asignado",
           empresas: { nombre_empresa: "VVGI Reclutamiento LATAM" },
+          sueldo_ofertado: 45000,
         }}
         onSuccess={() => setModalTestSubir(false)}
       />

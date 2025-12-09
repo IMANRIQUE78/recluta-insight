@@ -542,8 +542,11 @@ export default function SubirDatosEstudioModal({
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Empresa Solicitante</Label>
-                          <p className="text-sm font-medium">{estudio.empresa_nombre || "—"}</p>
+                          <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Building className="h-3 w-3" />
+                            Empresa Solicitante
+                          </Label>
+                          <p className="text-sm font-medium">{estudio.empresas?.nombre_empresa || estudio.empresa_nombre || "—"}</p>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground">Puesto</Label>
@@ -661,7 +664,20 @@ export default function SubirDatosEstudioModal({
                           )}
                         </div>
                       ) : (
-                        <p className="text-sm text-muted-foreground">Cargando datos del candidato...</p>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              Nombre Completo
+                            </Label>
+                            <p className="text-sm font-medium">{estudio.nombre_candidato || "—"}</p>
+                          </div>
+                          <div className="col-span-2 space-y-1">
+                            <p className="text-xs text-muted-foreground italic">
+                              Los datos de contacto adicionales se cargarán desde el perfil del candidato.
+                            </p>
+                          </div>
+                        </div>
                       )}
                     </CardContent>
                   </Card>
