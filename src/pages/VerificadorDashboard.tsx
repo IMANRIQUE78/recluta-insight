@@ -17,7 +17,8 @@ import {
   MapPin,
   Building,
   User,
-  LogOut
+  LogOut,
+  Eye
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -174,6 +175,28 @@ export default function VerificadorDashboard() {
     if (dias <= 1) return "bg-orange-500";
     if (dias <= 3) return "bg-yellow-500";
     return "bg-green-500";
+  };
+
+  const getCardStyle = (fechaLimite: string) => {
+    const dias = getDiasRestantes(fechaLimite);
+    if (dias < 0) return "border-l-red-500 bg-red-50/50 dark:bg-red-950/20";
+    if (dias <= 1) return "border-l-orange-500 bg-orange-50/50 dark:bg-orange-950/20";
+    if (dias <= 3) return "border-l-yellow-500 bg-yellow-50/50 dark:bg-yellow-950/20";
+    return "border-l-green-500 bg-green-50/30 dark:bg-green-950/10";
+  };
+
+  const getUrgenciaBadge = (fechaLimite: string) => {
+    const dias = getDiasRestantes(fechaLimite);
+    if (dias < 0) {
+      return <Badge className="bg-red-100 text-red-700 border-red-200">Vencido</Badge>;
+    }
+    if (dias <= 1) {
+      return <Badge className="bg-orange-100 text-orange-700 border-orange-200">Urgente</Badge>;
+    }
+    if (dias <= 3) {
+      return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">Próximo</Badge>;
+    }
+    return <Badge className="bg-green-100 text-green-700 border-green-200">En tiempo</Badge>;
   };
 
   const handleAbrirSubirDatos = (estudio: any) => {
@@ -365,12 +388,14 @@ export default function VerificadorDashboard() {
               </Select>
             </div>
 
-            {/* Estudios Cards */}
-            <div className="grid gap-4">
+            {/* Estudios Cards - Grid similar a vacantes */}
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {estudiosFiltrados.length === 0 ? (
-                <Card>
-                  <CardContent className="py-8 text-center text-muted-foreground">
-                    No hay estudios que coincidan con los filtros
+                <Card className="md:col-span-2 xl:col-span-3">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <ClipboardList className="h-16 w-16 mx-auto mb-4 opacity-30" />
+                    <p className="text-lg font-medium">Sin estudios pendientes</p>
+                    <p className="text-sm">Los estudios asignados aparecerán aquí</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -379,70 +404,93 @@ export default function VerificadorDashboard() {
                   const estatusInfo = estatusConfig[estudio.estatus];
                   
                   return (
-                    <Card key={estudio.id} className="overflow-hidden">
-                      <div className={`h-1 ${getSLAColor(estudio.fecha_limite)}`} />
-                      <CardContent className="pt-4">
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                          <div className="flex-1 space-y-2">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <p className="text-xs text-muted-foreground font-mono">{estudio.folio}</p>
-                                <h3 className="font-semibold text-lg flex items-center gap-2">
-                                  <User className="h-4 w-4 text-muted-foreground" />
-                                  {estudio.nombre_candidato}
-                                </h3>
-                              </div>
-                              <Badge className={estatusInfo.color}>
-                                {estatusInfo.icon}
-                                <span className="ml-1">{estatusInfo.label}</span>
-                              </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <ClipboardList className="h-3 w-3" />
-                                <span>{estudio.vacante_puesto}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Building className="h-3 w-3" />
-                                <span>{estudio.empresas?.nombre_empresa || "Sin empresa"}</span>
-                              </div>
-                              <div className="flex items-center gap-1 col-span-full sm:col-span-1">
-                                <MapPin className="h-3 w-3" />
-                                <span className="truncate">{estudio.direccion_visita}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <span className={diasRestantes < 0 ? "text-red-600 font-medium" : diasRestantes <= 1 ? "text-orange-600 font-medium" : ""}>
-                                  {diasRestantes < 0 
-                                    ? `Vencido hace ${Math.abs(diasRestantes)} días`
-                                    : diasRestantes === 0
-                                      ? "Vence hoy"
-                                      : `${diasRestantes} días restantes`
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 sm:flex-col">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleVerDetalle(estudio)}
-                            >
-                              Ver detalles
-                            </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => handleAbrirSubirDatos(estudio)}
-                            >
-                              Subir datos
-                            </Button>
-                          </div>
+                    <div
+                      key={estudio.id}
+                      className={`p-4 border-l-4 rounded-lg border shadow-sm hover:shadow-md transition-all ${getCardStyle(estudio.fecha_limite)}`}
+                    >
+                      {/* Header con folio y urgencia */}
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <Badge variant="outline" className="font-mono text-xs shrink-0">
+                          {estudio.folio}
+                        </Badge>
+                        {getUrgenciaBadge(estudio.fecha_limite)}
+                      </div>
+
+                      {/* Candidato y empresa */}
+                      <div className="flex items-center gap-2 mb-1">
+                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <h4 className="font-semibold text-base line-clamp-1">{estudio.nombre_candidato}</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-1 flex items-center gap-1">
+                        <Building className="h-3 w-3 shrink-0" />
+                        {estudio.empresas?.nombre_empresa || "Sin empresa"} • {estudio.vacante_puesto}
+                      </p>
+
+                      {/* Métricas principales */}
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-background/80 rounded-md p-2 text-center border">
+                          <p className={`text-2xl font-bold ${
+                            diasRestantes < 0 ? "text-red-600" : 
+                            diasRestantes <= 1 ? "text-orange-600" : 
+                            diasRestantes <= 3 ? "text-yellow-600" : 
+                            "text-green-600"
+                          }`}>
+                            {diasRestantes < 0 ? Math.abs(diasRestantes) : diasRestantes}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                            {diasRestantes < 0 ? "Días vencido" : diasRestantes === 0 ? "Vence hoy" : "Días restantes"}
+                          </p>
                         </div>
-                      </CardContent>
-                    </Card>
+                        <div className="bg-background/80 rounded-md p-2 text-center border">
+                          <Badge className={`${estatusInfo.color} text-xs`}>
+                            {estatusInfo.icon}
+                            <span className="ml-1">{estatusInfo.label}</span>
+                          </Badge>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Estatus</p>
+                        </div>
+                      </div>
+
+                      {/* Dirección */}
+                      <div className="bg-background/60 rounded-md p-2 mb-3 border">
+                        <div className="flex items-start gap-2 text-xs">
+                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                          <span className="line-clamp-2 text-muted-foreground">{estudio.direccion_visita}</span>
+                        </div>
+                      </div>
+
+                      {/* Fechas */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>Solicitado: {format(new Date(estudio.fecha_solicitud), "dd MMM", { locale: es })}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>Límite: {format(new Date(estudio.fecha_limite), "dd MMM", { locale: es })}</span>
+                        </div>
+                      </div>
+
+                      {/* Botones */}
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleVerDetalle(estudio)}
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Detalles
+                        </Button>
+                        <Button 
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleAbrirSubirDatos(estudio)}
+                        >
+                          <ClipboardList className="h-3 w-3 mr-1" />
+                          Capturar
+                        </Button>
+                      </div>
+                    </div>
                   );
                 })
               )}
