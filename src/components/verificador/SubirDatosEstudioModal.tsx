@@ -18,6 +18,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Select,
   SelectContent,
@@ -47,7 +48,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Info,
-  Lock
+  Lock,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -103,24 +105,34 @@ export default function SubirDatosEstudioModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("solicitud");
   const [candidatoData, setCandidatoData] = useState<any>(null);
+  const [loadingCandidato, setLoadingCandidato] = useState(false);
 
   // Load candidate data
   useEffect(() => {
     const loadCandidatoData = async () => {
       if (estudio?.candidato_user_id) {
-        const { data } = await supabase
-          .from("perfil_candidato")
-          .select("*")
-          .eq("user_id", estudio.candidato_user_id)
-          .single();
-        
-        if (data) {
-          setCandidatoData(data);
+        setLoadingCandidato(true);
+        try {
+          const { data, error } = await supabase
+            .from("perfil_candidato")
+            .select("*")
+            .eq("user_id", estudio.candidato_user_id)
+            .maybeSingle();
+          
+          if (!error && data) {
+            setCandidatoData(data);
+          }
+        } catch (err) {
+          console.error("Error loading candidate data:", err);
+        } finally {
+          setLoadingCandidato(false);
         }
       }
     };
-    if (open) {
+    if (open && estudio?.candidato_user_id) {
       loadCandidatoData();
+    } else {
+      setCandidatoData(null);
     }
   }, [estudio?.candidato_user_id, open]);
 
@@ -663,6 +675,11 @@ export default function SubirDatosEstudioModal({
                             </>
                           )}
                         </div>
+                      ) : loadingCandidato ? (
+                        <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Cargando datos del candidato...</span>
+                        </div>
                       ) : (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                           <div className="space-y-1">
@@ -673,8 +690,9 @@ export default function SubirDatosEstudioModal({
                             <p className="text-sm font-medium">{estudio.nombre_candidato || "—"}</p>
                           </div>
                           <div className="col-span-2 space-y-1">
-                            <p className="text-xs text-muted-foreground italic">
-                              Los datos de contacto adicionales se cargarán desde el perfil del candidato.
+                            <p className="text-xs text-amber-600 italic flex items-center gap-1">
+                              <AlertTriangle className="h-3 w-3" />
+                              No se encontró perfil de candidato registrado en la plataforma.
                             </p>
                           </div>
                         </div>
@@ -838,13 +856,15 @@ export default function SubirDatosEstudioModal({
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            {...register("estudia_actualmente")}
-                            className="h-4 w-4"
+                      <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="estudia_actualmente"
+                            checked={watch("estudia_actualmente")}
+                            onCheckedChange={(checked) => setValue("estudia_actualmente", checked === true)}
                           />
-                          <Label className="font-normal">Actualmente estudia</Label>
+                          <Label htmlFor="estudia_actualmente" className="font-normal cursor-pointer">
+                            Actualmente estudia
+                          </Label>
                         </div>
                         {watch("estudia_actualmente") && (
                           <div>
@@ -1045,8 +1065,11 @@ export default function SubirDatosEstudioModal({
                             { key: "tiene_patio", label: "Patio/Jardín" },
                             { key: "piso_cemento", label: "Piso Cemento" },
                           ].map(({ key, label }) => (
-                            <label key={key} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" {...register(key as any)} className="h-4 w-4" />
+                            <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={watch(key as any)}
+                                onCheckedChange={(checked) => setValue(key as any, checked === true)}
+                              />
                               {label}
                             </label>
                           ))}
@@ -1077,8 +1100,11 @@ export default function SubirDatosEstudioModal({
                             { key: "tiene_audio", label: "Sistema Audio" },
                             { key: "tiene_computadora", label: "Computadora" },
                           ].map(({ key, label }) => (
-                            <label key={key} className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" {...register(key as any)} className="h-4 w-4" />
+                            <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={watch(key as any)}
+                                onCheckedChange={(checked) => setValue(key as any, checked === true)}
+                              />
                               {label}
                             </label>
                           ))}
@@ -1123,9 +1149,15 @@ export default function SubirDatosEstudioModal({
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="flex items-center gap-2">
-                          <input type="checkbox" {...register("tiene_dependientes")} className="h-4 w-4" />
-                          <Label className="font-normal">Tiene dependientes económicos</Label>
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            id="tiene_dependientes"
+                            checked={watch("tiene_dependientes")}
+                            onCheckedChange={(checked) => setValue("tiene_dependientes", checked === true)}
+                          />
+                          <Label htmlFor="tiene_dependientes" className="font-normal cursor-pointer">
+                            Tiene dependientes económicos
+                          </Label>
                         </div>
                         {watch("tiene_dependientes") && (
                           <div>
@@ -1213,8 +1245,11 @@ export default function SubirDatosEstudioModal({
                           { check: "tiene_deuda_bancaria", value: "monto_deuda_bancaria", label: "Deuda Bancaria" },
                         ].map(({ check, value, label }) => (
                           <div key={check} className="space-y-2">
-                            <label className="flex items-center gap-2 text-sm">
-                              <input type="checkbox" {...register(check as any)} className="h-4 w-4" />
+                            <label className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={watch(check as any)}
+                                onCheckedChange={(checked) => setValue(check as any, checked === true)}
+                              />
                               {label}
                             </label>
                             {watch(check as any) && (
@@ -1296,8 +1331,11 @@ export default function SubirDatosEstudioModal({
                           { key: "acepta_toxicologico", label: "Acepta Toxicológico" },
                           { key: "lee_libros", label: "Lee Libros" },
                         ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center gap-2 text-xs">
-                            <input type="checkbox" {...register(key as any)} className="h-4 w-4" />
+                          <label key={key} className="flex items-center gap-2 text-xs cursor-pointer">
+                            <Checkbox
+                              checked={watch(key as any)}
+                              onCheckedChange={(checked) => setValue(key as any, checked === true)}
+                            />
                             {label}
                           </label>
                         ))}
@@ -1330,8 +1368,11 @@ export default function SubirDatosEstudioModal({
                           { key: "proceso_administrativo", label: "¿Ha estado sujeto a proceso administrativo?" },
                           { key: "familiares_prision", label: "¿Tiene familiares en prisión?" },
                         ].map(({ key, label }) => (
-                          <label key={key} className="flex items-center gap-2 text-sm">
-                            <input type="checkbox" {...register(key as any)} className="h-4 w-4" />
+                          <label key={key} className="flex items-center gap-2 text-sm cursor-pointer">
+                            <Checkbox
+                              checked={watch(key as any)}
+                              onCheckedChange={(checked) => setValue(key as any, checked === true)}
+                            />
                             {label}
                           </label>
                         ))}
