@@ -107,35 +107,6 @@ export default function SubirDatosEstudioModal({
   const [candidatoData, setCandidatoData] = useState<any>(null);
   const [loadingCandidato, setLoadingCandidato] = useState(false);
 
-  // Load candidate data
-  useEffect(() => {
-    const loadCandidatoData = async () => {
-      if (estudio?.candidato_user_id) {
-        setLoadingCandidato(true);
-        try {
-          const { data, error } = await supabase
-            .from("perfil_candidato")
-            .select("*")
-            .eq("user_id", estudio.candidato_user_id)
-            .maybeSingle();
-          
-          if (!error && data) {
-            setCandidatoData(data);
-          }
-        } catch (err) {
-          console.error("Error loading candidate data:", err);
-        } finally {
-          setLoadingCandidato(false);
-        }
-      }
-    };
-    if (open && estudio?.candidato_user_id) {
-      loadCandidatoData();
-    } else {
-      setCandidatoData(null);
-    }
-  }, [estudio?.candidato_user_id, open]);
-
   const { register, handleSubmit, watch, setValue, reset, control } = useForm({
     defaultValues: {
       // Datos de la visita
@@ -298,6 +269,37 @@ export default function SubirDatosEstudioModal({
       observaciones_finales: estudio?.observaciones_finales || "",
     },
   });
+
+  // Load candidate data and reset form when estudio changes
+  useEffect(() => {
+    const loadCandidatoData = async () => {
+      if (estudio?.candidato_user_id) {
+        setLoadingCandidato(true);
+        try {
+          const { data, error } = await supabase
+            .from("perfil_candidato")
+            .select("*")
+            .eq("user_id", estudio.candidato_user_id)
+            .maybeSingle();
+          
+          if (!error && data) {
+            setCandidatoData(data);
+          }
+        } catch (err) {
+          console.error("Error loading candidate data:", err);
+        } finally {
+          setLoadingCandidato(false);
+        }
+      }
+    };
+    
+    if (open && estudio) {
+      loadCandidatoData();
+      setActiveTab("solicitud");
+    } else {
+      setCandidatoData(null);
+    }
+  }, [estudio?.id, estudio?.candidato_user_id, open]);
 
   const candidatoPresente = watch("candidato_presente");
 
