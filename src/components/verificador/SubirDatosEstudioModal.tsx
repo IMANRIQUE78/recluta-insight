@@ -512,8 +512,8 @@ export default function SubirDatosEstudioModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[95vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 pb-2 border-b shrink-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogHeader className="p-4 pb-2 border-b shrink-0 bg-background">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5 text-primary" />
             Estudio Socioeconómico
@@ -521,24 +521,30 @@ export default function SubirDatosEstudioModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-            <div className="px-4 py-2 border-b shrink-0 overflow-x-auto">
-              <TabsList className="inline-flex h-9 w-auto min-w-full">
-                {tabs.map((tab) => (
-                  <TabsTrigger 
-                    key={tab.id} 
-                    value={tab.id} 
-                    className="text-xs px-2 sm:px-3 whitespace-nowrap"
-                  >
-                    <tab.icon className="h-3 w-3 mr-1" />
-                    <span className="hidden sm:inline">{tab.label}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+            {/* Sticky Navigation Bar */}
+            <div className="shrink-0 bg-muted/50 border-b">
+              <div className="px-2 py-2 overflow-x-auto scrollbar-thin">
+                <TabsList className="inline-flex h-10 w-auto gap-1 bg-transparent p-0">
+                  {tabs.map((tab, index) => (
+                    <TabsTrigger 
+                      key={tab.id} 
+                      value={tab.id} 
+                      className="text-xs px-3 py-2 whitespace-nowrap rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm bg-background border"
+                    >
+                      <tab.icon className="h-3.5 w-3.5 mr-1.5" />
+                      <span>{tab.label}</span>
+                      <span className="ml-1.5 text-[10px] text-muted-foreground data-[state=active]:text-primary-foreground/80">
+                        {index + 1}/{tabs.length}
+                      </span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
             </div>
 
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
               <form className="p-4 space-y-4">
                 {/* Tab: Información de la Solicitud (Solo Lectura) */}
                 <TabsContent value="solicitud" className="mt-0 space-y-4">
