@@ -17,8 +17,7 @@ import {
   MapPin,
   Building,
   User,
-  LogOut,
-  Eye
+  LogOut
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -399,7 +398,7 @@ export default function VerificadorDashboard() {
                   </CardContent>
                 </Card>
               ) : (
-                estudiosFiltrados.map((estudio) => {
+              estudiosFiltrados.map((estudio) => {
                   const diasRestantes = getDiasRestantes(estudio.fecha_limite);
                   const estatusInfo = estatusConfig[estudio.estatus];
                   
@@ -408,28 +407,52 @@ export default function VerificadorDashboard() {
                       key={estudio.id}
                       className={`p-4 border-l-4 rounded-lg border shadow-sm hover:shadow-md transition-all ${getCardStyle(estudio.fecha_limite)}`}
                     >
-                      {/* Header con folio y urgencia */}
-                      <div className="flex items-start justify-between gap-2 mb-3">
-                        <Badge variant="outline" className="font-mono text-xs shrink-0">
-                          {estudio.folio}
-                        </Badge>
+                      {/* Header con folio, estatus y urgencia */}
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="font-mono text-xs shrink-0">
+                            {estudio.folio}
+                          </Badge>
+                          <Badge className={`${estatusInfo.color} text-xs`}>
+                            {estatusInfo.icon}
+                            <span className="ml-1">{estatusInfo.label}</span>
+                          </Badge>
+                        </div>
                         {getUrgenciaBadge(estudio.fecha_limite)}
                       </div>
 
-                      {/* Candidato y empresa */}
+                      {/* Candidato */}
                       <div className="flex items-center gap-2 mb-1">
-                        <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <h4 className="font-semibold text-base line-clamp-1">{estudio.nombre_candidato}</h4>
+                        <User className="h-4 w-4 text-primary shrink-0" />
+                        <h4 className="font-semibold text-base">{estudio.nombre_candidato}</h4>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-1 flex items-center gap-1">
-                        <Building className="h-3 w-3 shrink-0" />
-                        {estudio.empresas?.nombre_empresa || "Sin empresa"} • {estudio.vacante_puesto}
-                      </p>
 
-                      {/* Métricas principales */}
-                      <div className="grid grid-cols-2 gap-2 mb-3">
+                      {/* Empresa y puesto */}
+                      <div className="bg-background/60 rounded-md p-2 mb-2 border space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Building className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <span className="font-medium">{estudio.empresas?.nombre_empresa || "Sin empresa"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span className="ml-5">Puesto: {estudio.vacante_puesto}</span>
+                        </div>
+                      </div>
+
+                      {/* Dirección de visita */}
+                      <div className="bg-background/60 rounded-md p-2 mb-2 border">
+                        <div className="flex items-start gap-2 text-xs">
+                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-muted-foreground font-medium">Dirección de visita:</span>
+                            <p className="text-foreground mt-0.5">{estudio.direccion_visita}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Métricas de tiempo */}
+                      <div className="grid grid-cols-3 gap-2 mb-2">
                         <div className="bg-background/80 rounded-md p-2 text-center border">
-                          <p className={`text-2xl font-bold ${
+                          <p className={`text-xl font-bold ${
                             diasRestantes < 0 ? "text-red-600" : 
                             diasRestantes <= 1 ? "text-orange-600" : 
                             diasRestantes <= 3 ? "text-yellow-600" : 
@@ -437,59 +460,47 @@ export default function VerificadorDashboard() {
                           }`}>
                             {diasRestantes < 0 ? Math.abs(diasRestantes) : diasRestantes}
                           </p>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
-                            {diasRestantes < 0 ? "Días vencido" : diasRestantes === 0 ? "Vence hoy" : "Días restantes"}
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">
+                            {diasRestantes < 0 ? "Días vencido" : diasRestantes === 0 ? "Vence hoy" : "Días rest."}
                           </p>
                         </div>
                         <div className="bg-background/80 rounded-md p-2 text-center border">
-                          <Badge className={`${estatusInfo.color} text-xs`}>
-                            {estatusInfo.icon}
-                            <span className="ml-1">{estatusInfo.label}</span>
-                          </Badge>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-1">Estatus</p>
+                          <p className="text-xs font-medium">{format(new Date(estudio.fecha_solicitud), "dd/MM", { locale: es })}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Solicitado</p>
+                        </div>
+                        <div className="bg-background/80 rounded-md p-2 text-center border">
+                          <p className="text-xs font-medium">{format(new Date(estudio.fecha_limite), "dd/MM", { locale: es })}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Límite</p>
                         </div>
                       </div>
 
-                      {/* Dirección */}
-                      <div className="bg-background/60 rounded-md p-2 mb-3 border">
-                        <div className="flex items-start gap-2 text-xs">
-                          <MapPin className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 text-muted-foreground">{estudio.direccion_visita}</span>
+                      {/* Fecha de visita programada si existe */}
+                      {estudio.fecha_visita && (
+                        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-md p-2 mb-2 border border-blue-200 dark:border-blue-800">
+                          <div className="flex items-center gap-2 text-xs text-blue-700 dark:text-blue-300">
+                            <Calendar className="h-3 w-3" />
+                            <span>Visita programada: {format(new Date(estudio.fecha_visita), "dd/MM/yyyy", { locale: es })} {estudio.hora_visita && `a las ${estudio.hora_visita}`}</span>
+                          </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* Fechas */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Solicitado: {format(new Date(estudio.fecha_solicitud), "dd MMM", { locale: es })}</span>
+                      {/* Observaciones si existen */}
+                      {estudio.observaciones_visita && (
+                        <div className="bg-amber-50 dark:bg-amber-950/30 rounded-md p-2 mb-2 border border-amber-200 dark:border-amber-800">
+                          <p className="text-[10px] text-amber-700 dark:text-amber-300 font-medium mb-0.5">Observaciones:</p>
+                          <p className="text-xs text-amber-800 dark:text-amber-200 line-clamp-2">{estudio.observaciones_visita}</p>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Límite: {format(new Date(estudio.fecha_limite), "dd MMM", { locale: es })}</span>
-                        </div>
-                      </div>
+                      )}
 
-                      {/* Botones */}
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleVerDetalle(estudio)}
-                        >
-                          <Eye className="h-3 w-3 mr-1" />
-                          Detalles
-                        </Button>
-                        <Button 
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => handleAbrirSubirDatos(estudio)}
-                        >
-                          <ClipboardList className="h-3 w-3 mr-1" />
-                          Capturar
-                        </Button>
-                      </div>
+                      {/* Botón único para capturar */}
+                      <Button 
+                        size="sm"
+                        className="w-full"
+                        onClick={() => handleAbrirSubirDatos(estudio)}
+                      >
+                        <ClipboardList className="h-4 w-4 mr-2" />
+                        Capturar Datos del Estudio
+                      </Button>
                     </div>
                   );
                 })
