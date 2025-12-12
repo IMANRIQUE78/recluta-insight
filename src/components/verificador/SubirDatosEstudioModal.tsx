@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// Tabs removed - using scroll view
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -103,7 +103,7 @@ export default function SubirDatosEstudioModal({
   onSuccess,
 }: SubirDatosEstudioModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState("solicitud");
+  
   const [candidatoData, setCandidatoData] = useState<any>(null);
   const [loadingCandidato, setLoadingCandidato] = useState(false);
 
@@ -295,7 +295,6 @@ export default function SubirDatosEstudioModal({
     
     if (open && estudio) {
       loadCandidatoData();
-      setActiveTab("solicitud");
     } else {
       setCandidatoData(null);
     }
@@ -498,17 +497,6 @@ export default function SubirDatosEstudioModal({
 
   if (!estudio) return null;
 
-  const tabs = [
-    { id: "solicitud", label: "Solicitud", icon: FileText },
-    { id: "visita", label: "Visita", icon: Calendar },
-    { id: "candidato", label: "Candidato", icon: User },
-    { id: "familia", label: "Familia", icon: Users },
-    { id: "vivienda", label: "Vivienda", icon: Home },
-    { id: "economico", label: "Económico", icon: DollarSign },
-    { id: "salud", label: "Salud", icon: Heart },
-    { id: "referencias", label: "Referencias", icon: Briefcase },
-    { id: "resultado", label: "Resultado", icon: CheckCircle },
-  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -521,33 +509,10 @@ export default function SubirDatosEstudioModal({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            {/* Sticky Navigation Bar */}
-            <div className="shrink-0 bg-muted/50 border-b">
-              <div className="px-2 py-2 overflow-x-auto scrollbar-thin">
-                <TabsList className="inline-flex h-10 w-auto gap-1 bg-transparent p-0">
-                  {tabs.map((tab, index) => (
-                    <TabsTrigger 
-                      key={tab.id} 
-                      value={tab.id} 
-                      className="text-xs px-3 py-2 whitespace-nowrap rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm bg-background border"
-                    >
-                      <tab.icon className="h-3.5 w-3.5 mr-1.5" />
-                      <span>{tab.label}</span>
-                      <span className="ml-1.5 text-[10px] text-muted-foreground data-[state=active]:text-primary-foreground/80">
-                        {index + 1}/{tabs.length}
-                      </span>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-            </div>
-
-            <ScrollArea className="flex-1 min-h-0">
-              <form className="p-4 space-y-4">
-                {/* Tab: Información de la Solicitud (Solo Lectura) */}
-                <TabsContent value="solicitud" className="mt-0 space-y-4">
+        <ScrollArea className="flex-1">
+          <form className="p-4 space-y-6">
+            {/* Sección: Información de la Solicitud (Solo Lectura) */}
+            <div className="space-y-4">
                   <Card className="bg-muted/30 border-primary/20">
                     <CardHeader className="py-3">
                       <div className="flex items-center gap-2">
@@ -707,10 +672,10 @@ export default function SubirDatosEstudioModal({
                       )}
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Datos de la Visita */}
-                <TabsContent value="visita" className="mt-0 space-y-4">
+                {/* Sección: Datos de la Visita */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -782,10 +747,10 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Datos Candidato Verificados */}
-                <TabsContent value="candidato" className="mt-0 space-y-4">
+                {/* Sección: Datos Candidato Verificados */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -887,10 +852,10 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Datos Familiares */}
-                <TabsContent value="familia" className="mt-0 space-y-4">
+                {/* Sección: Datos Familiares */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -947,10 +912,10 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Vivienda */}
-                <TabsContent value="vivienda" className="mt-0 space-y-4">
+                {/* Sección: Vivienda */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -1129,10 +1094,10 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Datos Económicos */}
-                <TabsContent value="economico" className="mt-0 space-y-4">
+                {/* Sección: Datos Económicos */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -1268,10 +1233,10 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Salud e Información Legal */}
-                <TabsContent value="salud" className="mt-0 space-y-4">
+                {/* Sección: Salud e Información Legal */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -1393,10 +1358,10 @@ export default function SubirDatosEstudioModal({
                       )}
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Referencias */}
-                <TabsContent value="referencias" className="mt-0 space-y-4">
+                {/* Sección: Referencias */}
+                <div className="space-y-4">
                   <Card>
                     <CardHeader className="py-3">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -1484,10 +1449,10 @@ export default function SubirDatosEstudioModal({
                       ))}
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
 
-                {/* Tab: Resultado Final */}
-                <TabsContent value="resultado" className="mt-0 space-y-4">
+                {/* Sección: Resultado Final */}
+                <div className="space-y-4">
                   <Card className="border-primary/30">
                     <CardHeader className="py-3 bg-primary/5">
                       <CardTitle className="text-sm flex items-center gap-2">
@@ -1553,11 +1518,9 @@ export default function SubirDatosEstudioModal({
                       </div>
                     </CardContent>
                   </Card>
-                </TabsContent>
+                </div>
               </form>
             </ScrollArea>
-          </Tabs>
-        </div>
 
         {/* Footer con botones */}
         <div className="p-4 border-t shrink-0 flex justify-between gap-3 bg-muted/30">
