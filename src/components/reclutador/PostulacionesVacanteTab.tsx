@@ -82,11 +82,32 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
   };
 
   const getEtapaColor = (etapa: string) => {
+    if (etapa === "se_solicita_socioeconomico") return "secondary";
     if (etapa?.includes("entrevista")) return "default";
     if (etapa === "contratado") return "default";
     if (etapa?.includes("no_viable") || etapa === "descartado" || etapa?.includes("no_")) return "destructive";
     if (etapa === "continua_proceso") return "secondary";
     return "outline";
+  };
+
+  const formatEtapa = (etapa: string) => {
+    const etapaLabels: Record<string, string> = {
+      "recibida": "Recibida",
+      "entrevista_presencial": "Entrevista Presencial",
+      "entrevista_distancia": "Entrevista a Distancia",
+      "no_respondio_contacto": "No Respondió Contacto",
+      "continua_proceso": "Continúa en Proceso",
+      "candidato_abandona": "Candidato Abandona",
+      "no_asistio": "No Asistió",
+      "no_viable_filtro": "No Viable en Llamada Filtro",
+      "no_viable_entrevista": "No Viable en Entrevista",
+      "no_viable_conocimientos": "No Viable por Conocimientos",
+      "no_viable_psicometria": "No Viable por Psicometría",
+      "no_viable_segunda_entrevista": "No Viable en Segunda Entrevista",
+      "contratado": "Contratado",
+      "se_solicita_socioeconomico": "Se Solicita Socioeconómico",
+    };
+    return etapaLabels[etapa] || etapa?.replace(/_/g, " ") || "Sin etapa";
   };
 
   if (loading) {
@@ -127,7 +148,7 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
                       {postulacion.candidato?.nombre_completo || "Candidato"}
                     </button>
                     <Badge variant={getEtapaColor(postulacion.etapa)}>
-                      {postulacion.etapa}
+                      {formatEtapa(postulacion.etapa)}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
