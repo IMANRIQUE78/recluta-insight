@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 // Tabs removed - using scroll view
-import { ScrollArea } from "@/components/ui/scroll-area";
+// ScrollArea removed - using native scroll
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -509,7 +509,7 @@ export default function SubirDatosEstudioModal({
           </DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-muted/20 hover:scrollbar-thumb-primary/50">
           <form className="p-4 space-y-6">
             {/* Sección: Información de la Solicitud (Solo Lectura) */}
             <div className="space-y-4">
@@ -1520,7 +1520,7 @@ export default function SubirDatosEstudioModal({
                   </Card>
                 </div>
               </form>
-            </ScrollArea>
+            </div>
 
         {/* Footer con botones */}
         <div className="p-4 border-t shrink-0 flex justify-between gap-3 bg-muted/30">
