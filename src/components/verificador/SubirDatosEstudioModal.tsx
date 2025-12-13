@@ -525,6 +525,15 @@ export default function SubirDatosEstudioModal({
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                      {/* Nombre del candidato destacado */}
+                      <div className="p-3 bg-primary/5 rounded-lg border border-primary/20">
+                        <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                          <User className="h-3 w-3" />
+                          Candidato
+                        </Label>
+                        <p className="text-lg font-semibold text-primary">{estudio.nombre_candidato || "Sin nombre"}</p>
+                      </div>
+                      
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground flex items-center gap-1">
@@ -535,7 +544,7 @@ export default function SubirDatosEstudioModal({
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground">Puesto</Label>
-                          <p className="text-sm font-medium">{estudio.vacante_puesto}</p>
+                          <p className="text-sm font-medium">{estudio.vacante_puesto || "—"}</p>
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground">Sueldo Ofertado</Label>
@@ -551,7 +560,7 @@ export default function SubirDatosEstudioModal({
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs text-muted-foreground">Folio Estudio</Label>
-                          <p className="text-sm font-mono font-medium">{estudio.folio}</p>
+                          <p className="text-sm font-mono font-medium">{estudio.folio || "—"}</p>
                         </div>
                       </div>
 
@@ -562,7 +571,7 @@ export default function SubirDatosEstudioModal({
                           <MapPin className="h-3 w-3" />
                           Dirección a Visitar
                         </Label>
-                        <p className="text-sm font-medium">{estudio.direccion_visita}</p>
+                        <p className="text-sm font-medium">{estudio.direccion_visita || "—"}</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -572,15 +581,20 @@ export default function SubirDatosEstudioModal({
                     <CardHeader className="py-3">
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-primary" />
-                        <CardTitle className="text-sm">Información Personal</CardTitle>
+                        <CardTitle className="text-sm">Información de Contacto del Candidato</CardTitle>
                         <Badge variant="secondary" className="text-xs">Desde perfil</Badge>
                       </div>
                       <CardDescription className="text-xs">
-                        Datos de contacto del candidato precargados
+                        Datos de contacto del candidato precargados desde su perfil
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      {candidatoData ? (
+                      {loadingCandidato ? (
+                        <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm">Cargando datos del candidato...</span>
+                        </div>
+                      ) : candidatoData ? (
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <div className="space-y-1">
@@ -588,14 +602,14 @@ export default function SubirDatosEstudioModal({
                                 <User className="h-3 w-3" />
                                 Nombre Completo
                               </Label>
-                              <p className="text-sm font-medium">{candidatoData.nombre_completo}</p>
+                              <p className="text-sm font-medium">{candidatoData.nombre_completo || estudio.nombre_candidato}</p>
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Mail className="h-3 w-3" />
                                 Email
                               </Label>
-                              <p className="text-sm font-medium">{candidatoData.email}</p>
+                              <p className="text-sm font-medium">{candidatoData.email || "—"}</p>
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
@@ -617,7 +631,7 @@ export default function SubirDatosEstudioModal({
                             </div>
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground">Código Candidato</Label>
-                              <p className="text-sm font-mono font-medium">{candidatoData.codigo_candidato}</p>
+                              <p className="text-sm font-mono font-medium">{candidatoData.codigo_candidato || "—"}</p>
                             </div>
                           </div>
                           
@@ -648,24 +662,21 @@ export default function SubirDatosEstudioModal({
                             </>
                           )}
                         </div>
-                      ) : loadingCandidato ? (
-                        <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span className="text-sm">Cargando datos del candidato...</span>
-                        </div>
                       ) : (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          <div className="space-y-1">
-                            <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              Nombre Completo
-                            </Label>
-                            <p className="text-sm font-medium">{estudio.nombre_candidato || "—"}</p>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                Nombre Completo
+                              </Label>
+                              <p className="text-sm font-medium">{estudio.nombre_candidato || "—"}</p>
+                            </div>
                           </div>
-                          <div className="col-span-2 space-y-1">
-                            <p className="text-xs text-amber-600 italic flex items-center gap-1">
-                              <AlertTriangle className="h-3 w-3" />
-                              No se encontró perfil de candidato registrado en la plataforma.
+                          <div className="p-2 bg-amber-50 dark:bg-amber-950/30 rounded border border-amber-200 dark:border-amber-800">
+                            <p className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                              <Info className="h-3 w-3" />
+                              No se encontró perfil de candidato registrado. Los datos de contacto deberán capturarse durante la visita.
                             </p>
                           </div>
                         </div>
