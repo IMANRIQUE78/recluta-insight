@@ -82,7 +82,7 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
   };
 
   const getEtapaColor = (etapa: string) => {
-    if (etapa === "se_solicita_socioeconomico") return "secondary";
+    if (etapa === "solicita_socioeconomico") return "secondary";
     if (etapa?.includes("entrevista")) return "default";
     if (etapa === "contratado") return "default";
     if (etapa?.includes("no_viable") || etapa === "descartado" || etapa?.includes("no_")) return "destructive";
@@ -105,7 +105,7 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
       "no_viable_psicometria": "No Viable por Psicometría",
       "no_viable_segunda_entrevista": "No Viable en Segunda Entrevista",
       "contratado": "Contratado",
-      "se_solicita_socioeconomico": "Se Solicita Socioeconómico",
+      "solicita_socioeconomico": "Se Solicita Socioeconómico",
     };
     return etapaLabels[etapa] || etapa?.replace(/_/g, " ") || "Sin etapa";
   };
