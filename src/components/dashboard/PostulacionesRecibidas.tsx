@@ -56,6 +56,7 @@ const etapaLabels: Record<string, string> = {
   contratado: "Contratado",
   contratada: "Contratada",
   descartado: "Descartado",
+  solicita_socioeconomico: "Se solicita socioeconómico",
 };
 
 const etapaColors: Record<string, string> = {
@@ -77,6 +78,7 @@ const etapaColors: Record<string, string> = {
   contratado: "bg-green-500",
   contratada: "bg-green-500",
   descartado: "bg-red-500",
+  solicita_socioeconomico: "bg-blue-600",
 };
 
 export const PostulacionesRecibidas = () => {
