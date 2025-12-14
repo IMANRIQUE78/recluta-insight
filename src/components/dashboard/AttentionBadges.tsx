@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   AlertTriangle, 
@@ -9,7 +8,7 @@ import {
   FileCheck, 
   UserPlus, 
   ChevronRight,
-  Bell
+  CheckCircle2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,8 +60,8 @@ export const AttentionBadges = ({ onItemClick }: AttentionBadgesProps) => {
           attentionItems.push({
             id: v.id,
             type: "cierre",
-            title: `Cierre solicitado: ${v.titulo_puesto}`,
-            subtitle: `${v.folio} • Por ${v.perfil_reclutador?.nombre_reclutador || "Reclutador"}`,
+            title: `${v.titulo_puesto}`,
+            subtitle: `${v.folio} • ${v.perfil_reclutador?.nombre_reclutador || "Reclutador"}`,
             urgency: "alta",
             data: v
           });
@@ -94,8 +93,8 @@ export const AttentionBadges = ({ onItemClick }: AttentionBadgesProps) => {
             attentionItems.push({
               id: inv.id,
               type: "invitacion",
-              title: `Invitación pendiente`,
-              subtitle: `Código: ${inv.codigo_reclutador} • ${inv.tipo_vinculacion}`,
+              title: `Código: ${inv.codigo_reclutador}`,
+              subtitle: `Tipo: ${inv.tipo_vinculacion}`,
               urgency: "media",
               data: inv
             });
@@ -120,7 +119,7 @@ export const AttentionBadges = ({ onItemClick }: AttentionBadgesProps) => {
             attentionItems.push({
               id: est.id,
               type: "estudio",
-              title: `Estudio entregado: ${est.nombre_candidato}`,
+              title: `${est.nombre_candidato}`,
               subtitle: `${est.folio} • ${est.vacante_puesto}`,
               urgency: "media",
               data: est
@@ -137,101 +136,98 @@ export const AttentionBadges = ({ onItemClick }: AttentionBadgesProps) => {
     }
   };
 
-  const getIcon = (type: AttentionItem["type"]) => {
-    switch (type) {
-      case "cierre":
-        return <Clock className="h-4 w-4" />;
-      case "invitacion":
-        return <UserPlus className="h-4 w-4" />;
-      case "estudio":
-        return <FileCheck className="h-4 w-4" />;
-    }
-  };
+  const cierreItems = items.filter(i => i.type === "cierre");
+  const invitacionItems = items.filter(i => i.type === "invitacion");
+  const estudioItems = items.filter(i => i.type === "estudio");
 
-  const getUrgencyStyles = (urgency: AttentionItem["urgency"]) => {
-    switch (urgency) {
-      case "alta":
-        return "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-950/50";
-      case "media":
-        return "bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-950/50";
-      case "baja":
-        return "bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-950/50";
-    }
-  };
-
-  const getIconStyles = (urgency: AttentionItem["urgency"]) => {
-    switch (urgency) {
-      case "alta":
-        return "text-red-600 dark:text-red-400";
-      case "media":
-        return "text-amber-600 dark:text-amber-400";
-      case "baja":
-        return "text-blue-600 dark:text-blue-400";
-    }
-  };
-
-  if (loading) {
+  const renderCard = (
+    title: string,
+    icon: React.ReactNode,
+    sectionItems: AttentionItem[],
+    emptyColor: string,
+    alertColor: string
+  ) => {
+    const isEmpty = sectionItems.length === 0;
+    
     return (
-      <Card className="border-dashed">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Bell className="h-4 w-4 animate-pulse" />
-            <span className="text-sm">Cargando alertas...</span>
-          </div>
+      <Card className={cn(
+        "transition-all",
+        isEmpty 
+          ? `border-dashed ${emptyColor}` 
+          : alertColor
+      )}>
+        <CardHeader className="pb-2 pt-4">
+          <CardTitle className="flex items-center justify-between text-sm font-medium">
+            <div className="flex items-center gap-2">
+              {icon}
+              {title}
+            </div>
+            {!isEmpty && (
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                {sectionItems.length}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pb-4">
+          {loading ? (
+            <div className="text-sm text-muted-foreground animate-pulse">Cargando...</div>
+          ) : isEmpty ? (
+            <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="text-sm font-medium">Todo ok</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sectionItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => onItemClick?.(item)}
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md bg-background/60 hover:bg-background border border-border/50 transition-all cursor-pointer text-left"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{item.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                </button>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
-  }
-
-  if (items.length === 0) {
-    return (
-      <Card className="border-dashed border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-            <Bell className="h-4 w-4" />
-            <span className="text-sm font-medium">Sin pendientes - Todo está al día</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+  };
 
   return (
-    <Card className="border-amber-200 dark:border-amber-800 bg-gradient-to-r from-amber-50/50 to-orange-50/30 dark:from-amber-950/20 dark:to-orange-950/10">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-base font-semibold">
-            <AlertTriangle className="h-5 w-5 text-amber-600" />
-            Lo que requiere mi atención ahora
-            <Badge variant="secondary" className="ml-2 bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-              {items.length}
-            </Badge>
-          </CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="flex flex-wrap gap-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => onItemClick?.(item)}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg border transition-all cursor-pointer text-left",
-                getUrgencyStyles(item.urgency)
-              )}
-            >
-              <div className={cn("shrink-0", getIconStyles(item.urgency))}>
-                {getIcon(item.type)}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium truncate">{item.title}</p>
-                <p className="text-xs text-muted-foreground truncate">{item.subtitle}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="h-5 w-5 text-amber-600" />
+        <h2 className="text-lg font-semibold">Lo que requiere mi atención ahora</h2>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {renderCard(
+          "Solicitudes de Cierre",
+          <Clock className="h-4 w-4 text-red-600" />,
+          cierreItems,
+          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
+        )}
+        {renderCard(
+          "Invitaciones Pendientes",
+          <UserPlus className="h-4 w-4 text-amber-600" />,
+          invitacionItems,
+          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
+        )}
+        {renderCard(
+          "Estudios Entregados",
+          <FileCheck className="h-4 w-4 text-blue-600" />,
+          estudioItems,
+          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20"
+        )}
+      </div>
+    </div>
   );
 };
