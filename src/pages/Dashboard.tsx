@@ -10,6 +10,7 @@ import { VacanteDetailModal } from "@/components/dashboard/VacanteDetailModal";
 import { ReclutadorProfileModal } from "@/components/dashboard/ReclutadorProfileModal";
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
+import { AttentionBadges } from "@/components/dashboard/AttentionBadges";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,6 +188,15 @@ const Dashboard = () => {
       />
       
       <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Attention Badges - Lo que requiere mi atención */}
+        <AttentionBadges 
+          onItemClick={(item) => {
+            if (item.type === "cierre" && item.data) {
+              setSelectedVacante(item.data);
+            }
+          }}
+        />
+
         {/* Quick Actions Bar */}
         <div className="flex items-center justify-between gap-4 pb-4 border-b">
           <QuickActions 
