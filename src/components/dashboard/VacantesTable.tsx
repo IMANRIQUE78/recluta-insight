@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock } from "lucide-react";
+import { differenceInDays } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface VacantesTableProps {
   onSelectVacante: (vacante: any) => void;
@@ -36,6 +38,29 @@ const getEstatusLabel = (estatus: string) => {
     default:
       return estatus;
   }
+};
+
+// Semáforo visual - misma escala que el dashboard del reclutador
+const getSemaforoColor = (dias: number) => {
+  if (dias <= 15) return "bg-green-500";
+  if (dias <= 30) return "bg-yellow-500";
+  if (dias <= 45) return "bg-orange-500";
+  return "bg-red-500";
+};
+
+const getSemaforoBadge = (dias: number) => {
+  if (dias <= 15) return { label: "En tiempo", className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-300" };
+  if (dias <= 30) return { label: "Atención", className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 border-yellow-300" };
+  if (dias <= 45) return { label: "Urgente", className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-300" };
+  return { label: "Crítico", className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300" };
+};
+
+const getRowSemaforoClass = (dias: number, estatus: string) => {
+  if (estatus !== "abierta") return "";
+  if (dias <= 15) return "border-l-4 border-l-green-500";
+  if (dias <= 30) return "border-l-4 border-l-yellow-500";
+  if (dias <= 45) return "border-l-4 border-l-orange-500";
+  return "border-l-4 border-l-red-500";
 };
 
 export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTableProps) => {
@@ -233,16 +258,29 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                   <TableHead>Nombre de Vacante</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Fecha de Registro</TableHead>
+                  <TableHead>Días Abierta</TableHead>
                   <TableHead>Estatus</TableHead>
                   <TableHead>Reclutador</TableHead>
                   <TableHead>Lugar de Trabajo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredVacantes.map((vacante) => (
+                {filteredVacantes.map((vacante) => {
+                  const diasAbierta = differenceInDays(
+                    vacante.estatus === "cerrada" && vacante.fecha_cierre 
+                      ? new Date(vacante.fecha_cierre) 
+                      : new Date(), 
+                    new Date(vacante.fecha_solicitud)
+                  );
+                  const semaforoBadge = getSemaforoBadge(diasAbierta);
+                  
+                  return (
                   <TableRow
                     key={vacante.id}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    className={cn(
+                      "cursor-pointer hover:bg-muted/50 transition-colors",
+                      getRowSemaforoClass(diasAbierta, vacante.estatus)
+                    )}
                     onClick={() => onSelectVacante(vacante)}
                   >
                     <TableCell className="font-medium">{vacante.folio}</TableCell>
@@ -256,6 +294,18 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(vacante.fecha_solicitud)}</TableCell>
+                    <TableCell>
+                      {vacante.estatus === "abierta" ? (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={semaforoBadge.className}>
+                            <Clock className="h-3 w-3 mr-1" />
+                            {diasAbierta}d - {semaforoBadge.label}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">{diasAbierta} días</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Badge className={getEstatusColor(vacante.estatus)}>
@@ -287,7 +337,8 @@ export const VacantesTable = ({ onSelectVacante, refreshTrigger }: VacantesTable
                     </TableCell>
                     <TableCell className="capitalize">{vacante.lugar_trabajo}</TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
