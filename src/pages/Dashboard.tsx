@@ -190,6 +190,7 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Attention Badges - Lo que requiere mi atención */}
         <AttentionBadges 
+          refreshTrigger={refreshTrigger}
           onItemClick={(item) => {
             if (item.type === "cierre" && item.data) {
               setSelectedVacante(item.data);

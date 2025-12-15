@@ -23,15 +23,16 @@ interface AttentionItem {
 
 interface AttentionBadgesProps {
   onItemClick?: (item: AttentionItem) => void;
+  refreshTrigger?: number;
 }
 
-export const AttentionBadges = ({ onItemClick }: AttentionBadgesProps) => {
+export const AttentionBadges = ({ onItemClick, refreshTrigger }: AttentionBadgesProps) => {
   const [items, setItems] = useState<AttentionItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadAttentionItems();
-  }, []);
+  }, [refreshTrigger]);
 
   const loadAttentionItems = async () => {
     try {
