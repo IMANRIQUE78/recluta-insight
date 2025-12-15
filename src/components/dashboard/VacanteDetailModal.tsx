@@ -9,8 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Users, Calendar, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Lock, Users, Calendar, AlertTriangle, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PostulacionesVacanteTab } from "@/components/reclutador/PostulacionesVacanteTab";
 
 interface VacanteDetailModalProps {
   open: boolean;
@@ -27,6 +29,8 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [reclutadores, setReclutadores] = useState<any[]>([]);
   const [postulacionesCount, setPostulacionesCount] = useState(0);
   const [entrevistasCount, setEntrevistasCount] = useState(0);
+  const [publicacionId, setPublicacionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("detalle");
   
   const [formData, setFormData] = useState<{
     folio: string;
@@ -202,6 +206,8 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         .maybeSingle();
 
       if (publicacion) {
+        setPublicacionId(publicacion.id);
+        
         // Contar postulaciones
         const { count: postCount } = await supabase
           .from("postulaciones")
@@ -210,15 +216,26 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
         setPostulacionesCount(postCount || 0);
 
-        // Contar entrevistas realizadas
-        const { count: entCount } = await supabase
-          .from("entrevistas_candidato")
-          .select("*", { count: 'exact', head: true })
-          .eq("postulacion_id", publicacion.id)
-          .neq("estado", "rechazada");
+        // Contar entrevistas a través de postulaciones
+        const { data: postulaciones } = await supabase
+          .from("postulaciones")
+          .select("id")
+          .eq("publicacion_id", publicacion.id);
 
-        setEntrevistasCount(entCount || 0);
+        if (postulaciones && postulaciones.length > 0) {
+          const postulacionIds = postulaciones.map(p => p.id);
+          const { count: entCount } = await supabase
+            .from("entrevistas_candidato")
+            .select("*", { count: 'exact', head: true })
+            .in("postulacion_id", postulacionIds)
+            .neq("estado", "rechazada");
+
+          setEntrevistasCount(entCount || 0);
+        } else {
+          setEntrevistasCount(0);
+        }
       } else {
+        setPublicacionId(null);
         setPostulacionesCount(0);
         setEntrevistasCount(0);
       }
@@ -386,40 +403,54 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
           </Alert>
         )}
 
-        {/* Métricas de la vacante */}
-        <div className="grid grid-cols-2 gap-4 mt-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                Postulaciones Recibidas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{postulacionesCount}</p>
-              <CardDescription className="text-xs mt-1">
-                Total de candidatos interesados
-              </CardDescription>
-            </CardContent>
-          </Card>
+        {/* Tabs para pipeline de información */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="detalle" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Detalle Requisición
+            </TabsTrigger>
+            <TabsTrigger value="pipeline" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Pipeline ({postulacionesCount})
+            </TabsTrigger>
+          </TabsList>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-primary" />
-                Entrevistas Realizadas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold">{entrevistasCount}</p>
-              <CardDescription className="text-xs mt-1">
-                {vacante?.estatus === "abierta" ? "En proceso de selección" : "Total de entrevistas"}
-              </CardDescription>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="detalle" className="mt-4">
+            {/* Métricas de la vacante */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    Postulaciones Recibidas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{postulacionesCount}</p>
+                  <CardDescription className="text-xs mt-1">
+                    Total de candidatos interesados
+                  </CardDescription>
+                </CardContent>
+              </Card>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    Entrevistas Realizadas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-bold">{entrevistasCount}</p>
+                  <CardDescription className="text-xs mt-1">
+                    {vacante?.estatus === "abierta" ? "En proceso de selección" : "Total de entrevistas"}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
           {/* ID Único - Solo lectura */}
           <div className="space-y-2">
             <Label htmlFor="folio">ID Único de Vacante</Label>
@@ -635,25 +666,42 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             />
           </div>
 
-          <div className="flex justify-end items-center gap-3 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                onOpenChange(false);
-                setEditing(false);
-              }}
-            >
-              Cerrar
-            </Button>
-            {!isLocked && (
-              <Button type="submit" disabled={loading}>
-                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Guardar Cambios
-              </Button>
+              <div className="flex justify-end items-center gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    onOpenChange(false);
+                    setEditing(false);
+                  }}
+                >
+                  Cerrar
+                </Button>
+                {!isLocked && (
+                  <Button type="submit" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Guardar Cambios
+                  </Button>
+                )}
+              </div>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="pipeline" className="mt-4">
+            {publicacionId ? (
+              <PostulacionesVacanteTab 
+                publicacionId={publicacionId} 
+                onPostulacionUpdated={loadVacanteMetrics}
+              />
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">
+                <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p className="font-medium">Vacante no publicada</p>
+                <p className="text-sm mt-1">Esta vacante aún no ha sido publicada en el marketplace.</p>
+              </div>
             )}
-          </div>
-        </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );
