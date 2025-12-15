@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Lock, Users, Calendar, AlertTriangle, FileText } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PostulacionesVacanteTab } from "@/components/reclutador/PostulacionesVacanteTab";
+
 
 interface VacanteDetailModalProps {
   open: boolean;
@@ -194,6 +194,9 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
     }
   };
 
+  // Estado para conteos por etapa del pipeline
+  const [pipelineStats, setPipelineStats] = useState<Record<string, number>>({});
+
   const loadVacanteMetrics = async () => {
     if (!vacante?.id) return;
 
@@ -208,13 +211,29 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
       if (publicacion) {
         setPublicacionId(publicacion.id);
         
-        // Contar postulaciones
+        // Contar postulaciones totales
         const { count: postCount } = await supabase
           .from("postulaciones")
           .select("*", { count: 'exact', head: true })
           .eq("publicacion_id", publicacion.id);
 
         setPostulacionesCount(postCount || 0);
+
+        // Obtener conteos por etapa para el pipeline
+        const etapas = ['recibida', 'en_revision', 'entrevista', 'evaluacion', 'oferta', 'contratado', 'rechazado'];
+        const statsPromises = etapas.map(async (etapa) => {
+          const { count } = await supabase
+            .from("postulaciones")
+            .select("*", { count: 'exact', head: true })
+            .eq("publicacion_id", publicacion.id)
+            .eq("etapa", etapa);
+          return { etapa, count: count || 0 };
+        });
+
+        const results = await Promise.all(statsPromises);
+        const stats: Record<string, number> = {};
+        results.forEach(r => { stats[r.etapa] = r.count; });
+        setPipelineStats(stats);
 
         // Contar entrevistas a través de postulaciones
         const { data: postulaciones } = await supabase
@@ -238,6 +257,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         setPublicacionId(null);
         setPostulacionesCount(0);
         setEntrevistasCount(0);
+        setPipelineStats({});
       }
     } catch (error) {
       console.error("Error loading metrics:", error);
@@ -689,10 +709,77 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
 
           <TabsContent value="pipeline" className="mt-4">
             {publicacionId ? (
-              <PostulacionesVacanteTab 
-                publicacionId={publicacionId} 
-                onPostulacionUpdated={loadVacanteMetrics}
-              />
+              <div className="space-y-4">
+                {/* Pipeline visual con conteos por etapa */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['recibida'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">Recibidas</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-yellow-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['en_revision'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">En Revisión</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-purple-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['entrevista'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">En Entrevista</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-orange-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['evaluacion'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">En Evaluación</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Segunda fila de estados finales */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Card className="border-l-4 border-l-cyan-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['oferta'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">Con Oferta</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['contratado'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">Contratados</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-red-500">
+                    <CardContent className="pt-4">
+                      <p className="text-2xl font-bold">{pipelineStats['rechazado'] || 0}</p>
+                      <p className="text-sm text-muted-foreground">No Viables</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Resumen */}
+                <Card className="bg-muted/30">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Postulaciones</p>
+                        <p className="text-2xl font-bold">{postulacionesCount}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Entrevistas Programadas</p>
+                        <p className="text-2xl font-bold">{entrevistasCount}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <p className="text-xs text-muted-foreground text-center">
+                  La gestión individual de candidatos es responsabilidad del reclutador asignado
+                </p>
+              </div>
             ) : (
               <div className="text-center py-12 text-muted-foreground">
                 <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
