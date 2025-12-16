@@ -24,6 +24,7 @@ import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculad
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
 import { SolicitarEstudioDialog } from "@/components/reclutador/SolicitarEstudioDialog";
+import { AttentionBadgesReclutador } from "@/components/reclutador/AttentionBadgesReclutador";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
@@ -508,6 +509,13 @@ const ReclutadorDashboard = () => {
           asociaciones={asociacionesActivas} 
           onDesvincularSuccess={loadDashboardData}
         />
+
+        {/* Lo que requiere mi atención */}
+        {perfilReclutador?.user_id && (
+          <AttentionBadgesReclutador 
+            reclutadorUserId={perfilReclutador.user_id}
+          />
+        )}
 
         {/* Perfil y Código Único */}
         <section className="space-y-3 sm:space-y-4">
