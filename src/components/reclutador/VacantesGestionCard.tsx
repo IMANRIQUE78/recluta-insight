@@ -53,105 +53,121 @@ export const VacantesGestionCard = ({ reclutadorId }: VacantesGestionCardProps) 
 
   const loadVacantes = async () => {
     try {
-      // Cargar vacantes abiertas
-      const { data: abiertas, error: errorAbiertas } = await supabase
-        .from("vacantes")
+      // Cargar vacantes abiertas y cerradas en paralelo
+      const [abiertasResult, cerradasResult] = await Promise.all([
+        supabase
+          .from("vacantes")
+          .select(`
+            *,
+            clientes_areas (cliente_nombre, area),
+            empresas (nombre_empresa)
+          `)
+          .eq("reclutador_asignado_id", reclutadorId)
+          .eq("estatus", "abierta")
+          .order("fecha_solicitud", { ascending: false }),
+        supabase
+          .from("vacantes")
+          .select(`
+            *,
+            clientes_areas (cliente_nombre, area),
+            empresas (nombre_empresa)
+          `)
+          .eq("reclutador_asignado_id", reclutadorId)
+          .eq("estatus", "cerrada")
+          .order("fecha_cierre", { ascending: false })
+          .limit(10)
+      ]);
+
+      if (abiertasResult.error) throw abiertasResult.error;
+      if (cerradasResult.error) throw cerradasResult.error;
+
+      const abiertas = abiertasResult.data || [];
+      const cerradas = cerradasResult.data || [];
+
+      // Obtener IDs de vacantes abiertas
+      const vacanteIds = abiertas.map(v => v.id);
+
+      if (vacanteIds.length === 0) {
+        setVacantesAbiertas([]);
+        setVacantesCerradas(cerradas.map(v => ({
+          ...v,
+          publicada: true,
+          postulaciones: 0,
+          entrevistas: 0,
+          diasAbierta: v.fecha_cierre 
+            ? differenceInDays(new Date(v.fecha_cierre), new Date(v.fecha_solicitud))
+            : 0,
+          diasHastaPublicacion: null,
+        } as VacanteEnriquecida)));
+        return;
+      }
+
+      // Una sola query para obtener publicaciones con conteos
+      const { data: publicacionesData } = await supabase
+        .from("publicaciones_marketplace")
         .select(`
-          *,
-          clientes_areas (cliente_nombre, area),
-          empresas (nombre_empresa)
+          id,
+          vacante_id,
+          fecha_publicacion,
+          postulaciones (
+            id,
+            entrevistas_candidato (id)
+          )
         `)
-        .eq("reclutador_asignado_id", reclutadorId)
-        .eq("estatus", "abierta")
-        .order("fecha_solicitud", { ascending: false });
+        .in("vacante_id", vacanteIds);
 
-      if (errorAbiertas) throw errorAbiertas;
+      // Crear mapa de métricas por vacante_id
+      const metricsMap = new Map<string, {
+        publicacion_id: string;
+        fecha_publicacion: string;
+        postulaciones: number;
+        entrevistas: number;
+      }>();
 
-      // Cargar vacantes cerradas (últimas 10)
-      const { data: cerradas, error: errorCerradas } = await supabase
-        .from("vacantes")
-        .select(`
-          *,
-          clientes_areas (cliente_nombre, area),
-          empresas (nombre_empresa)
-        `)
-        .eq("reclutador_asignado_id", reclutadorId)
-        .eq("estatus", "cerrada")
-        .order("fecha_cierre", { ascending: false })
-        .limit(10);
+      (publicacionesData || []).forEach(pub => {
+        const postulaciones = pub.postulaciones || [];
+        const entrevistas = postulaciones.reduce((acc, p: any) => 
+          acc + (p.entrevistas_candidato?.length || 0), 0);
+        
+        metricsMap.set(pub.vacante_id, {
+          publicacion_id: pub.id,
+          fecha_publicacion: pub.fecha_publicacion,
+          postulaciones: postulaciones.length,
+          entrevistas,
+        });
+      });
 
-      if (errorCerradas) throw errorCerradas;
+      // Enriquecer vacantes abiertas sin queries adicionales
+      const abiertasEnriquecidas = abiertas.map((vacante) => {
+        const metrics = metricsMap.get(vacante.id);
+        const diasAbierta = differenceInDays(new Date(), new Date(vacante.fecha_solicitud));
+        const diasHastaPublicacion = metrics?.fecha_publicacion
+          ? differenceInDays(new Date(metrics.fecha_publicacion), new Date(vacante.fecha_solicitud))
+          : null;
 
-      // Enriquecer vacantes abiertas
-      const abiertasEnriquecidas = await Promise.all(
-        (abiertas || []).map(async (vacante) => {
-          const { data: publicacion } = await supabase
-            .from("publicaciones_marketplace")
-            .select("id, fecha_publicacion")
-            .eq("vacante_id", vacante.id)
-            .maybeSingle();
+        return {
+          ...vacante,
+          publicada: !!metrics,
+          publicacion_id: metrics?.publicacion_id,
+          fecha_publicacion: metrics?.fecha_publicacion,
+          postulaciones: metrics?.postulaciones || 0,
+          entrevistas: metrics?.entrevistas || 0,
+          diasAbierta,
+          diasHastaPublicacion,
+        } as VacanteEnriquecida;
+      });
 
-          let postulacionesCount = 0;
-          let entrevistasCount = 0;
-
-          if (publicacion) {
-            const { count: postCount } = await supabase
-              .from("postulaciones")
-              .select("*", { count: "exact", head: true })
-              .eq("publicacion_id", publicacion.id);
-            postulacionesCount = postCount || 0;
-
-            // Contar entrevistas relacionadas
-            const { data: postulaciones } = await supabase
-              .from("postulaciones")
-              .select("id")
-              .eq("publicacion_id", publicacion.id);
-
-            if (postulaciones && postulaciones.length > 0) {
-              const postIds = postulaciones.map(p => p.id);
-              const { count: entCount } = await supabase
-                .from("entrevistas_candidato")
-                .select("*", { count: "exact", head: true })
-                .in("postulacion_id", postIds);
-              entrevistasCount = entCount || 0;
-            }
-          }
-
-          const diasAbierta = differenceInDays(new Date(), new Date(vacante.fecha_solicitud));
-          const diasHastaPublicacion = publicacion?.fecha_publicacion
-            ? differenceInDays(new Date(publicacion.fecha_publicacion), new Date(vacante.fecha_solicitud))
-            : null;
-
-          return {
-            ...vacante,
-            publicada: !!publicacion,
-            publicacion_id: publicacion?.id,
-            fecha_publicacion: publicacion?.fecha_publicacion,
-            postulaciones: postulacionesCount,
-            entrevistas: entrevistasCount,
-            diasAbierta,
-            diasHastaPublicacion,
-          } as VacanteEnriquecida;
-        })
-      );
-
-      // Enriquecer vacantes cerradas
-      const cerradasEnriquecidas = await Promise.all(
-        (cerradas || []).map(async (vacante) => {
-          const diasCierre = vacante.fecha_cierre
-            ? differenceInDays(new Date(vacante.fecha_cierre), new Date(vacante.fecha_solicitud))
-            : 0;
-
-          return {
-            ...vacante,
-            publicada: true,
-            postulaciones: 0,
-            entrevistas: 0,
-            diasAbierta: diasCierre,
-            diasHastaPublicacion: null,
-          } as VacanteEnriquecida;
-        })
-      );
+      // Enriquecer vacantes cerradas (solo cálculos locales)
+      const cerradasEnriquecidas = cerradas.map((vacante) => ({
+        ...vacante,
+        publicada: true,
+        postulaciones: 0,
+        entrevistas: 0,
+        diasAbierta: vacante.fecha_cierre
+          ? differenceInDays(new Date(vacante.fecha_cierre), new Date(vacante.fecha_solicitud))
+          : 0,
+        diasHastaPublicacion: null,
+      } as VacanteEnriquecida));
 
       setVacantesAbiertas(abiertasEnriquecidas);
       setVacantesCerradas(cerradasEnriquecidas);
