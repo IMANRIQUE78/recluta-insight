@@ -10,6 +10,9 @@ interface ReclutadorStats {
   porcentajeExito: number;
   calificacionPromedio: number;
   totalCalificaciones: number;
+  // Monthly stats for goals
+  vacantesCerradasMes: number;
+  entrevistasRealizadasMes: number;
 }
 
 export const useReclutadorStats = (reclutadorId: string | null) => {
@@ -22,6 +25,8 @@ export const useReclutadorStats = (reclutadorId: string | null) => {
     porcentajeExito: 0,
     calificacionPromedio: 0,
     totalCalificaciones: 0,
+    vacantesCerradasMes: 0,
+    entrevistasRealizadasMes: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -33,6 +38,20 @@ export const useReclutadorStats = (reclutadorId: string | null) => {
 
     const loadStats = async () => {
       try {
+        // Calculate current month boundaries
+        const now = new Date();
+        const inicioMes = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const finMes = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+
+        // Get user_id for the recruiter profile
+        const { data: perfilData } = await supabase
+          .from("perfil_reclutador")
+          .select("user_id")
+          .eq("id", reclutadorId)
+          .single();
+
+        const reclutadorUserId = perfilData?.user_id;
+
         // Obtener vacantes asignadas
         const { data: vacantesAsignadas } = await supabase
           .from("vacantes")
@@ -42,6 +61,14 @@ export const useReclutadorStats = (reclutadorId: string | null) => {
         const asignadas = vacantesAsignadas?.filter(v => v.estatus === "abierta").length || 0;
         const cerradas = vacantesAsignadas?.filter(v => v.estatus === "cerrada") || [];
         
+        // Vacantes cerradas este mes
+        const cerradasMes = vacantesAsignadas?.filter(v => 
+          v.estatus === "cerrada" && 
+          v.fecha_cierre && 
+          new Date(v.fecha_cierre) >= new Date(inicioMes) &&
+          new Date(v.fecha_cierre) <= new Date(finMes)
+        ).length || 0;
+
         // Calcular promedio de días de cierre
         let promedioDias = 0;
         if (cerradas.length > 0) {
@@ -67,19 +94,26 @@ export const useReclutadorStats = (reclutadorId: string | null) => {
         // Obtener entrevistas realizadas
         const { data: entrevistas } = await supabase
           .from("entrevistas_candidato")
-          .select("id, postulacion_id, asistio")
-          .eq("reclutador_user_id", reclutadorId);
+          .select("id, postulacion_id, asistio, fecha_entrevista")
+          .eq("reclutador_user_id", reclutadorUserId);
+
+        // Entrevistas realizadas este mes (confirmadas y fecha pasada)
+        const entrevistasRealizadasMes = entrevistas?.filter(e => 
+          e.fecha_entrevista && 
+          new Date(e.fecha_entrevista) >= new Date(inicioMes) &&
+          new Date(e.fecha_entrevista) <= new Date(finMes) &&
+          new Date(e.fecha_entrevista) <= now
+        ).length || 0;
 
         // Calcular porcentaje de éxito (entrevistas que asistieron / total entrevistas)
         const totalEntrevistas = entrevistas?.length || 0;
-        const asistidas = entrevistas?.filter(e => e.asistio).length || 0;
         const porcentajeExito = totalEntrevistas > 0 ? Math.round((cerradas.length / totalEntrevistas) * 100) : 0;
 
         // Obtener calificaciones promedio
         const { data: feedbacks } = await supabase
           .from("feedback_candidato")
           .select("puntuacion")
-          .eq("reclutador_user_id", reclutadorId)
+          .eq("reclutador_user_id", reclutadorUserId)
           .not("puntuacion", "is", null);
 
         const totalCalificaciones = feedbacks?.length || 0;
@@ -96,6 +130,8 @@ export const useReclutadorStats = (reclutadorId: string | null) => {
           porcentajeExito,
           calificacionPromedio,
           totalCalificaciones,
+          vacantesCerradasMes: cerradasMes,
+          entrevistasRealizadasMes,
         });
       } catch (error) {
         console.error("Error loading recruiter stats:", error);

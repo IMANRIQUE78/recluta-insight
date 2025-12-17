@@ -25,6 +25,7 @@ import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
 import { SolicitarEstudioDialog } from "@/components/reclutador/SolicitarEstudioDialog";
 import { AttentionBadgesReclutador } from "@/components/reclutador/AttentionBadgesReclutador";
+import { ObjetivosPersonalesCard } from "@/components/reclutador/ObjetivosPersonalesCard";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
@@ -517,9 +518,9 @@ const ReclutadorDashboard = () => {
           />
         )}
 
-        {/* Perfil y Código Único */}
+        {/* Perfil, Código y Objetivo Personal */}
         <section className="space-y-3 sm:space-y-4">
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Código Único */}
             <Card className="border-primary/20">
               <CardHeader>
@@ -592,6 +593,12 @@ const ReclutadorDashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Objetivo Personal */}
+            <ObjetivosPersonalesCard
+              vacantesCerradasMes={stats.vacantesCerradasMes}
+              entrevistasRealizadasMes={stats.entrevistasRealizadasMes}
+            />
           </div>
         </section>
 
