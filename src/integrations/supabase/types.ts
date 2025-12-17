@@ -1394,6 +1394,7 @@ export type Database = {
           codigo_trabajador: string
           created_at: string
           email: string | null
+          email_encrypted: string | null
           empresa_id: string
           fecha_acepto_aviso: string | null
           fecha_ingreso: string | null
@@ -1402,6 +1403,7 @@ export type Database = {
           nombre_completo: string
           puesto: string
           telefono: string | null
+          telefono_encrypted: string | null
           tipo_jornada: string
           updated_at: string
         }
@@ -1414,6 +1416,7 @@ export type Database = {
           codigo_trabajador: string
           created_at?: string
           email?: string | null
+          email_encrypted?: string | null
           empresa_id: string
           fecha_acepto_aviso?: string | null
           fecha_ingreso?: string | null
@@ -1422,6 +1425,7 @@ export type Database = {
           nombre_completo: string
           puesto: string
           telefono?: string | null
+          telefono_encrypted?: string | null
           tipo_jornada?: string
           updated_at?: string
         }
@@ -1434,6 +1438,7 @@ export type Database = {
           codigo_trabajador?: string
           created_at?: string
           email?: string | null
+          email_encrypted?: string | null
           empresa_id?: string
           fecha_acepto_aviso?: string | null
           fecha_ingreso?: string | null
@@ -1442,6 +1447,7 @@ export type Database = {
           nombre_completo?: string
           puesto?: string
           telefono?: string | null
+          telefono_encrypted?: string | null
           tipo_jornada?: string
           updated_at?: string
         }
@@ -1640,6 +1646,11 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      safe_decrypt: {
+        Args: { encrypted_data: string; fallback_data?: string }
+        Returns: string
+      }
+      safe_encrypt: { Args: { data: string }; Returns: string }
       validate_questionnaire_token: {
         Args: { p_token: string }
         Returns: {
