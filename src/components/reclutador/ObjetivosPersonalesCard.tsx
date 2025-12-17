@@ -26,7 +26,8 @@ const getMesActual = () => {
 };
 
 const getMesNombre = () => {
-  return new Date().toLocaleDateString('es-MX', { month: 'long' });
+  const mes = new Date().toLocaleDateString('es-MX', { month: 'long' });
+  return mes.charAt(0).toUpperCase() + mes.slice(1);
 };
 
 const getStorageKey = () => `objetivos_reclutador_v2`;
