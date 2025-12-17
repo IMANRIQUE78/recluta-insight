@@ -598,6 +598,8 @@ const ReclutadorDashboard = () => {
             <ObjetivosPersonalesCard
               vacantesCerradasMes={stats.vacantesCerradasMes}
               entrevistasRealizadasMes={stats.entrevistasRealizadasMes}
+              promedioDiasCierre={stats.promedioDiasCierre}
+              calificacionPromedio={stats.calificacionPromedio}
             />
           </div>
         </section>
