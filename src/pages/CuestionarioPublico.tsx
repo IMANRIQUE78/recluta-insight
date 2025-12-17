@@ -51,17 +51,16 @@ const CuestionarioPublico = () => {
 
   const validateToken = async () => {
     try {
-      // Buscar el token
-      const { data: tokenResult, error: tokenError } = await supabase
-        .from("tokens_cuestionario_nom035")
-        .select("*")
-        .eq("token", token)
-        .single();
+      // Usar RPC seguro para validar token sin exponer todos los tokens
+      const { data: result, error } = await supabase
+        .rpc("validate_questionnaire_token", { p_token: token });
 
-      if (tokenError || !tokenResult) {
+      if (error || !result || result.length === 0) {
         setStep("invalid");
         return;
       }
+
+      const tokenResult = result[0];
 
       // Verificar si ya fue usado
       if (tokenResult.usado) {
@@ -75,21 +74,24 @@ const CuestionarioPublico = () => {
         return;
       }
 
-      setTokenData(tokenResult);
+      // Mapear datos del token
+      setTokenData({
+        id: tokenResult.token_id,
+        trabajador_id: tokenResult.trabajador_id,
+        empresa_id: tokenResult.empresa_id,
+        tipo_guia: tokenResult.tipo_guia,
+        usado: tokenResult.usado,
+        fecha_expiracion: tokenResult.fecha_expiracion,
+      });
 
-      // Obtener datos del trabajador
-      const { data: trabajadorResult, error: trabajadorError } = await supabase
-        .from("trabajadores_nom035")
-        .select("id, nombre_completo, email, telefono")
-        .eq("id", tokenResult.trabajador_id)
-        .single();
+      // Mapear datos del trabajador
+      setTrabajador({
+        id: tokenResult.trabajador_id,
+        nombre_completo: tokenResult.trabajador_nombre,
+        email: tokenResult.trabajador_email,
+        telefono: tokenResult.trabajador_telefono,
+      });
 
-      if (trabajadorError || !trabajadorResult) {
-        setStep("invalid");
-        return;
-      }
-
-      setTrabajador(trabajadorResult);
       setStep("auth");
     } catch (error) {
       console.error("Error validating token:", error);
@@ -191,11 +193,10 @@ const CuestionarioPublico = () => {
 
       await supabase.from("respuestas_nom035").insert(respuestasToInsert);
 
-      // Marcar token como usado
-      await supabase
-        .from("tokens_cuestionario_nom035")
-        .update({ usado: true })
-        .eq("id", tokenData.id);
+      // Marcar token como usado usando RPC seguro
+      await supabase.rpc("mark_questionnaire_token_used", { 
+        p_token_id: tokenData.id 
+      });
 
       setStep("completado");
     } catch (error) {
@@ -256,11 +257,10 @@ const CuestionarioPublico = () => {
 
       await supabase.from("resultados_dimension_nom035").insert(resultadosToInsert);
 
-      // Marcar token como usado
-      await supabase
-        .from("tokens_cuestionario_nom035")
-        .update({ usado: true })
-        .eq("id", tokenData.id);
+      // Marcar token como usado usando RPC seguro
+      await supabase.rpc("mark_questionnaire_token_used", { 
+        p_token_id: tokenData.id 
+      });
 
       setStep("completado");
     } catch (error) {
