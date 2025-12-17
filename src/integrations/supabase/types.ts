@@ -1632,9 +1632,27 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_questionnaire_token_used: {
+        Args: { p_token_id: string }
+        Returns: boolean
+      }
       recalcular_estadisticas_reclutador: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      validate_questionnaire_token: {
+        Args: { p_token: string }
+        Returns: {
+          empresa_id: string
+          fecha_expiracion: string
+          tipo_guia: string
+          token_id: string
+          trabajador_email: string
+          trabajador_id: string
+          trabajador_nombre: string
+          trabajador_telefono: string
+          usado: boolean
+        }[]
       }
     }
     Enums: {
