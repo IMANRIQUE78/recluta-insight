@@ -289,71 +289,114 @@ const ReclutadorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Optimizado */}
-      <header className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
+      {/* Header Mejorado - UI/UX Optimizado */}
+      <header className={`sticky top-0 z-50 w-full bg-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/95 transition-all duration-300 shadow-sm ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}>
-        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
-              <img src={vvgiLogo} alt="VVGI" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+        {/* Barra superior con gradiente sutil */}
+        <div className="h-1 w-full bg-gradient-to-r from-primary via-primary/60 to-primary/30" />
+        
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-3">
+            {/* ZONA IZQUIERDA: Branding e Identidad */}
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              {/* Logo con efecto hover */}
+              <div className="relative group">
+                <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity" />
+                <img 
+                  src={vvgiLogo} 
+                  alt="VVGI" 
+                  className="h-10 w-10 sm:h-12 sm:w-12 object-contain shrink-0 relative z-10 transition-transform group-hover:scale-105" 
+                />
+              </div>
+              
+              {/* Información del reclutador */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-base sm:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
-                  Oficina de {perfilReclutador?.nombre_reclutador || "Reclutador"}
-                </h1>
-                {rankingPosition && (
-                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 mt-0.5">
-                    <Star className="h-3 w-3 text-primary fill-primary" />
-                    <span className="text-xs font-medium text-primary">
-                      #{rankingPosition} Global
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-xl font-bold text-foreground truncate">
+                    Oficina de{" "}
+                    <span className="bg-gradient-primary bg-clip-text text-transparent">
+                      {perfilReclutador?.nombre_reclutador || "Reclutador"}
                     </span>
+                  </h1>
+                </div>
+                
+                {/* Badge de ranking destacado */}
+                {rankingPosition && (
+                  <div className="inline-flex items-center gap-1.5 mt-1">
+                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border border-amber-500/30">
+                      <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        #{rankingPosition}
+                      </span>
+                      <span className="text-xs text-amber-600/70 dark:text-amber-400/70 hidden sm:inline">
+                        Ranking Global
+                      </span>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
             
-            <div className="flex items-center gap-1 sm:gap-2">
+            {/* ZONA DERECHA: Acciones Principales */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Acción Principal Destacada */}
               <Button
-                variant="default"
-                size="sm"
                 onClick={() => setSolicitarEstudioOpen(true)}
-                className="hidden sm:flex h-8"
+                className="hidden sm:flex h-9 px-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
               >
-                <FileSearch className="mr-1.5 h-3.5 w-3.5" />
-                Estudio
+                <FileSearch className="mr-2 h-4 w-4" />
+                Solicitar Estudio
               </Button>
               <Button
-                variant="default"
                 size="icon"
                 onClick={() => setSolicitarEstudioOpen(true)}
-                className="sm:hidden h-8 w-8"
+                className="sm:hidden h-9 w-9 bg-gradient-to-r from-primary to-primary/80"
               >
                 <FileSearch className="h-4 w-4" />
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditarPerfilOpen(true)}
-                className="hidden sm:flex h-8"
-              >
-                <UserCog className="mr-1.5 h-3.5 w-3.5" />
-                Perfil
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setEditarPerfilOpen(true)}
-                className="sm:hidden h-8 w-8"
-              >
-                <UserCog className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:flex h-8">
-                <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                Salir
-              </Button>
-              <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden h-8 w-8">
-                <LogOut className="h-4 w-4" />
-              </Button>
+              
+              {/* Separador visual */}
+              <div className="hidden sm:block h-6 w-px bg-border" />
+              
+              {/* Acciones Secundarias */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditarPerfilOpen(true)}
+                  className="hidden sm:flex h-9 px-3 hover:bg-primary/10 hover:text-primary transition-colors"
+                >
+                  <UserCog className="mr-1.5 h-4 w-4" />
+                  Mi Perfil
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setEditarPerfilOpen(true)}
+                  className="sm:hidden h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                >
+                  <UserCog className="h-4 w-4" />
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleSignOut} 
+                  className="hidden sm:flex h-9 px-3 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="mr-1.5 h-4 w-4" />
+                  Salir
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSignOut} 
+                  className="sm:hidden h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
