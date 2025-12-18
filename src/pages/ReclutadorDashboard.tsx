@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch, ChevronDown, ChevronUp } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { VacantesGestionCard } from "@/components/reclutador/VacantesGestionCard";
 import { EntrevistasCalendarioCard } from "@/components/reclutador/EntrevistasCalendarioCard";
 import { GlobalLeaderboard } from "@/components/dashboard/GlobalLeaderboard";
@@ -41,6 +42,7 @@ const ReclutadorDashboard = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
   const [solicitarEstudioOpen, setSolicitarEstudioOpen] = useState(false);
+  const [perfilExpanded, setPerfilExpanded] = useState(false);
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
   const { data: detailData, columns: detailColumns, loading: detailLoading } = useReclutadorKPIDetails(
@@ -63,17 +65,14 @@ const ReclutadorDashboard = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Calcular fecha hace 28 días
       const hace28Dias = new Date();
       hace28Dias.setDate(hace28Dias.getDate() - 28);
       const fechaLimite = hace28Dias.toISOString().split('T')[0];
 
-      // Obtener datos de todos los reclutadores con sus IDs
       const { data: perfiles } = await supabase
         .from('perfil_reclutador')
         .select('id, user_id, nombre_reclutador');
 
-      // Obtener vacantes CERRADAS en los últimos 28 días (basado en fecha_cierre)
       const { data: vacantes } = await supabase
         .from('vacantes')
         .select('reclutador_asignado_id, estatus, fecha_cierre, fecha_solicitud')
@@ -83,12 +82,9 @@ const ReclutadorDashboard = () => {
 
       if (!perfiles || !vacantes) return;
 
-      // Calcular estadísticas por reclutador
       const statsMap = new Map();
       
       perfiles.forEach(perfil => {
-        // Filtrar por perfil.id, NO por user_id
-        // Ya solo tenemos vacantes cerradas con fecha_cierre
         const vacantesReclutador = vacantes.filter(v => v.reclutador_asignado_id === perfil.id);
         
         let promedioDias = 0;
@@ -113,11 +109,9 @@ const ReclutadorDashboard = () => {
         });
       });
 
-      // Calcular ranking con nuevo algoritmo
       const reclutadoresData = Array.from(statsMap.values());
       const rankingCalculado = calcularRankingGlobal(reclutadoresData);
 
-      // Encontrar la posición del usuario actual
       const userRanking = rankingCalculado.find(r => r.user_id === user.id);
       if (userRanking) {
         setRankingPosition(userRanking.posicion);
@@ -135,7 +129,6 @@ const ReclutadorDashboard = () => {
         return;
       }
 
-      // Cargar perfil de reclutador
       const { data: perfil, error: perfilError } = await supabase
         .from("perfil_reclutador")
         .select("*")
@@ -144,12 +137,8 @@ const ReclutadorDashboard = () => {
 
       if (perfilError) throw perfilError;
       
-      console.log("Perfil de reclutador cargado:", perfil);
-      console.log("Código único del reclutador:", perfil?.codigo_reclutador);
-      
       setPerfilReclutador(perfil);
 
-      // Cargar invitaciones pendientes con información del administrador
       const { data: invitaciones } = await supabase
         .from("invitaciones_reclutador")
         .select(`
@@ -167,7 +156,6 @@ const ReclutadorDashboard = () => {
 
       setInvitacionesPendientes(invitaciones || []);
 
-      // Cargar asociaciones con información completa de empresas (todas, no solo activas)
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
         .select(`
@@ -202,7 +190,6 @@ const ReclutadorDashboard = () => {
 
   const handleCopyCode = () => {
     if (perfilReclutador?.codigo_reclutador) {
-      // Copiar código tal como está (en minúsculas, sin modificar)
       const codigo = perfilReclutador.codigo_reclutador.trim();
       navigator.clipboard.writeText(codigo);
       toast({
@@ -220,7 +207,6 @@ const ReclutadorDashboard = () => {
 
   const handleAceptarInvitacion = async (invitacionId: string, empresaId: string, tipoVinculacion: string) => {
     try {
-      // Actualizar estado de invitación
       const { error: updateError } = await supabase
         .from("invitaciones_reclutador")
         .update({ estado: "aceptada" })
@@ -228,7 +214,6 @@ const ReclutadorDashboard = () => {
 
       if (updateError) throw updateError;
 
-      // SIEMPRE crear NUEVA asociación - NUNCA actualizar registros históricos
       const { error: asociacionError } = await supabase
         .from("reclutador_empresa")
         .insert([{
@@ -304,31 +289,26 @@ const ReclutadorDashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {/* Header Optimizado */}
       <header className={`sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}>
-        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-4">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
               <img src={vvgiLogo} alt="VVGI" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
               <div className="flex-1 min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
+                <h1 className="text-base sm:text-xl font-bold bg-gradient-primary bg-clip-text text-transparent truncate">
                   Oficina de {perfilReclutador?.nombre_reclutador || "Reclutador"}
                 </h1>
-                <div className="flex items-center gap-1 sm:gap-2 flex-wrap mt-1">
-                  {rankingPosition && (
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-300 hover:shadow-md hover:shadow-primary/20">
-                      <Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary fill-primary animate-pulse" />
-                      <span className="text-sm sm:text-base font-bold bg-gradient-primary bg-clip-text text-transparent">
-                        <span className="hidden sm:inline">Lugar </span>#{rankingPosition}
-                      </span>
-                      <span className="hidden md:inline text-xs text-muted-foreground ml-1">
-                        / Ranking Global
-                      </span>
-                    </div>
-                  )}
-                </div>
+                {rankingPosition && (
+                  <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 mt-0.5">
+                    <Star className="h-3 w-3 text-primary fill-primary" />
+                    <span className="text-xs font-medium text-primary">
+                      #{rankingPosition} Global
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -337,16 +317,16 @@ const ReclutadorDashboard = () => {
                 variant="default"
                 size="sm"
                 onClick={() => setSolicitarEstudioOpen(true)}
-                className="hidden sm:flex"
+                className="hidden sm:flex h-8"
               >
-                <FileSearch className="mr-2 h-4 w-4" />
-                Solicitar Estudio
+                <FileSearch className="mr-1.5 h-3.5 w-3.5" />
+                Estudio
               </Button>
               <Button
                 variant="default"
                 size="icon"
                 onClick={() => setSolicitarEstudioOpen(true)}
-                className="sm:hidden"
+                className="sm:hidden h-8 w-8"
               >
                 <FileSearch className="h-4 w-4" />
               </Button>
@@ -354,24 +334,24 @@ const ReclutadorDashboard = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => setEditarPerfilOpen(true)}
-                className="hidden sm:flex"
+                className="hidden sm:flex h-8"
               >
-                <UserCog className="mr-2 h-4 w-4" />
-                Mejorar Perfil
+                <UserCog className="mr-1.5 h-3.5 w-3.5" />
+                Perfil
               </Button>
               <Button
                 variant="outline"
                 size="icon"
                 onClick={() => setEditarPerfilOpen(true)}
-                className="sm:hidden"
+                className="sm:hidden h-8 w-8"
               >
                 <UserCog className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:flex">
-                <LogOut className="mr-2 h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={handleSignOut} className="hidden sm:flex h-8">
+                <LogOut className="mr-1.5 h-3.5 w-3.5" />
                 Salir
               </Button>
-              <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden">
+              <Button variant="outline" size="icon" onClick={handleSignOut} className="sm:hidden h-8 w-8">
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>
@@ -381,122 +361,75 @@ const ReclutadorDashboard = () => {
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Tabs defaultValue="resumen" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-5 gap-1 h-auto p-1 lg:w-[1000px]">
-            <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+          <TabsList className="grid w-full grid-cols-5 gap-1 h-auto p-1 lg:w-[800px]">
+            <TabsTrigger value="resumen" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1 sm:gap-2">
               <Star className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Resumen</span>
             </TabsTrigger>
-            <TabsTrigger value="gestion" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+            <TabsTrigger value="gestion" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1 sm:gap-2">
               <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Gestión</span>
             </TabsTrigger>
-            <TabsTrigger value="marketplace" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+            <TabsTrigger value="marketplace" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1 sm:gap-2">
               <Store className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline">Marketplace</span>
+              <span className="hidden xs:inline">Market</span>
             </TabsTrigger>
-            <TabsTrigger value="pool" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+            <TabsTrigger value="pool" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1 sm:gap-2">
               <Users className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Pool</span>
             </TabsTrigger>
-            <TabsTrigger value="mensajes" className="text-xs sm:text-sm px-2 py-2 sm:py-2.5 flex-col sm:flex-row gap-1 sm:gap-2">
+            <TabsTrigger value="mensajes" className="text-xs sm:text-sm px-2 py-2 flex-col sm:flex-row gap-1 sm:gap-2">
               <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline">Chat</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB: RESUMEN */}
+          {/* TAB: RESUMEN - Reorganizado para UX óptima */}
           <TabsContent value="resumen" className="space-y-4 sm:space-y-6">
             
-            {/* Invitaciones Pendientes - PRIORIDAD MÁXIMA */}
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 1: ATENCIÓN INMEDIATA - Lo que necesita acción AHORA
+            ══════════════════════════════════════════════════════════════════ */}
+            
+            {/* Invitaciones Pendientes - MÁXIMA PRIORIDAD */}
             {invitacionesPendientes.length > 0 && (
-              <section className="space-y-3 sm:space-y-4">
+              <section className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="h-6 sm:h-8 w-1 bg-primary rounded-full" />
-                  <h2 className="text-lg sm:text-2xl font-bold">¡Invitaciones Pendientes!</h2>
+                  <div className="h-6 w-1 bg-primary rounded-full" />
+                  <h2 className="text-lg font-bold">¡Invitaciones Pendientes!</h2>
+                  <Badge variant="destructive" className="animate-pulse">{invitacionesPendientes.length}</Badge>
                 </div>
                 <div className="space-y-3">
                   {invitacionesPendientes.map((invitacion) => (
-                    <Card key={invitacion.id} className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-background shadow-lg hover:shadow-xl transition-all">
-                      <CardHeader className="pb-4">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-center gap-2">
-                              <Building2 className="h-5 w-5 text-primary" />
-                              <CardTitle className="text-xl">
-                                Nueva Invitación de Colaboración
-                              </CardTitle>
+                    <Card key={invitacion.id} className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-background">
+                      <CardContent className="py-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                          <div className="flex-1 space-y-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Building2 className="h-4 w-4 text-primary shrink-0" />
+                              <span className="font-semibold text-primary">
+                                {invitacion.empresas?.nombre_empresa || 'Empresa'}
+                              </span>
+                              <Badge variant={invitacion.tipo_vinculacion === 'interno' ? 'default' : 'secondary'} className="text-xs">
+                                {invitacion.tipo_vinculacion === 'interno' ? 'Interno' : 'Freelance'}
+                              </Badge>
                             </div>
-                            
-                            <div className="bg-background/80 backdrop-blur-sm p-4 rounded-lg border border-border/50 space-y-2">
-                              <p className="text-sm leading-relaxed">
-                                La empresa{' '}
-                                <span className="font-bold text-primary text-base">
-                                  {invitacion.empresas?.nombre_empresa || 'Empresa'}
-                                </span>
-                                {' '}te invita a trabajar como{' '}
-                                <span className="font-bold text-foreground">
-                                  {invitacion.tipo_vinculacion === 'interno' ? 'Reclutador Interno' : 'Reclutador Freelance'}
-                                </span>
-                              </p>
-                              
-                              {invitacion.empresas?.sector && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
-                                  <Badge variant="outline" className="font-normal">
-                                    {invitacion.empresas.sector}
-                                  </Badge>
-                                </div>
-                              )}
-                              
-                              {invitacion.empresas?.email_contacto && (
-                                <p className="text-xs text-muted-foreground pt-1">
-                                  Contacto: {invitacion.empresas.email_contacto}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <Badge 
-                            variant={invitacion.tipo_vinculacion === 'interno' ? 'default' : 'secondary'}
-                            className="text-sm px-3 py-1"
-                          >
-                            {invitacion.tipo_vinculacion === 'interno' ? 'Interno' : 'Freelance'}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      
-                      <CardContent className="space-y-4">
-                        {invitacion.mensaje && (
-                          <div className="bg-muted/50 p-4 rounded-lg border-l-4 border-primary">
-                            <p className="text-xs font-semibold text-primary mb-2 uppercase tracking-wide">
-                              Mensaje de la Empresa
-                            </p>
-                            <p className="text-sm text-foreground/90 italic leading-relaxed">
-                              "{invitacion.mensaje}"
-                            </p>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2">
-                          <Button
-                            onClick={() => handleAceptarInvitacion(
-                              invitacion.id,
-                              invitacion.empresa_id,
-                              invitacion.tipo_vinculacion
+                            {invitacion.mensaje && (
+                              <p className="text-sm text-muted-foreground italic">"{invitacion.mensaje}"</p>
                             )}
-                            className="flex-1 h-10 sm:h-11"
-                            size="lg"
-                          >
-                            <CheckCircle2 className="mr-2 h-4 sm:h-5 w-4 sm:w-5" />
-                            <span className="text-sm sm:text-base">Aceptar Invitación</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => handleRechazarInvitacion(invitacion.id)}
-                            className="flex-1 h-10 sm:h-11"
-                            size="lg"
-                          >
-                            <span className="text-sm sm:text-base">Rechazar</span>
-                          </Button>
+                          </div>
+                          <div className="flex gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              onClick={() => handleAceptarInvitacion(invitacion.id, invitacion.empresa_id, invitacion.tipo_vinculacion)}
+                            >
+                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
+                              Aceptar
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={() => handleRechazarInvitacion(invitacion.id)}>
+                              Rechazar
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -505,286 +438,280 @@ const ReclutadorDashboard = () => {
               </section>
             )}
 
-        {/* Empresas Vinculadas - TARJETA PERMANENTE */}
-        <EmpresasVinculadasCard 
-          asociaciones={asociacionesActivas} 
-          onDesvincularSuccess={loadDashboardData}
-        />
+            {/* AttentionBadges - Acciones Pendientes */}
+            {perfilReclutador?.user_id && (
+              <AttentionBadgesReclutador reclutadorUserId={perfilReclutador.user_id} />
+            )}
 
-        {/* Lo que requiere mi atención */}
-        {perfilReclutador?.user_id && (
-          <AttentionBadgesReclutador 
-            reclutadorUserId={perfilReclutador.user_id}
-          />
-        )}
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 2: TRABAJO PRINCIPAL - El corazón del workflow diario
+            ══════════════════════════════════════════════════════════════════ */}
+            
+            {/* Layout de 2 columnas en desktop para trabajo principal */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              {/* Vacantes - Ocupa 2/3 del espacio */}
+              <div className="lg:col-span-2">
+                <VacantesGestionCard reclutadorId={perfilReclutador?.id} />
+              </div>
+              
+              {/* Panel lateral derecho */}
+              <div className="space-y-4">
+                {/* Objetivos Personales - Prominente */}
+                <ObjetivosPersonalesCard
+                  vacantesCerradasMes={stats.vacantesCerradasMes}
+                  entrevistasRealizadasMes={stats.entrevistasRealizadasMes}
+                  promedioDiasCierre={stats.promedioDiasCierre}
+                  calificacionPromedio={stats.calificacionPromedio}
+                />
+                
+                {/* KPIs Compactos */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4 text-primary" />
+                      Indicadores
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => handleKPIClick("Promedio Cierre")}
+                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Promedio</span>
+                      </div>
+                      <p className="text-lg font-bold">{stats.promedioDiasCierre}<span className="text-xs font-normal text-muted-foreground ml-1">días</span></p>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleKPIClick("Vacantes Cerradas")}
+                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Cerradas</span>
+                      </div>
+                      <p className="text-lg font-bold">{stats.vacantesCerradas}</p>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleKPIClick("Entrevistas / Cierre")}
+                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Conversión</span>
+                      </div>
+                      <p className="text-lg font-bold">{stats.porcentajeExito}<span className="text-xs font-normal text-muted-foreground ml-1">%</span></p>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleKPIClick("Calificación")}
+                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <Star className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-xs text-muted-foreground">Rating</span>
+                      </div>
+                      <p className="text-lg font-bold">{stats.calificacionPromedio}<span className="text-xs font-normal text-muted-foreground ml-1">★</span></p>
+                    </button>
+                  </CardContent>
+                </Card>
 
-        {/* Perfil, Código y Objetivo Personal */}
-        <section className="space-y-3 sm:space-y-4">
-          <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {/* Código Único */}
-            <Card className="border-primary/20">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Tu Código Único
-                </CardTitle>
-                <CardDescription>
-                  Comparte este código con empresas para que te inviten a colaborar
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {perfilReclutador?.codigo_reclutador ? (
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 p-4 bg-muted rounded-lg border-2 border-primary/20">
-                      <code className="text-2xl font-bold font-mono tracking-wider flex-1 text-primary select-all">
-                        {perfilReclutador.codigo_reclutador}
-                      </code>
-                      <Button size="icon" variant="ghost" onClick={handleCopyCode} title="Copiar código">
-                        <Copy className="h-4 w-4" />
-                      </Button>
+                {/* Resumen Compacto */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-primary" />
+                      Estado Actual
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="flex items-center justify-between py-1.5 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground">Empresas activas</span>
+                      <Badge variant="secondary" className="font-mono">{asociacionesActivas.length}</Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      💡 Haz clic en el botón <Copy className="h-3 w-3 inline" /> para copiar tu código y compartirlo con empresas
-                    </p>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <p className="text-sm">Código no disponible</p>
-                    <p className="text-xs">Contacta a soporte si el problema persiste</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    <div className="flex items-center justify-between py-1.5 border-b border-border/50">
+                      <span className="text-xs text-muted-foreground">Vacantes asignadas</span>
+                      <Badge variant="secondary" className="font-mono">{stats.vacantesAsignadas}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between py-1.5">
+                      <span className="text-xs text-muted-foreground">Vacantes publicadas</span>
+                      <Badge variant="secondary" className="font-mono">{stats.vacantesPublicadas}</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
 
-            {/* Plan y Estado */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="h-5 w-5" />
-                  Plan de Suscripción
-                </CardTitle>
-                <CardDescription>
-                  Tu plan actual y beneficios
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Plan actual:</span>
-                  <Badge variant="secondary">Básico (Gratuito)</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Asociaciones simultáneas:</span>
-                  <span className="font-semibold">1 empresa</span>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold">Actualiza a Premium para obtener:</p>
-                  <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>Hasta 5 asociaciones simultáneas</li>
-                    <li>Acceso a pool de candidatos premium</li>
-                    <li>Baterías psicométricas</li>
-                    <li>IA para sourcing automático</li>
-                    <li>Publicaciones destacadas</li>
-                  </ul>
-                </div>
-                <Button className="w-full" disabled>
-                  <Zap className="mr-2 h-4 w-4" />
-                  Actualizar a Premium (Próximamente)
+            {/* Calendario de Entrevistas */}
+            <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
+
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 3: INFORMACIÓN SECUNDARIA - Colapsable
+            ══════════════════════════════════════════════════════════════════ */}
+            
+            <Collapsible open={perfilExpanded} onOpenChange={setPerfilExpanded}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between h-10 px-3 hover:bg-muted/50">
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Mi Perfil y Configuración
+                  </span>
+                  {perfilExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
-              </CardContent>
-            </Card>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-3">
+                {/* Empresas Vinculadas */}
+                <EmpresasVinculadasCard 
+                  asociaciones={asociacionesActivas} 
+                  onDesvincularSuccess={loadDashboardData}
+                />
 
-            {/* Objetivo Personal */}
-            <ObjetivosPersonalesCard
-              vacantesCerradasMes={stats.vacantesCerradasMes}
-              entrevistasRealizadasMes={stats.entrevistasRealizadasMes}
-              promedioDiasCierre={stats.promedioDiasCierre}
-              calificacionPromedio={stats.calificacionPromedio}
-            />
-          </div>
-        </section>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Código Único */}
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Tu Código Único
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        Comparte este código con empresas para que te inviten
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {perfilReclutador?.codigo_reclutador ? (
+                        <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-primary/20">
+                          <code className="text-xl font-bold font-mono tracking-wider flex-1 text-primary select-all">
+                            {perfilReclutador.codigo_reclutador}
+                          </code>
+                          <Button size="icon" variant="ghost" onClick={handleCopyCode} className="h-8 w-8">
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-2">Código no disponible</p>
+                      )}
+                    </CardContent>
+                  </Card>
 
-        {/* Indicadores de Performance */}
-        <section className="space-y-3 sm:space-y-4">
-          <h2 className="text-base sm:text-xl font-bold">Indicadores de Performance</h2>
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
-            <KPICard
-              title="Promedio Cierre"
-              value={stats.promedioDiasCierre}
-              unit="días"
-              icon={<Clock className="h-5 w-5" />}
-              onDoubleClick={() => handleKPIClick("Promedio Cierre")}
-            />
-            <KPICard
-              title="Vacantes Cerradas"
-              value={stats.vacantesCerradas}
-              icon={<CheckCircle2 className="h-5 w-5" />}
-              onDoubleClick={() => handleKPIClick("Vacantes Cerradas")}
-            />
-            <KPICard
-              title="Entrevistas / Cierre"
-              value={stats.porcentajeExito}
-              unit="%"
-              icon={<TrendingUp className="h-5 w-5" />}
-              onDoubleClick={() => handleKPIClick("Entrevistas / Cierre")}
-            />
-            <KPICard
-              title="Calificación"
-              value={stats.calificacionPromedio}
-              unit={`★ (${stats.totalCalificaciones})`}
-              icon={<Star className="h-5 w-5" />}
-              onDoubleClick={() => handleKPIClick("Calificación")}
-            />
-          </div>
-        </section>
-
-        {/* Gestión de Vacantes - Sección Principal */}
-        <section className="space-y-3 sm:space-y-4">
-          <VacantesGestionCard reclutadorId={perfilReclutador?.id} />
-        </section>
-
-        {/* Calendario de Entrevistas - Espacio completo */}
-        <section className="space-y-3 sm:space-y-4">
-          <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
-        </section>
-
-        {/* Estadísticas Rápidas */}
-        <section className="space-y-3 sm:space-y-4">
-          <h2 className="text-base sm:text-xl font-bold">Resumen</h2>
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
-            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Invitaciones Pendientes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <Clock className="h-8 w-8 text-primary opacity-60" />
-                  <span className="text-3xl font-bold tracking-tight">{invitacionesPendientes.length}</span>
+                  {/* Plan de Suscripción */}
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Star className="h-4 w-4" />
+                        Plan de Suscripción
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Plan actual:</span>
+                        <Badge variant="secondary">Básico</Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Asociaciones:</span>
+                        <span className="text-sm font-medium">1 empresa</span>
+                      </div>
+                      <Separator />
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-medium">Premium incluye:</p>
+                        <ul className="text-xs text-muted-foreground space-y-0.5 list-disc list-inside">
+                          <li>Hasta 5 asociaciones</li>
+                          <li>Pool premium + IA sourcing</li>
+                          <li>Baterías psicométricas</li>
+                        </ul>
+                      </div>
+                      <Button className="w-full h-8 text-xs" disabled>
+                        <Zap className="mr-1.5 h-3.5 w-3.5" />
+                        Próximamente
+                      </Button>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
+              </CollapsibleContent>
+            </Collapsible>
 
-            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Empresas Activas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <Building2 className="h-8 w-8 text-primary opacity-60" />
-                  <span className="text-3xl font-bold tracking-tight">{asociacionesActivas.length}</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 4: RANKING Y COMUNIDAD
+            ══════════════════════════════════════════════════════════════════ */}
+            
+            <GlobalLeaderboard />
 
-            <Card className="hover:shadow-elegant transition-all duration-300 border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Vacantes Asignadas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-3">
-                  <Briefcase className="h-8 w-8 text-primary opacity-60" />
-                  <span className="text-3xl font-bold tracking-tight">{stats.vacantesAsignadas}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <VacantesPublicadasCard count={stats.vacantesPublicadas} loading={statsLoading} />
-          </div>
-        </section>
-
-
-
-        {/* Ranking Global de Reclutadores */}
-        <section className="pt-4">
-          <GlobalLeaderboard />
-        </section>
-
-        {/* Estado Vacío - Solo mostrar si no hay invitaciones NI asociaciones NI trabajo activo */}
-        {invitacionesPendientes.length === 0 && asociacionesActivas.length === 0 && (
-          <section>
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-                <Briefcase className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Aún no tienes colaboraciones</h3>
-                <p className="text-sm text-muted-foreground max-w-md mb-4">
-                  Comparte tu código único con empresas para que te inviten a colaborar en sus procesos de reclutamiento.
-                </p>
-                <Button onClick={handleCopyCode} variant="outline">
-                  <Copy className="mr-2 h-4 w-4" />
-                  Copiar mi código
-                </Button>
-              </CardContent>
-            </Card>
-          </section>
-        )}
+            {/* Estado Vacío */}
+            {invitacionesPendientes.length === 0 && asociacionesActivas.length === 0 && (
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                  <Briefcase className="h-16 w-16 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Aún no tienes colaboraciones</h3>
+                  <p className="text-sm text-muted-foreground max-w-md mb-4">
+                    Comparte tu código único con empresas para que te inviten a colaborar.
+                  </p>
+                  <Button onClick={handleCopyCode} variant="outline">
+                    <Copy className="mr-2 h-4 w-4" />
+                    Copiar mi código
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* TAB: GESTIÓN DE VACANTES */}
-          <TabsContent value="gestion" className="space-y-4 sm:space-y-6">
-            <div className="space-y-3 sm:space-y-4">
+          <TabsContent value="gestion" className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold">Gestión de Vacantes Publicadas</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Gestión de Postulaciones</h2>
                 <p className="text-sm text-muted-foreground">
-                  Administra tus vacantes publicadas en el marketplace
+                  Administra las postulaciones de tus vacantes publicadas
                 </p>
               </div>
-
-              {/* Postulaciones Recibidas Component */}
               <PostulacionesRecibidas />
             </div>
           </TabsContent>
 
           {/* TAB: MARKETPLACE */}
-          <TabsContent value="marketplace" className="space-y-4 sm:space-y-6">
-            <div className="space-y-3 sm:space-y-4">
+          <TabsContent value="marketplace" className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold">Mis Vacantes en Marketplace</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Mis Vacantes en Marketplace</h2>
                 <p className="text-sm text-muted-foreground">
                   Visualiza tus vacantes publicadas en el marketplace público
                 </p>
               </div>
-
               <MarketplaceReclutador reclutadorUserId={perfilReclutador?.user_id} />
             </div>
           </TabsContent>
 
           {/* TAB: POOL DE CANDIDATOS */}
-          <TabsContent value="pool" className="space-y-4 sm:space-y-6">
-            <div className="space-y-3 sm:space-y-4">
+          <TabsContent value="pool" className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold">Pool de Candidatos</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Pool de Candidatos</h2>
                 <p className="text-sm text-muted-foreground">
                   Explora candidatos registrados en la plataforma
                 </p>
               </div>
-
               <PoolCandidatos reclutadorId={perfilReclutador.id} />
             </div>
           </TabsContent>
 
           {/* TAB: MENSAJES */}
-          <TabsContent value="mensajes" className="space-y-4 sm:space-y-6">
-            <div className="space-y-3 sm:space-y-4">
+          <TabsContent value="mensajes" className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h2 className="text-lg sm:text-2xl font-bold">Centro de Comunicación</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Centro de Comunicación</h2>
                 <p className="text-sm text-muted-foreground">
                   Gestiona tus conversaciones con candidatos
                 </p>
               </div>
-
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center py-12">
                     <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                     <h3 className="text-lg font-semibold mb-2">Mensajes con Candidatos</h3>
                     <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                      Accede al chat con cada candidato desde la sección de Postulaciones Recibidas en "Gestión de Vacantes"
+                      Accede al chat desde la pestaña "Gestión" al revisar cada postulación
                     </p>
                   </div>
                 </CardContent>
@@ -794,7 +721,7 @@ const ReclutadorDashboard = () => {
         </Tabs>
       </div>
 
-      {/* Modal de detalles de KPI */}
+      {/* Modales */}
       <KPIDetailModal
         open={modalOpen}
         onOpenChange={setModalOpen}
@@ -805,7 +732,6 @@ const ReclutadorDashboard = () => {
         loading={detailLoading}
       />
 
-      {/* Modal de edición de perfil */}
       {perfilReclutador && (
         <EditarPerfilReclutadorDialog
           open={editarPerfilOpen}
@@ -815,7 +741,6 @@ const ReclutadorDashboard = () => {
         />
       )}
 
-      {/* Modal de solicitar estudio socioeconómico */}
       {perfilReclutador && (
         <SolicitarEstudioDialog
           open={solicitarEstudioOpen}
