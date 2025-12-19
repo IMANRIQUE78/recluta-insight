@@ -169,7 +169,9 @@ const ReclutadorDashboard = () => {
             tamano_empresa,
             ciudad,
             estado,
-            pais
+            pais,
+            email_contacto,
+            telefono_contacto
           )
         `)
         .eq("reclutador_id", perfil.id)

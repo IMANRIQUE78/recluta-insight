@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Calendar, Briefcase, Globe, MapPin, ChevronDown, ChevronUp, UserX } from "lucide-react";
+import { Building2, Calendar, Briefcase, Globe, MapPin, ChevronDown, ChevronUp, UserX, Users, Mail, Phone, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,8 @@ interface EmpresaVinculada {
     ciudad?: string;
     estado?: string;
     pais?: string;
+    email_contacto?: string;
+    telefono_contacto?: string;
   };
 }
 
@@ -51,12 +53,12 @@ export const EmpresasVinculadasCard = ({ asociaciones, onDesvincularSuccess }: E
 
   const getTamanoLabel = (tamano?: string) => {
     const tamanos: Record<string, string> = {
-      pequeña: "1-50 empleados",
+      micro: "1-10 empleados",
+      pyme: "11-50 empleados",
       mediana: "51-250 empleados",
-      grande: "251-1000 empleados",
-      corporativo: "1000+ empleados"
+      grande: "251+ empleados"
     };
-    return tamanos[tamano || ""] || "No especificado";
+    return tamanos[tamano || ""] || tamano || "No especificado";
   };
 
   const toggleExpand = (id: string) => {
@@ -67,7 +69,7 @@ export const EmpresasVinculadasCard = ({ asociaciones, onDesvincularSuccess }: E
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
+          <Building2 className="h-5 w-5 text-primary" />
           Empresas en las que Colaboro
         </CardTitle>
         <CardDescription>
@@ -88,55 +90,86 @@ export const EmpresasVinculadasCard = ({ asociaciones, onDesvincularSuccess }: E
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {asociaciones.map((asociacion) => {
               const badge = getTipoVinculacionBadge(asociacion.tipo_vinculacion);
               const isExpanded = expandedId === asociacion.id;
+              const empresa = asociacion.empresas;
               
               return (
                 <div
                   key={asociacion.id}
-                  className="border rounded-lg overflow-hidden"
+                  className="border rounded-lg overflow-hidden bg-card hover:shadow-md transition-shadow"
                 >
-                  <div className="p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between gap-3 mb-2">
+                  {/* Header de la empresa */}
+                  <div className="p-4 border-b border-border/50 bg-muted/30">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className="font-semibold text-base flex items-center gap-2">
-                          <Building2 className="h-4 w-4 text-primary" />
-                          {asociacion.empresas?.nombre_empresa || "Empresa"}
-                        </h4>
-                        {asociacion.empresas?.sector && (
-                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1 ml-6">
-                            <Briefcase className="h-3 w-3" />
-                            {asociacion.empresas.sector}
-                          </p>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-lg flex items-center gap-2">
+                            <Building2 className="h-5 w-5 text-primary" />
+                            {empresa?.nombre_empresa || "Empresa"}
+                          </h4>
+                          <Badge variant={badge.variant}>{badge.label}</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+                          {empresa?.sector && (
+                            <span className="flex items-center gap-1">
+                              <Briefcase className="h-3.5 w-3.5" />
+                              {empresa.sector}
+                            </span>
+                          )}
+                          {empresa?.tamano_empresa && (
+                            <span className="flex items-center gap-1">
+                              <Users className="h-3.5 w-3.5" />
+                              {getTamanoLabel(empresa.tamano_empresa)}
+                            </span>
+                          )}
+                          {(empresa?.ciudad || empresa?.estado) && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3.5 w-3.5" />
+                              {[empresa.ciudad, empresa.estado].filter(Boolean).join(", ")}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <Badge variant={badge.variant}>{badge.label}</Badge>
                     </div>
-                    
-                    <div className="flex items-center justify-between mt-3">
+                  </div>
+
+                  {/* Employer Branding - Descripción siempre visible */}
+                  {empresa?.descripcion_empresa && (
+                    <div className="p-4 bg-gradient-to-r from-primary/5 to-transparent border-b border-border/30">
+                      <h5 className="text-xs font-semibold text-primary uppercase tracking-wide mb-2">
+                        Acerca de la Empresa
+                      </h5>
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                        {empresa.descripcion_empresa}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Información de contacto y detalles expandibles */}
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          Desde {format(new Date(asociacion.fecha_inicio), "d 'de' MMMM, yyyy", { locale: es })}
+                          Colaborando desde {format(new Date(asociacion.fecha_inicio), "d 'de' MMMM, yyyy", { locale: es })}
                         </span>
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDesvincularDialog({
-                            open: true,
-                            asociacionId: asociacion.id,
-                            empresaNombre: asociacion.empresas?.nombre_empresa || "Empresa"
-                          })}
-                          className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <UserX className="h-3 w-3 mr-1" />
-                          Desvincular
-                        </Button>
+                        {empresa?.sitio_web && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => window.open(empresa.sitio_web, '_blank')}
+                            className="h-8 text-xs"
+                          >
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            Sitio Web
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
@@ -149,72 +182,91 @@ export const EmpresasVinculadasCard = ({ asociaciones, onDesvincularSuccess }: E
                             </>
                           ) : (
                             <>
-                              Ver más <ChevronDown className="ml-1 h-3 w-3" />
+                              Más info <ChevronDown className="ml-1 h-3 w-3" />
                             </>
                           )}
                         </Button>
                       </div>
                     </div>
-                  </div>
 
-                  {isExpanded && (
-                    <div className="border-t bg-muted/20 p-4 space-y-4">
-                      {/* Descripción */}
-                      {asociacion.empresas?.descripcion_empresa && (
-                        <div>
-                          <h5 className="text-sm font-semibold mb-2">Acerca de la Empresa</h5>
-                          <p className="text-sm text-muted-foreground leading-relaxed">
-                            {asociacion.empresas.descripcion_empresa}
-                          </p>
+                    {/* Detalles expandidos */}
+                    {isExpanded && (
+                      <div className="mt-4 pt-4 border-t border-border/50 space-y-4">
+                        {/* Información de contacto */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {empresa?.email_contacto && (
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                              <Mail className="h-4 w-4 text-primary" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Email de contacto</p>
+                                <a href={`mailto:${empresa.email_contacto}`} className="text-sm font-medium text-primary hover:underline">
+                                  {empresa.email_contacto}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {empresa?.telefono_contacto && (
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                              <Phone className="h-4 w-4 text-primary" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Teléfono</p>
+                                <a href={`tel:${empresa.telefono_contacto}`} className="text-sm font-medium">
+                                  {empresa.telefono_contacto}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {empresa?.sitio_web && (
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                              <Globe className="h-4 w-4 text-primary" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">Sitio Web</p>
+                                <a 
+                                  href={empresa.sitio_web} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-primary hover:underline"
+                                >
+                                  {empresa.sitio_web}
+                                </a>
+                              </div>
+                            </div>
+                          )}
+
+                          {empresa?.pais && (
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-md">
+                              <MapPin className="h-4 w-4 text-primary" />
+                              <div>
+                                <p className="text-xs text-muted-foreground">País</p>
+                                <p className="text-sm font-medium">{empresa.pais}</p>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
 
-                      <Separator />
+                        <Separator />
 
-                      {/* Detalles */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {asociacion.empresas?.tamano_empresa && (
-                          <div className="flex items-start gap-2">
-                            <Building2 className="h-4 w-4 text-primary mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-muted-foreground">Tamaño</p>
-                              <p className="text-sm font-semibold">{getTamanoLabel(asociacion.empresas.tamano_empresa)}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {(asociacion.empresas?.ciudad || asociacion.empresas?.estado || asociacion.empresas?.pais) && (
-                          <div className="flex items-start gap-2">
-                            <MapPin className="h-4 w-4 text-primary mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-muted-foreground">Ubicación</p>
-                              <p className="text-sm font-semibold">
-                                {[asociacion.empresas.ciudad, asociacion.empresas.estado, asociacion.empresas.pais]
-                                  .filter(Boolean)
-                                  .join(", ")}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-
-                        {asociacion.empresas?.sitio_web && (
-                          <div className="flex items-start gap-2 sm:col-span-2">
-                            <Globe className="h-4 w-4 text-primary mt-0.5" />
-                            <div>
-                              <p className="text-xs font-medium text-muted-foreground">Sitio Web</p>
-                              <Button
-                                variant="link"
-                                className="h-auto p-0 text-sm font-semibold"
-                                onClick={() => window.open(asociacion.empresas.sitio_web, '_blank')}
-                              >
-                                {asociacion.empresas.sitio_web}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
+                        {/* Acción de desvincular */}
+                        <div className="flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDesvincularDialog({
+                              open: true,
+                              asociacionId: asociacion.id,
+                              empresaNombre: empresa?.nombre_empresa || "Empresa"
+                            })}
+                            className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <UserX className="h-3 w-3 mr-1" />
+                            Desvincular de esta empresa
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
