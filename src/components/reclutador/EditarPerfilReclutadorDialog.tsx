@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Linkedin, Twitter, Globe } from "lucide-react";
+import { Loader2, Linkedin, Twitter, Globe, Copy, CheckCircle2 } from "lucide-react";
 
 interface EditarPerfilReclutadorDialogProps {
   open: boolean;
@@ -32,6 +32,8 @@ export function EditarPerfilReclutadorDialog({
   const [empresaAsociada, setEmpresaAsociada] = useState("");
   const [anosExperiencia, setAnosExperiencia] = useState(0);
   const [fechaRegistro, setFechaRegistro] = useState("");
+  const [codigoReclutador, setCodigoReclutador] = useState("");
+  const [copiado, setCopiado] = useState(false);
 
   // Datos editables
   const [telefono, setTelefono] = useState("");
@@ -66,6 +68,7 @@ export function EditarPerfilReclutadorDialog({
         setTipoReclutador(perfilData.tipo_reclutador);
         setAnosExperiencia(perfilData.anos_experiencia || 0);
         setFechaRegistro(new Date(perfilData.created_at).toLocaleDateString('es-MX'));
+        setCodigoReclutador(perfilData.codigo_reclutador || "");
 
         // Si es reclutador interno, buscar empresa asociada
         if (perfilData.tipo_reclutador === 'interno') {
@@ -138,11 +141,26 @@ export function EditarPerfilReclutadorDialog({
     }
   };
 
+  const handleCopyCodigo = () => {
+    if (codigoReclutador) {
+      navigator.clipboard.writeText(codigoReclutador);
+      setCopiado(true);
+      toast({
+        title: "✅ Código copiado",
+        description: `Tu código ${codigoReclutador} ha sido copiado al portapapeles`,
+      });
+      setTimeout(() => setCopiado(false), 2000);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Editar Perfil Profesional</DialogTitle>
+          <DialogTitle>Mi Perfil Profesional</DialogTitle>
+          <DialogDescription>
+            Gestiona tu información profesional y código de vinculación
+          </DialogDescription>
         </DialogHeader>
 
         {loading ? (
@@ -151,6 +169,35 @@ export function EditarPerfilReclutadorDialog({
           </div>
         ) : (
           <div className="space-y-6 py-4">
+            {/* Código de Vinculación - DESTACADO */}
+            <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex-1">
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Tu Código Único de Vinculación</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Comparte este código con empresas para que te inviten a colaborar
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="bg-background px-4 py-2 rounded-md border border-border font-mono text-lg font-bold text-primary tracking-wider">
+                    {codigoReclutador || "------"}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyCodigo}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    {copiado ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+
             {/* Sección de Solo Lectura */}
             <div className="bg-muted/30 rounded-lg p-4 space-y-3 border border-border">
               <h3 className="text-sm font-semibold text-foreground mb-3">Información de Registro</h3>
