@@ -340,20 +340,20 @@ const ReclutadorDashboard = () => {
             
             {/* ZONA DERECHA: Acciones Principales */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Acción Principal Destacada */}
+              {/* Acción Principal - Mi Perfil */}
               <Button
-                onClick={() => setSolicitarEstudioOpen(true)}
+                onClick={() => setEditarPerfilOpen(true)}
                 className="hidden sm:flex h-9 px-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-md hover:shadow-lg transition-all"
               >
-                <FileSearch className="mr-2 h-4 w-4" />
-                Solicitar Estudio
+                <UserCog className="mr-2 h-4 w-4" />
+                Mi Perfil
               </Button>
               <Button
                 size="icon"
-                onClick={() => setSolicitarEstudioOpen(true)}
+                onClick={() => setEditarPerfilOpen(true)}
                 className="sm:hidden h-9 w-9 bg-gradient-to-r from-primary to-primary/80"
               >
-                <FileSearch className="h-4 w-4" />
+                <UserCog className="h-4 w-4" />
               </Button>
               
               {/* Separador visual */}
@@ -364,19 +364,19 @@ const ReclutadorDashboard = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setEditarPerfilOpen(true)}
+                  onClick={() => setSolicitarEstudioOpen(true)}
                   className="hidden sm:flex h-9 px-3 hover:bg-primary/10 hover:text-primary transition-colors"
                 >
-                  <UserCog className="mr-1.5 h-4 w-4" />
-                  Mi Perfil
+                  <FileSearch className="mr-1.5 h-4 w-4" />
+                  Solicitar Estudio
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setEditarPerfilOpen(true)}
+                  onClick={() => setSolicitarEstudioOpen(true)}
                   className="sm:hidden h-9 w-9 hover:bg-primary/10 hover:text-primary"
                 >
-                  <UserCog className="h-4 w-4" />
+                  <FileSearch className="h-4 w-4" />
                 </Button>
                 
                 <Button 
@@ -592,7 +592,17 @@ const ReclutadorDashboard = () => {
             <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
 
             {/* ══════════════════════════════════════════════════════════════════
-                ZONA 3: INFORMACIÓN SECUNDARIA - Colapsable
+                ZONA 3: EMPRESAS COLABORADORAS - Información importante para vender vacantes
+            ══════════════════════════════════════════════════════════════════ */}
+            
+            {/* Empresas Vinculadas - VISIBLE para que el reclutador tenga info de la empresa */}
+            <EmpresasVinculadasCard 
+              asociaciones={asociacionesActivas} 
+              onDesvincularSuccess={loadDashboardData}
+            />
+
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 4: INFORMACIÓN SECUNDARIA - Colapsable
             ══════════════════════════════════════════════════════════════════ */}
             
             <Collapsible open={perfilExpanded} onOpenChange={setPerfilExpanded}>
@@ -600,45 +610,14 @@ const ReclutadorDashboard = () => {
                 <Button variant="ghost" className="w-full justify-between h-10 px-3 hover:bg-muted/50">
                   <span className="text-sm font-medium flex items-center gap-2">
                     <User className="h-4 w-4" />
-                    Mi Perfil y Configuración
+                    Configuración y Suscripción
                   </span>
                   {perfilExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-4 pt-3">
-                {/* Empresas Vinculadas */}
-                <EmpresasVinculadasCard 
-                  asociaciones={asociacionesActivas} 
-                  onDesvincularSuccess={loadDashboardData}
-                />
 
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* Código Único */}
-                  <Card className="border-primary/20">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Tu Código Único
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Comparte este código con empresas para que te inviten
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {perfilReclutador?.codigo_reclutador ? (
-                        <div className="flex items-center gap-2 p-3 bg-muted rounded-lg border border-primary/20">
-                          <code className="text-xl font-bold font-mono tracking-wider flex-1 text-primary select-all">
-                            {perfilReclutador.codigo_reclutador}
-                          </code>
-                          <Button size="icon" variant="ghost" onClick={handleCopyCode} className="h-8 w-8">
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-sm text-muted-foreground text-center py-2">Código no disponible</p>
-                      )}
-                    </CardContent>
-                  </Card>
+                <div className="grid gap-4 md:grid-cols-1">
 
                   {/* Plan de Suscripción */}
                   <Card>
