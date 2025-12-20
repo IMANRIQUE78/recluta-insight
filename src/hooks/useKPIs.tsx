@@ -25,8 +25,12 @@ export const useKPIs = (
 
   const calculateKPIs = async () => {
     try {
+      setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       // Construir query con filtros
       let query = supabase
@@ -37,15 +41,19 @@ export const useKPIs = (
       if (selectedCliente !== "todos") {
         query = query.eq("cliente_area_id", selectedCliente);
       }
+      // Corregido: usar reclutador_asignado_id en lugar de reclutador_id
       if (selectedReclutador !== "todos") {
-        query = query.eq("reclutador_id", selectedReclutador);
+        query = query.eq("reclutador_asignado_id", selectedReclutador);
       }
       if (selectedEstatus !== "todos") {
         query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
       }
 
       const { data: vacantes, error: vacantesError } = await query;
-      if (vacantesError) throw vacantesError;
+      if (vacantesError) {
+        console.error("Error fetching vacantes:", vacantesError);
+        throw vacantesError;
+      }
 
       const totalVacantes = vacantes?.length || 0;
       const abiertas = vacantes?.filter((v) => v.estatus === "abierta").length || 0;
@@ -72,14 +80,78 @@ export const useKPIs = (
       const tasaExito = totalVacantes > 0 ? Math.round((cerradas / totalVacantes) * 100) : 0;
       const tasaCancel = totalVacantes > 0 ? Math.round((canceladas / totalVacantes) * 100) : 0;
 
-      // KPIs obsoletos deshabilitados temporalmente
-      // TODO: Reimplementar usando el sistema de postulaciones
-      const totalCandidatos = 0;
-      const contratados = 0;
-      const ratio = "0:0";
+      // Obtener datos de entrevistas y contrataciones desde postulaciones
+      let totalEntrevistados = 0;
+      let totalContratados = 0;
+      let totalFeedbackScore = 0;
+      let feedbackCount = 0;
+
+      if (vacantes && vacantes.length > 0) {
+        const vacantesIds = vacantes.map(v => v.id);
+        
+        // Obtener publicaciones de estas vacantes
+        const { data: publicaciones } = await supabase
+          .from("publicaciones_marketplace")
+          .select("id, vacante_id")
+          .in("vacante_id", vacantesIds);
+
+        if (publicaciones && publicaciones.length > 0) {
+          const publicacionIds = publicaciones.map(p => p.id);
+
+          // Obtener postulaciones
+          const { data: postulaciones } = await supabase
+            .from("postulaciones")
+            .select("id, estado, candidato_user_id")
+            .in("publicacion_id", publicacionIds);
+
+          if (postulaciones && postulaciones.length > 0) {
+            const postulacionIds = postulaciones.map(p => p.id);
+            
+            // Contar contratados (estado = 'contratado' o 'aceptado')
+            totalContratados = postulaciones.filter(
+              p => p.estado === "contratado" || p.estado === "aceptado"
+            ).length;
+
+            // Obtener entrevistas realizadas
+            const { data: entrevistas } = await supabase
+              .from("entrevistas_candidato")
+              .select("id, asistio")
+              .in("postulacion_id", postulacionIds)
+              .eq("estado", "completada");
+
+            totalEntrevistados = entrevistas?.filter(e => e.asistio)?.length || 0;
+
+            // Obtener feedback para calcular satisfacción
+            const { data: feedbacks } = await supabase
+              .from("feedback_candidato")
+              .select("puntuacion")
+              .in("postulacion_id", postulacionIds)
+              .not("puntuacion", "is", null);
+
+            if (feedbacks && feedbacks.length > 0) {
+              feedbackCount = feedbacks.length;
+              totalFeedbackScore = feedbacks.reduce((sum, f) => sum + (f.puntuacion || 0), 0);
+            }
+          }
+        }
+      }
+
+      // Calcular ratio entrevistados vs contratados
+      const ratio = `${totalEntrevistados}:${totalContratados}`;
+
+      // Calcular satisfacción promedio (de 1 a 5)
+      const promedioSatisfaccion = feedbackCount > 0 
+        ? Number((totalFeedbackScore / feedbackCount).toFixed(1)) 
+        : 0;
+
+      // Calcular tasa de rotación (placeholder - requiere datos históricos)
+      // Por ahora calculamos basándonos en cancelaciones tempranas
+      const tasaRot = totalVacantes > 0 && cerradas > 0
+        ? Math.round((canceladas / (cerradas + canceladas)) * 100)
+        : 0;
+
+      // Costo promedio por contratación (placeholder - requiere campo de costo)
       const costoPromedio = 0;
-      const promedioSatisfaccion = 0;
-      const tasaRot = 0;
 
       setKpis({
         tiempoPromedioCobertura: tiempoPromedio,
@@ -87,7 +159,7 @@ export const useKPIs = (
         tasaCancelacion: tasaCancel,
         vacantesAbiertas: abiertas,
         costoPromedioContratacion: costoPromedio,
-        satisfaccionCliente: Number(promedioSatisfaccion),
+        satisfaccionCliente: promedioSatisfaccion,
         tasaRotacion: tasaRot,
         entrevistadosVsContratados: ratio,
       });
