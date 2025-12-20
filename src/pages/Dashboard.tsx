@@ -10,6 +10,7 @@ import { ReclutadorProfileModal } from "@/components/dashboard/ReclutadorProfile
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
 import { AttentionBadges } from "@/components/dashboard/AttentionBadges";
+import { HistorialVacantesModal } from "@/components/dashboard/HistorialVacantesModal";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,7 +28,8 @@ import {
   Brain,
   Crown,
   BarChart3,
-  Briefcase
+  Briefcase,
+  History
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -47,6 +49,7 @@ const Dashboard = () => {
   const [reclutadorProfileOpen, setReclutadorProfileOpen] = useState(false);
   const [selectedReclutadorId, setSelectedReclutadorId] = useState<string>("");
   const [selectedAsociacionId, setSelectedAsociacionId] = useState<string | undefined>(undefined);
+  const [historialOpen, setHistorialOpen] = useState(false);
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -337,14 +340,25 @@ const Dashboard = () => {
             {/* Requisiciones Internas */}
             <Card>
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-muted">
-                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-muted">
+                      <Briefcase className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <CardTitle>Requisiciones Internas</CardTitle>
+                      <CardDescription>Solicitudes de contratación de la empresa</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle>Requisiciones Internas</CardTitle>
-                    <CardDescription>Solicitudes de contratación de la empresa</CardDescription>
-                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setHistorialOpen(true)}
+                    className="gap-2"
+                  >
+                    <History className="h-4 w-4" />
+                    Ver Historial Completo
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent>
@@ -409,6 +423,12 @@ const Dashboard = () => {
         onOpenChange={setReclutadorProfileOpen}
         reclutadorId={selectedReclutadorId}
         asociacionId={selectedAsociacionId}
+      />
+
+      <HistorialVacantesModal
+        open={historialOpen}
+        onOpenChange={setHistorialOpen}
+        onSelectVacante={(vacante) => setSelectedVacante(vacante)}
       />
     </div>
   );
