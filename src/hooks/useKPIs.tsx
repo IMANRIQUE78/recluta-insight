@@ -32,7 +32,28 @@ export const useKPIs = (
         return;
       }
 
-      // Construir query con filtros
+      // Para tiempo de cobertura SIEMPRE usamos TODAS las vacantes cerradas del usuario
+      // (sin importar filtros de cliente/reclutador/estatus)
+      const { data: todasVacantesCerradas } = await supabase
+        .from("vacantes")
+        .select("id, fecha_solicitud, fecha_cierre")
+        .eq("user_id", user.id)
+        .eq("estatus", "cerrada")
+        .not("fecha_cierre", "is", null);
+
+      // Calcular tiempo promedio de cobertura
+      let tiempoPromedio = 0;
+      if (todasVacantesCerradas && todasVacantesCerradas.length > 0) {
+        const totalDias = todasVacantesCerradas.reduce((sum, v) => {
+          const inicio = new Date(v.fecha_solicitud);
+          const fin = new Date(v.fecha_cierre!);
+          const dias = Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
+          return sum + Math.max(0, dias);
+        }, 0);
+        tiempoPromedio = Math.round(totalDias / todasVacantesCerradas.length);
+      }
+
+      // Query con filtros para los demás KPIs
       let query = supabase
         .from("vacantes")
         .select("*")
@@ -41,7 +62,6 @@ export const useKPIs = (
       if (selectedCliente !== "todos") {
         query = query.eq("cliente_area_id", selectedCliente);
       }
-      // Corregido: usar reclutador_asignado_id en lugar de reclutador_id
       if (selectedReclutador !== "todos") {
         query = query.eq("reclutador_asignado_id", selectedReclutador);
       }
@@ -60,22 +80,6 @@ export const useKPIs = (
       const cerradas = vacantes?.filter((v) => v.estatus === "cerrada").length || 0;
       const canceladas = vacantes?.filter((v) => v.estatus === "cancelada").length || 0;
 
-      // Calcular tiempo promedio de cobertura (vacantes cerradas)
-      const vacantesCerradas = vacantes?.filter(
-        (v) => v.estatus === "cerrada" && v.fecha_cierre && v.fecha_solicitud
-      ) || [];
-      
-      let tiempoPromedio = 0;
-      if (vacantesCerradas.length > 0) {
-        const totalDias = vacantesCerradas.reduce((sum, v) => {
-          const inicio = new Date(v.fecha_solicitud);
-          const fin = new Date(v.fecha_cierre!);
-          const dias = Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
-          return sum + dias;
-        }, 0);
-        tiempoPromedio = Math.round(totalDias / vacantesCerradas.length);
-      }
-
       // Calcular tasas
       const tasaExito = totalVacantes > 0 ? Math.round((cerradas / totalVacantes) * 100) : 0;
       const tasaCancel = totalVacantes > 0 ? Math.round((canceladas / totalVacantes) * 100) : 0;
@@ -89,7 +93,6 @@ export const useKPIs = (
       if (vacantes && vacantes.length > 0) {
         const vacantesIds = vacantes.map(v => v.id);
         
-        // Obtener publicaciones de estas vacantes
         const { data: publicaciones } = await supabase
           .from("publicaciones_marketplace")
           .select("id, vacante_id")
@@ -98,7 +101,6 @@ export const useKPIs = (
         if (publicaciones && publicaciones.length > 0) {
           const publicacionIds = publicaciones.map(p => p.id);
 
-          // Obtener postulaciones
           const { data: postulaciones } = await supabase
             .from("postulaciones")
             .select("id, estado, candidato_user_id")
@@ -107,12 +109,10 @@ export const useKPIs = (
           if (postulaciones && postulaciones.length > 0) {
             const postulacionIds = postulaciones.map(p => p.id);
             
-            // Contar contratados (estado = 'contratado' o 'aceptado')
             totalContratados = postulaciones.filter(
               p => p.estado === "contratado" || p.estado === "aceptado"
             ).length;
 
-            // Obtener entrevistas realizadas
             const { data: entrevistas } = await supabase
               .from("entrevistas_candidato")
               .select("id, asistio")
@@ -121,7 +121,6 @@ export const useKPIs = (
 
             totalEntrevistados = entrevistas?.filter(e => e.asistio)?.length || 0;
 
-            // Obtener feedback para calcular satisfacción
             const { data: feedbacks } = await supabase
               .from("feedback_candidato")
               .select("puntuacion")
@@ -136,21 +135,13 @@ export const useKPIs = (
         }
       }
 
-      // Calcular ratio entrevistados vs contratados
       const ratio = `${totalEntrevistados}:${totalContratados}`;
-
-      // Calcular satisfacción promedio (de 1 a 5)
       const promedioSatisfaccion = feedbackCount > 0 
         ? Number((totalFeedbackScore / feedbackCount).toFixed(1)) 
         : 0;
-
-      // Calcular tasa de rotación (placeholder - requiere datos históricos)
-      // Por ahora calculamos basándonos en cancelaciones tempranas
       const tasaRot = totalVacantes > 0 && cerradas > 0
         ? Math.round((canceladas / (cerradas + canceladas)) * 100)
         : 0;
-
-      // Costo promedio por contratación (placeholder - requiere campo de costo)
       const costoPromedio = 0;
 
       setKpis({
