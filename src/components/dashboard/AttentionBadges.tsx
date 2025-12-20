@@ -201,31 +201,31 @@ export const AttentionBadges = ({ onItemClick, refreshTrigger }: AttentionBadges
   };
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
+    <div className="space-y-4">
+      <div className="flex items-center gap-2 pb-2 border-b">
         <AlertTriangle className="h-5 w-5 text-amber-600" />
-        <h2 className="text-lg font-semibold">Lo que requiere mi atención ahora</h2>
+        <h2 className="text-lg font-semibold">Requiere Atención</h2>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-4">
         {renderCard(
           "Solicitudes de Cierre",
           <Clock className="h-4 w-4 text-red-600" />,
           cierreItems,
-          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-dashed border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
           "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20"
         )}
         {renderCard(
           "Invitaciones Pendientes",
           <UserPlus className="h-4 w-4 text-amber-600" />,
           invitacionItems,
-          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-dashed border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
           "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20"
         )}
         {renderCard(
           "Estudios Entregados",
           <FileCheck className="h-4 w-4 text-blue-600" />,
           estudioItems,
-          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-dashed border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
           "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20"
         )}
       </div>

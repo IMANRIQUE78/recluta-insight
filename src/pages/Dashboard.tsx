@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { QuickActions } from "@/components/dashboard/QuickActions";
 import { ForecastChart } from "@/components/dashboard/ForecastChart";
 import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { VacanteForm } from "@/components/dashboard/VacanteForm";
@@ -22,13 +21,23 @@ import {
   Target,
   XCircle,
   Award,
-  UserCheck
+  UserCheck,
+  Plus,
+  UserPlus,
+  Brain,
+  Crown,
+  BarChart3,
+  Briefcase
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
   const [requisicionFormOpen, setRequisicionFormOpen] = useState(false);
@@ -126,23 +135,27 @@ const Dashboard = () => {
       value: kpiData.tiempoPromedioCobertura,
       unit: "días",
       icon: <Clock className="h-4 w-4" />,
+      category: "operativo"
     },
     {
       title: "Tasa de Éxito de Cierre",
       value: kpiData.tasaExitoCierre,
       unit: "%",
       icon: <Target className="h-4 w-4" />,
+      category: "operativo"
+    },
+    {
+      title: "Vacantes Abiertas",
+      value: kpiData.vacantesAbiertas,
+      icon: <TrendingUp className="h-4 w-4" />,
+      category: "operativo"
     },
     {
       title: "Tasa de Cancelación",
       value: kpiData.tasaCancelacion,
       unit: "%",
       icon: <XCircle className="h-4 w-4" />,
-    },
-    {
-      title: "Vacantes Abiertas",
-      value: kpiData.vacantesAbiertas,
-      icon: <TrendingUp className="h-4 w-4" />,
+      category: "operativo"
     },
     {
       title: "Costo por Contratación",
@@ -150,23 +163,27 @@ const Dashboard = () => {
         ? `$${kpiData.costoPromedioContratacion.toLocaleString()}` 
         : "$0",
       icon: <DollarSign className="h-4 w-4" />,
+      category: "financiero"
     },
     {
       title: "Satisfacción del Cliente",
       value: kpiData.satisfaccionCliente,
       unit: "/5",
       icon: <Award className="h-4 w-4" />,
+      category: "calidad"
     },
     {
       title: "Tasa de Rotación",
       value: kpiData.tasaRotacion,
       unit: "%",
       icon: <Users className="h-4 w-4" />,
+      category: "calidad"
     },
     {
       title: "Entrevistados vs Contratados",
       value: kpiData.entrevistadosVsContratados,
       icon: <UserCheck className="h-4 w-4" />,
+      category: "operativo"
     },
   ];
 
@@ -187,84 +204,173 @@ const Dashboard = () => {
         onEstatusChange={setSelectedEstatus}
       />
       
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Attention Badges - Lo que requiere mi atención */}
-        <AttentionBadges 
-          refreshTrigger={refreshTrigger}
-          onItemClick={(item) => {
-            if (item.type === "cierre" && item.data) {
-              setSelectedVacante(item.data);
-            }
-          }}
-        />
-
-        {/* Quick Actions Bar */}
-        <div className="flex items-center justify-between gap-4 pb-4 border-b">
-          <QuickActions 
-            onNewRequisicion={() => setRequisicionFormOpen(true)}
-            onInvitarReclutador={() => setInvitarReclutadorOpen(true)}
-          />
+      <div className="container mx-auto px-4 py-6">
+        {/* Action Bar - Prominente y siempre visible */}
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <Button 
+            onClick={() => setRequisicionFormOpen(true)}
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Requisición
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => setInvitarReclutadorOpen(true)}
+            className="gap-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            Invitar Reclutador
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => navigate("/nom035")}
+            className="gap-2"
+          >
+            <Brain className="h-4 w-4" />
+            NOM-035
+            <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 text-[10px]">
+              <Crown className="h-2.5 w-2.5 mr-0.5" />
+              PRO
+            </Badge>
+          </Button>
         </div>
 
-        {/* KPIs Section - Resumen Ejecutivo */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Resumen Ejecutivo</h2>
-            <p className="text-sm text-muted-foreground">Métricas clave de desempeño</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {kpis.slice(0, 4).map((kpi, idx) => (
-              <KPICard 
-                key={idx} 
-                {...kpi} 
-                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
-              />
-            ))}
-          </div>
-        </section>
+        {/* Layout Principal: 2 columnas en desktop */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Columna Principal */}
+          <div className="space-y-6">
+            {/* KPIs Section - Destacado con tabs */}
+            <Card className="border-2 border-primary/20 shadow-lg">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <BarChart3 className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Indicadores Clave</CardTitle>
+                      <CardDescription>Click en cualquier indicador para ver detalles</CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-2">
+                <Tabs defaultValue="todos" className="w-full">
+                  <TabsList className="mb-4 w-full justify-start bg-muted/50">
+                    <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
+                    <TabsTrigger value="operativo" className="text-xs">Operativos</TabsTrigger>
+                    <TabsTrigger value="financiero" className="text-xs">Financieros</TabsTrigger>
+                    <TabsTrigger value="calidad" className="text-xs">Calidad</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="todos" className="mt-0">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {kpis.map((kpi, idx) => (
+                        <KPICard 
+                          key={idx} 
+                          title={kpi.title}
+                          value={kpi.value}
+                          unit={kpi.unit}
+                          icon={kpi.icon}
+                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="operativo" className="mt-0">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {kpis.filter(k => k.category === "operativo").map((kpi, idx) => (
+                        <KPICard 
+                          key={idx} 
+                          title={kpi.title}
+                          value={kpi.value}
+                          unit={kpi.unit}
+                          icon={kpi.icon}
+                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="financiero" className="mt-0">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {kpis.filter(k => k.category === "financiero").map((kpi, idx) => (
+                        <KPICard 
+                          key={idx} 
+                          title={kpi.title}
+                          value={kpi.value}
+                          unit={kpi.unit}
+                          icon={kpi.icon}
+                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="calidad" className="mt-0">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {kpis.filter(k => k.category === "calidad").map((kpi, idx) => (
+                        <KPICard 
+                          key={idx} 
+                          title={kpi.title}
+                          value={kpi.value}
+                          unit={kpi.unit}
+                          icon={kpi.icon}
+                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                        />
+                      ))}
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
 
-        {/* KPIs Section - Eficiencia Operativa */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Eficiencia Operativa</h2>
-            <p className="text-sm text-muted-foreground">Costos y productividad</p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {kpis.slice(4, 8).map((kpi, idx) => (
-              <KPICard 
-                key={idx} 
-                {...kpi}
-                onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
-              />
-            ))}
-          </div>
-        </section>
+            {/* Forecast Chart */}
+            <ForecastChart 
+              selectedCliente={selectedCliente}
+              selectedReclutador={selectedReclutador}
+              selectedEstatus={selectedEstatus}
+            />
 
-        {/* Forecast Chart */}
-        <section className="pt-2">
-          <ForecastChart 
-            selectedCliente={selectedCliente}
-            selectedReclutador={selectedReclutador}
-            selectedEstatus={selectedEstatus}
-          />
-        </section>
+            {/* Requisiciones Internas */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-muted">
+                    <Briefcase className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Requisiciones Internas</CardTitle>
+                    <CardDescription>Solicitudes de contratación de la empresa</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <VacantesTable 
+                  onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
+                  refreshTrigger={refreshTrigger}
+                />
+              </CardContent>
+            </Card>
 
-        {/* Reclutadores Asociados */}
-        <section className="space-y-4">
-          <ReclutadoresAsociadosTable />
-        </section>
-
-        {/* Requisiciones Internas */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">Requisiciones Internas</h2>
-            <p className="text-sm text-muted-foreground">Solicitudes de contratación de la empresa</p>
+            {/* Reclutadores Asociados */}
+            <ReclutadoresAsociadosTable />
           </div>
-          <VacantesTable 
-            onSelectVacante={(vacante) => setSelectedVacante(vacante)} 
-            refreshTrigger={refreshTrigger}
-          />
-        </section>
+
+          {/* Columna Lateral - Atención y Alertas */}
+          <div className="space-y-6">
+            <AttentionBadges 
+              refreshTrigger={refreshTrigger}
+              onItemClick={(item) => {
+                if (item.type === "cierre" && item.data) {
+                  setSelectedVacante(item.data);
+                }
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       <VacanteForm
