@@ -10,26 +10,10 @@ import { UserProfileModal } from "./UserProfileModal";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 interface DashboardHeaderProps {
-  clientes: Array<{ id: string; cliente_nombre: string; area: string }>;
-  reclutadores: Array<{ id: string; nombre: string }>;
-  selectedCliente: string;
-  selectedReclutador: string;
-  selectedEstatus: string;
-  onClienteChange: (value: string) => void;
-  onReclutadorChange: (value: string) => void;
-  onEstatusChange: (value: string) => void;
+  // Filtros removidos - ahora están en la sección de KPIs
 }
 
-export const DashboardHeader = ({
-  clientes,
-  reclutadores,
-  selectedCliente,
-  selectedReclutador,
-  selectedEstatus,
-  onClienteChange,
-  onReclutadorChange,
-  onEstatusChange,
-}: DashboardHeaderProps) => {
+export const DashboardHeader = ({}: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -144,48 +128,6 @@ export const DashboardHeader = ({
               </div>
             </div>
 
-            {/* Filtros Globales */}
-            <div className="grid gap-3 md:grid-cols-3">
-              <Select value={selectedCliente} onValueChange={onClienteChange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos los clientes" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="todos">Todos los clientes</SelectItem>
-                  {clientes.map((cliente) => (
-                    <SelectItem key={cliente.id} value={cliente.id}>
-                      {cliente.cliente_nombre} - {cliente.area}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedReclutador} onValueChange={onReclutadorChange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos los reclutadores" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="todos">Todos los reclutadores</SelectItem>
-                  {reclutadores.map((reclutador) => (
-                    <SelectItem key={reclutador.id} value={reclutador.id}>
-                      {reclutador.nombre}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={selectedEstatus} onValueChange={onEstatusChange}>
-                <SelectTrigger className="bg-background">
-                  <SelectValue placeholder="Todos los estatus" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  <SelectItem value="todos">Todos los estatus</SelectItem>
-                  <SelectItem value="abierta">Abierta</SelectItem>
-                  <SelectItem value="cerrada">Cerrada</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         </div>
       </header>
