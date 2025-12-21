@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { KPICard } from "@/components/dashboard/KPICard";
-import { ForecastChart } from "@/components/dashboard/ForecastChart";
+import { ForecastChartEmbedded } from "@/components/dashboard/ForecastChartEmbedded";
 import { KPIDetailModal } from "@/components/dashboard/KPIDetailModal";
 import { VacanteForm } from "@/components/dashboard/VacanteForm";
 import { VacantesTable } from "@/components/dashboard/VacantesTable";
@@ -29,13 +29,17 @@ import {
   Crown,
   BarChart3,
   Briefcase,
-  History
+  History,
+  Filter,
+  ChevronDown
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
@@ -50,6 +54,7 @@ const Dashboard = () => {
   const [selectedReclutadorId, setSelectedReclutadorId] = useState<string>("");
   const [selectedAsociacionId, setSelectedAsociacionId] = useState<string | undefined>(undefined);
   const [historialOpen, setHistorialOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -61,10 +66,12 @@ const Dashboard = () => {
   const { kpis: kpiData, loading: kpiLoading } = useKPIs(refreshTrigger, selectedCliente, selectedReclutador, selectedEstatus);
   const { data: detailData, columns: detailColumns, loading: detailLoading } = useKPIDetails(selectedKPI);
 
+  // Contador de filtros activos
+  const activeFiltersCount = [selectedCliente, selectedReclutador, selectedEstatus].filter(f => f !== "todos").length;
+
   useEffect(() => {
     loadFilters();
 
-    // Escuchar evento para abrir perfil de reclutador
     const handleOpenReclutadorProfile = (event: any) => {
       const { reclutadorId, asociacionId } = event.detail;
       setSelectedReclutadorId(reclutadorId);
@@ -89,7 +96,6 @@ const Dashboard = () => {
       .eq("user_id", user.id)
       .order("cliente_nombre", { ascending: true });
 
-    // Obtener empresa del usuario desde user_roles
     const { data: userRole } = await supabase
       .from("user_roles")
       .select("empresa_id")
@@ -100,7 +106,6 @@ const Dashboard = () => {
     let formattedReclutadores: any[] = [];
 
     if (userRole?.empresa_id) {
-      // Cargar reclutadores asociados a la empresa
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
         .select("reclutador_id")
@@ -114,7 +119,6 @@ const Dashboard = () => {
           .select("id, nombre_reclutador")
           .in("id", reclutadorIds);
 
-        // Usar perfil_reclutador.id para filtros (coincide con vacantes.reclutador_asignado_id)
         formattedReclutadores = perfiles?.map(perfil => ({
           id: perfil.id,
           nombre: perfil.nombre_reclutador
@@ -130,6 +134,12 @@ const Dashboard = () => {
     console.log("Opening modal for:", kpiTitle);
     setSelectedKPI(kpiTitle);
     setModalOpen(true);
+  };
+
+  const clearFilters = () => {
+    setSelectedCliente("todos");
+    setSelectedReclutador("todos");
+    setSelectedEstatus("todos");
   };
 
   const kpis = [
@@ -196,19 +206,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DashboardHeader
-        clientes={clientes}
-        reclutadores={reclutadores}
-        selectedCliente={selectedCliente}
-        selectedReclutador={selectedReclutador}
-        selectedEstatus={selectedEstatus}
-        onClienteChange={setSelectedCliente}
-        onReclutadorChange={setSelectedReclutador}
-        onEstatusChange={setSelectedEstatus}
-      />
+      <DashboardHeader />
       
       <div className="container mx-auto px-4 py-6">
-        {/* Action Bar - Prominente y siempre visible */}
+        {/* Action Bar */}
         <div className="flex flex-wrap items-center gap-3 mb-6">
           <Button 
             onClick={() => setRequisicionFormOpen(true)}
@@ -239,26 +240,98 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Layout Principal: 2 columnas en desktop */}
+        {/* Layout Principal */}
         <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
           {/* Columna Principal */}
           <div className="space-y-6">
-            {/* KPIs Section - Destacado con tabs */}
-            <Card className="border-2 border-primary/20 shadow-lg">
-              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 to-transparent">
-                <div className="flex items-center justify-between">
+            {/* Sección Consolidada: KPIs + Filtros + Pronóstico */}
+            <Card className="border-2 border-primary/20 shadow-lg overflow-hidden">
+              <CardHeader className="pb-4 bg-gradient-to-r from-primary/5 via-primary/3 to-transparent">
+                <div className="flex items-center justify-between flex-wrap gap-3">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-primary/10">
                       <BarChart3 className="h-5 w-5 text-primary" />
                     </div>
                     <div>
-                      <CardTitle className="text-xl">Indicadores Clave</CardTitle>
-                      <CardDescription>Click en cualquier indicador para ver detalles</CardDescription>
+                      <CardTitle className="text-xl">Centro de Métricas</CardTitle>
+                      <CardDescription>Indicadores clave y pronóstico de demanda</CardDescription>
                     </div>
                   </div>
+                  
+                  {/* Botón de filtros */}
+                  <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtros
+                        {activeFiltersCount > 0 && (
+                          <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                            {activeFiltersCount}
+                          </Badge>
+                        )}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${filtersOpen ? 'rotate-180' : ''}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                  </Collapsible>
                 </div>
+
+                {/* Filtros colapsables */}
+                <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
+                  <CollapsibleContent className="pt-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <Select value={selectedCliente} onValueChange={setSelectedCliente}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Todos los clientes" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="todos">Todos los clientes</SelectItem>
+                          {clientes.map((cliente) => (
+                            <SelectItem key={cliente.id} value={cliente.id}>
+                              {cliente.cliente_nombre} - {cliente.area}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={selectedReclutador} onValueChange={setSelectedReclutador}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Todos los reclutadores" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="todos">Todos los reclutadores</SelectItem>
+                          {reclutadores.map((reclutador) => (
+                            <SelectItem key={reclutador.id} value={reclutador.id}>
+                              {reclutador.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={selectedEstatus} onValueChange={setSelectedEstatus}>
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Todos los estatus" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background z-50">
+                          <SelectItem value="todos">Todos los estatus</SelectItem>
+                          <SelectItem value="abierta">Abierta</SelectItem>
+                          <SelectItem value="cerrada">Cerrada</SelectItem>
+                          <SelectItem value="cancelada">Cancelada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {activeFiltersCount > 0 && (
+                      <div className="mt-3 flex justify-end">
+                        <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs">
+                          Limpiar filtros
+                        </Button>
+                      </div>
+                    )}
+                  </CollapsibleContent>
+                </Collapsible>
               </CardHeader>
-              <CardContent className="pt-2">
+
+              <CardContent className="pt-2 space-y-6">
+                {/* KPIs con Tabs */}
                 <Tabs defaultValue="todos" className="w-full">
                   <TabsList className="mb-4 w-full justify-start bg-muted/50">
                     <TabsTrigger value="todos" className="text-xs">Todos</TabsTrigger>
@@ -327,15 +400,18 @@ const Dashboard = () => {
                     </div>
                   </TabsContent>
                 </Tabs>
+
+                {/* Separador visual */}
+                <Separator className="my-2" />
+
+                {/* Gráfica de Pronóstico embebida */}
+                <ForecastChartEmbedded 
+                  selectedCliente={selectedCliente}
+                  selectedReclutador={selectedReclutador}
+                  selectedEstatus={selectedEstatus}
+                />
               </CardContent>
             </Card>
-
-            {/* Forecast Chart */}
-            <ForecastChart 
-              selectedCliente={selectedCliente}
-              selectedReclutador={selectedReclutador}
-              selectedEstatus={selectedEstatus}
-            />
 
             {/* Requisiciones Internas */}
             <Card>
@@ -373,7 +449,7 @@ const Dashboard = () => {
             <ReclutadoresAsociadosTable />
           </div>
 
-          {/* Columna Lateral - Atención y Alertas */}
+          {/* Columna Lateral */}
           <div className="space-y-6">
             <AttentionBadges 
               refreshTrigger={refreshTrigger}
