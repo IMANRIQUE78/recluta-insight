@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: string | null) => {
@@ -6,51 +6,7 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
   const [columns, setColumns] = useState<Array<{ key: string; label: string }>>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (kpiTitle && reclutadorUserId) {
-      loadKPIDetails();
-    }
-  }, [kpiTitle, reclutadorUserId]);
-
-  const loadKPIDetails = async () => {
-    setLoading(true);
-    try {
-      if (!reclutadorUserId) return;
-
-      switch (kpiTitle) {
-        case "Promedio Cierre":
-          await loadPromedioCierreDetails(reclutadorUserId);
-          break;
-        case "Vacantes Cerradas":
-          await loadVacantesCerradasDetails(reclutadorUserId);
-          break;
-        case "Entrevistas / Cierre":
-          await loadEntrevistasDetails(reclutadorUserId);
-          break;
-        case "Calificación":
-          await loadCalificacionDetails(reclutadorUserId);
-          break;
-        default:
-          setData([]);
-          setColumns([]);
-      }
-    } catch (error) {
-      console.error("Error loading KPI details:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadPromedioCierreDetails = async (userId: string) => {
-    // Obtener perfil_reclutador.id desde user_id
-    const { data: perfil } = await supabase
-      .from("perfil_reclutador")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!perfil) return;
-
+  const loadPromedioCierreDetails = useCallback(async (userId: string, perfilId: string) => {
     const { data: vacantes } = await supabase
       .from("vacantes")
       .select(`
@@ -60,7 +16,7 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
         fecha_cierre,
         empresas(nombre_empresa)
       `)
-      .eq("reclutador_asignado_id", perfil.id)
+      .eq("reclutador_asignado_id", perfilId)
       .eq("estatus", "cerrada")
       .not("fecha_cierre", "is", null)
       .order("fecha_cierre", { ascending: false });
@@ -94,22 +50,10 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       : null;
 
     const estadisticas = [
-      {
-        metrica: "Total de vacantes cerradas",
-        valor: `${totalVacantes} vacantes`,
-      },
-      {
-        metrica: "Tiempo promedio de cierre",
-        valor: `${promedioDias} días`,
-      },
-      {
-        metrica: "Mejor tiempo de cierre",
-        valor: mejorVacante ? `${mejorVacante.dias} días - ${mejorVacante.puesto}` : "N/A",
-      },
-      {
-        metrica: "Mayor tiempo de cierre",
-        valor: peorVacante ? `${peorVacante.dias} días - ${peorVacante.puesto}` : "N/A",
-      },
+      { metrica: "Total de vacantes cerradas", valor: `${totalVacantes} vacantes` },
+      { metrica: "Tiempo promedio de cierre", valor: `${promedioDias} días` },
+      { metrica: "Mejor tiempo de cierre", valor: mejorVacante ? `${mejorVacante.dias} días - ${mejorVacante.puesto}` : "N/A" },
+      { metrica: "Mayor tiempo de cierre", valor: peorVacante ? `${peorVacante.dias} días - ${peorVacante.puesto}` : "N/A" },
     ];
 
     setData([...estadisticas, ...vacantesConDias]);
@@ -123,17 +67,9 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       { key: "fechaSolicitud", label: "F. Solicitud" },
       { key: "fechaCierre", label: "F. Cierre" },
     ]);
-  };
+  }, []);
 
-  const loadVacantesCerradasDetails = async (userId: string) => {
-    const { data: perfil } = await supabase
-      .from("perfil_reclutador")
-      .select("id")
-      .eq("user_id", userId)
-      .single();
-
-    if (!perfil) return;
-
+  const loadVacantesCerradasDetails = useCallback(async (userId: string, perfilId: string) => {
     const { data: vacantes } = await supabase
       .from("vacantes")
       .select(`
@@ -142,7 +78,7 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
         fecha_cierre,
         empresas(nombre_empresa)
       `)
-      .eq("reclutador_asignado_id", perfil.id)
+      .eq("reclutador_asignado_id", perfilId)
       .eq("estatus", "cerrada")
       .order("fecha_cierre", { ascending: false });
 
@@ -160,9 +96,9 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       { key: "empresa", label: "Empresa" },
       { key: "fechaCierre", label: "Fecha Cierre" },
     ]);
-  };
+  }, []);
 
-  const loadEntrevistasDetails = async (userId: string) => {
+  const loadEntrevistasDetails = useCallback(async (userId: string) => {
     const { data: entrevistas } = await supabase
       .from("entrevistas_candidato")
       .select(`
@@ -195,18 +131,9 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
     const realizadas = details.filter(d => d.asistio === "Sí").length;
 
     const estadisticas = [
-      {
-        metrica: "Total de entrevistas programadas",
-        valor: `${totalEntrevistas} entrevistas`,
-      },
-      {
-        metrica: "Entrevistas realizadas",
-        valor: `${realizadas} entrevistas`,
-      },
-      {
-        metrica: "Tasa de asistencia",
-        valor: totalEntrevistas > 0 ? `${Math.round((realizadas / totalEntrevistas) * 100)}%` : "0%",
-      },
+      { metrica: "Total de entrevistas programadas", valor: `${totalEntrevistas} entrevistas` },
+      { metrica: "Entrevistas realizadas", valor: `${realizadas} entrevistas` },
+      { metrica: "Tasa de asistencia", valor: totalEntrevistas > 0 ? `${Math.round((realizadas / totalEntrevistas) * 100)}%` : "0%" },
     ];
 
     setData([...estadisticas, ...details]);
@@ -219,9 +146,9 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       { key: "estado", label: "Estado" },
       { key: "asistio", label: "Asistió" },
     ]);
-  };
+  }, []);
 
-  const loadCalificacionDetails = async (userId: string) => {
+  const loadCalificacionDetails = useCallback(async (userId: string) => {
     const { data: feedbacks } = await supabase
       .from("feedback_candidato")
       .select(`
@@ -258,14 +185,8 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       : "0.0";
 
     const estadisticas = [
-      {
-        metrica: "Total de calificaciones recibidas",
-        valor: `${totalFeedbacks} calificaciones`,
-      },
-      {
-        metrica: "Calificación promedio",
-        valor: `${promedio} ★`,
-      },
+      { metrica: "Total de calificaciones recibidas", valor: `${totalFeedbacks} calificaciones` },
+      { metrica: "Calificación promedio", valor: `${promedio} ★` },
     ];
 
     setData([...estadisticas, ...details]);
@@ -278,7 +199,64 @@ export const useReclutadorKPIDetails = (kpiTitle: string, reclutadorUserId: stri
       { key: "aspectosPositivos", label: "Aspectos Positivos" },
       { key: "aspectosMejora", label: "Aspectos de Mejora" },
     ]);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!kpiTitle || !reclutadorUserId) {
+      setLoading(false);
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    const loadKPIDetails = async () => {
+      setLoading(true);
+      try {
+        // Get perfil_reclutador.id from user_id once
+        const { data: perfil } = await supabase
+          .from("perfil_reclutador")
+          .select("id")
+          .eq("user_id", reclutadorUserId)
+          .single();
+
+        if (abortController.signal.aborted) return;
+
+        const perfilId = perfil?.id;
+
+        switch (kpiTitle) {
+          case "Promedio Cierre":
+            if (perfilId) await loadPromedioCierreDetails(reclutadorUserId, perfilId);
+            break;
+          case "Vacantes Cerradas":
+            if (perfilId) await loadVacantesCerradasDetails(reclutadorUserId, perfilId);
+            break;
+          case "Entrevistas / Cierre":
+            await loadEntrevistasDetails(reclutadorUserId);
+            break;
+          case "Calificación":
+            await loadCalificacionDetails(reclutadorUserId);
+            break;
+          default:
+            setData([]);
+            setColumns([]);
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          console.error("Error loading KPI details:", error);
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadKPIDetails();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [kpiTitle, reclutadorUserId, loadPromedioCierreDetails, loadVacantesCerradasDetails, loadEntrevistasDetails, loadCalificacionDetails]);
 
   return { data, columns, loading };
 };
