@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useKPIs = (
@@ -18,12 +18,15 @@ export const useKPIs = (
     entrevistadosVsContratados: "0:0",
   });
   const [loading, setLoading] = useState(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    calculateKPIs();
-  }, [refreshTrigger, selectedCliente, selectedReclutador, selectedEstatus]);
+  const calculateKPIs = useCallback(async () => {
+    // Cancelar petición anterior si existe
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
-  const calculateKPIs = async () => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -32,14 +35,43 @@ export const useKPIs = (
         return;
       }
 
-      // Para tiempo de cobertura SIEMPRE usamos TODAS las vacantes cerradas del usuario
-      // (sin importar filtros de cliente/reclutador/estatus)
-      const { data: todasVacantesCerradas } = await supabase
-        .from("vacantes")
-        .select("id, fecha_solicitud, fecha_cierre")
-        .eq("user_id", user.id)
-        .eq("estatus", "cerrada")
-        .not("fecha_cierre", "is", null);
+      // Ejecutar queries en paralelo para máximo rendimiento
+      const [cerradasResult, filteredResult] = await Promise.all([
+        // Query 1: Vacantes cerradas para tiempo de cobertura (sin filtros)
+        supabase
+          .from("vacantes")
+          .select("id, fecha_solicitud, fecha_cierre")
+          .eq("user_id", user.id)
+          .eq("estatus", "cerrada")
+          .not("fecha_cierre", "is", null),
+        
+        // Query 2: Vacantes con filtros para demás KPIs
+        (() => {
+          let query = supabase
+            .from("vacantes")
+            .select("id, estatus, fecha_solicitud, fecha_cierre")
+            .eq("user_id", user.id);
+
+          if (selectedCliente !== "todos") {
+            query = query.eq("cliente_area_id", selectedCliente);
+          }
+          if (selectedReclutador !== "todos") {
+            query = query.eq("reclutador_asignado_id", selectedReclutador);
+          }
+          if (selectedEstatus !== "todos") {
+            query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
+          }
+          return query;
+        })()
+      ]);
+
+      const todasVacantesCerradas = cerradasResult.data;
+      const vacantes = filteredResult.data;
+
+      if (filteredResult.error) {
+        console.error("Error fetching vacantes:", filteredResult.error);
+        throw filteredResult.error;
+      }
 
       // Calcular tiempo promedio de cobertura
       let tiempoPromedio = 0;
@@ -53,28 +85,6 @@ export const useKPIs = (
         tiempoPromedio = Math.round(totalDias / todasVacantesCerradas.length);
       }
 
-      // Query con filtros para los demás KPIs
-      let query = supabase
-        .from("vacantes")
-        .select("*")
-        .eq("user_id", user.id);
-
-      if (selectedCliente !== "todos") {
-        query = query.eq("cliente_area_id", selectedCliente);
-      }
-      if (selectedReclutador !== "todos") {
-        query = query.eq("reclutador_asignado_id", selectedReclutador);
-      }
-      if (selectedEstatus !== "todos") {
-        query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
-      }
-
-      const { data: vacantes, error: vacantesError } = await query;
-      if (vacantesError) {
-        console.error("Error fetching vacantes:", vacantesError);
-        throw vacantesError;
-      }
-
       const totalVacantes = vacantes?.length || 0;
       const abiertas = vacantes?.filter((v) => v.estatus === "abierta").length || 0;
       const cerradas = vacantes?.filter((v) => v.estatus === "cerrada").length || 0;
@@ -84,12 +94,12 @@ export const useKPIs = (
       const tasaExito = totalVacantes > 0 ? Math.round((cerradas / totalVacantes) * 100) : 0;
       const tasaCancel = totalVacantes > 0 ? Math.round((canceladas / totalVacantes) * 100) : 0;
 
-      // Obtener datos de entrevistas y contrataciones desde postulaciones
+      // Inicializar valores por defecto
       let totalEntrevistados = 0;
       let totalContratados = 0;
-      let totalFeedbackScore = 0;
-      let feedbackCount = 0;
+      let promedioSatisfaccion = 0;
 
+      // Solo hacer queries adicionales si hay vacantes
       if (vacantes && vacantes.length > 0) {
         const vacantesIds = vacantes.map(v => v.id);
         
@@ -101,10 +111,19 @@ export const useKPIs = (
         if (publicaciones && publicaciones.length > 0) {
           const publicacionIds = publicaciones.map(p => p.id);
 
-          const { data: postulaciones } = await supabase
-            .from("postulaciones")
-            .select("id, estado, candidato_user_id")
-            .in("publicacion_id", publicacionIds);
+          // Ejecutar en paralelo
+          const [postulacionesResult, feedbacksResult] = await Promise.all([
+            supabase
+              .from("postulaciones")
+              .select("id, estado")
+              .in("publicacion_id", publicacionIds),
+            supabase
+              .from("feedback_candidato")
+              .select("puntuacion, postulacion_id")
+              .not("puntuacion", "is", null)
+          ]);
+
+          const postulaciones = postulacionesResult.data;
 
           if (postulaciones && postulaciones.length > 0) {
             const postulacionIds = postulaciones.map(p => p.id);
@@ -121,45 +140,52 @@ export const useKPIs = (
 
             totalEntrevistados = entrevistas?.filter(e => e.asistio)?.length || 0;
 
-            const { data: feedbacks } = await supabase
-              .from("feedback_candidato")
-              .select("puntuacion")
-              .in("postulacion_id", postulacionIds)
-              .not("puntuacion", "is", null);
+            // Filtrar feedbacks por postulaciones válidas
+            const feedbacks = feedbacksResult.data?.filter(f => 
+              postulacionIds.includes(f.postulacion_id)
+            ) || [];
 
-            if (feedbacks && feedbacks.length > 0) {
-              feedbackCount = feedbacks.length;
-              totalFeedbackScore = feedbacks.reduce((sum, f) => sum + (f.puntuacion || 0), 0);
+            if (feedbacks.length > 0) {
+              const totalFeedbackScore = feedbacks.reduce((sum, f) => sum + (f.puntuacion || 0), 0);
+              promedioSatisfaccion = Number((totalFeedbackScore / feedbacks.length).toFixed(1));
             }
           }
         }
       }
 
       const ratio = `${totalEntrevistados}:${totalContratados}`;
-      const promedioSatisfaccion = feedbackCount > 0 
-        ? Number((totalFeedbackScore / feedbackCount).toFixed(1)) 
-        : 0;
       const tasaRot = totalVacantes > 0 && cerradas > 0
         ? Math.round((canceladas / (cerradas + canceladas)) * 100)
         : 0;
-      const costoPromedio = 0;
 
       setKpis({
         tiempoPromedioCobertura: tiempoPromedio,
         tasaExitoCierre: tasaExito,
         tasaCancelacion: tasaCancel,
         vacantesAbiertas: abiertas,
-        costoPromedioContratacion: costoPromedio,
+        costoPromedioContratacion: 0,
         satisfaccionCliente: promedioSatisfaccion,
         tasaRotacion: tasaRot,
         entrevistadosVsContratados: ratio,
       });
     } catch (error) {
-      console.error("Error calculating KPIs:", error);
+      if ((error as Error).name !== 'AbortError') {
+        console.error("Error calculating KPIs:", error);
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedCliente, selectedReclutador, selectedEstatus]);
+
+  useEffect(() => {
+    calculateKPIs();
+    
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [refreshTrigger, calculateKPIs]);
 
   return { kpis, loading };
 };
