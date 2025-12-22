@@ -32,6 +32,7 @@ export const EntrevistasCalendarioCard = ({ reclutadorUserId }: EntrevistasCalen
 
   const loadEntrevistas = async () => {
     try {
+      // First fetch interviews
       const { data: entrevistasData, error: entrevistasError } = await supabase
         .from("entrevistas_candidato")
         .select(`
@@ -56,28 +57,37 @@ export const EntrevistasCalendarioCard = ({ reclutadorUserId }: EntrevistasCalen
         return;
       }
 
-      const postulacionIds = entrevistasData.map(e => e.postulacion_id);
-      const { data: postulaciones } = await supabase
-        .from("postulaciones")
-        .select(`id, publicacion_id`)
-        .in("id", postulacionIds);
+      // Get unique IDs for parallel queries
+      const postulacionIds = [...new Set(entrevistasData.map(e => e.postulacion_id))];
+      const candidatoUserIds = [...new Set(entrevistasData.map(e => e.candidato_user_id))];
 
-      const publicacionIds = postulaciones?.map(p => p.publicacion_id) || [];
-      const { data: publicaciones } = await supabase
-        .from("publicaciones_marketplace")
-        .select("id, titulo_puesto")
-        .in("id", publicacionIds);
+      // Parallel queries for related data
+      const [postulacionesResult, candidatosResult] = await Promise.all([
+        supabase
+          .from("postulaciones")
+          .select(`
+            id, 
+            publicacion_id,
+            publicaciones_marketplace(id, titulo_puesto)
+          `)
+          .in("id", postulacionIds),
+        supabase
+          .from("perfil_candidato")
+          .select("user_id, nombre_completo, email")
+          .in("user_id", candidatoUserIds)
+      ]);
 
-      const candidatoUserIds = entrevistasData.map(e => e.candidato_user_id);
-      const { data: candidatos } = await supabase
-        .from("perfil_candidato")
-        .select("user_id, nombre_completo, email")
-        .in("user_id", candidatoUserIds);
+      const postulaciones = postulacionesResult.data || [];
+      const candidatos = candidatosResult.data || [];
+
+      // Build lookup maps for O(1) access
+      const postulacionMap = new Map(postulaciones.map(p => [p.id, p]));
+      const candidatoMap = new Map(candidatos.map(c => [c.user_id, c]));
 
       const entrevistasEnriquecidas = entrevistasData.map(entrevista => {
-        const postulacion = postulaciones?.find(p => p.id === entrevista.postulacion_id);
-        const publicacion = publicaciones?.find(p => p.id === postulacion?.publicacion_id);
-        const candidato = candidatos?.find(c => c.user_id === entrevista.candidato_user_id);
+        const postulacion = postulacionMap.get(entrevista.postulacion_id);
+        const publicacion = (postulacion as any)?.publicaciones_marketplace;
+        const candidato = candidatoMap.get(entrevista.candidato_user_id);
 
         return {
           ...entrevista,
