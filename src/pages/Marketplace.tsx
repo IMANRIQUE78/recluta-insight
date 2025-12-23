@@ -7,10 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Search, Briefcase, SlidersHorizontal, X } from "lucide-react";
+import { Search, Briefcase, SlidersHorizontal, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import vvgiLogo from "@/assets/vvgi-logo.png";
+
+const ITEMS_PER_PAGE = 15;
 
 const Marketplace = () => {
   const navigate = useNavigate();
@@ -22,6 +24,7 @@ const Marketplace = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // Filtros
   const [modalidadFilter, setModalidadFilter] = useState<string>("todas");
@@ -38,6 +41,7 @@ const Marketplace = () => {
 
   useEffect(() => {
     applyFilters();
+    setCurrentPage(1); // Reset page when filters change
   }, [searchTerm, publicaciones, modalidadFilter, ubicacionFilter, salarioMin, salarioMax]);
 
   // Detectar parámetro de URL para abrir modal automáticamente
@@ -149,10 +153,12 @@ const Marketplace = () => {
               </div>
               <div className="space-y-0.5">
                 <h1 className="text-xl md:text-2xl font-bold tracking-tight">
-                  <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent font-bold">
                     Marketplace
                   </span>
-                  <span className="ml-2 text-foreground font-semibold">VVGI</span>
+                  <span className="ml-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent font-bold">
+                    VVGI
+                  </span>
                 </h1>
                 <p className="text-xs md:text-sm text-muted-foreground font-medium tracking-wide">
                   Encuentra una nueva experiencia laboral
@@ -315,20 +321,85 @@ const Marketplace = () => {
           </div>
         ) : (
           <>
-            <div className="mb-6">
+            {/* Info y paginación superior */}
+            <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-muted-foreground">
-                {filteredPublicaciones.length} {filteredPublicaciones.length === 1 ? 'vacante disponible' : 'vacantes disponibles'}
+                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredPublicaciones.length)} de {filteredPublicaciones.length} {filteredPublicaciones.length === 1 ? 'vacante' : 'vacantes'}
               </p>
+              {Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE) > 1 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Página {currentPage} de {Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE)}
+                  </span>
+                </div>
+              )}
             </div>
+
+            {/* Grid de tarjetas */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {filteredPublicaciones.map((publicacion) => (
-                <VacantePublicaCard
-                  key={publicacion.id}
-                  publicacion={publicacion}
-                  onClick={() => setSelectedPublicacion(publicacion)}
-                />
-              ))}
+              {filteredPublicaciones
+                .slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+                .map((publicacion) => (
+                  <VacantePublicaCard
+                    key={publicacion.id}
+                    publicacion={publicacion}
+                    onClick={() => setSelectedPublicacion(publicacion)}
+                  />
+                ))}
             </div>
+
+            {/* Paginación inferior */}
+            {Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE) > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Anterior
+                </Button>
+                
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE) }, (_, i) => i + 1)
+                    .filter(page => {
+                      const totalPages = Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE);
+                      if (totalPages <= 5) return true;
+                      if (page === 1 || page === totalPages) return true;
+                      if (Math.abs(page - currentPage) <= 1) return true;
+                      return false;
+                    })
+                    .map((page, index, arr) => (
+                      <div key={page} className="flex items-center">
+                        {index > 0 && arr[index - 1] !== page - 1 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[36px]"
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE), p + 1))}
+                  disabled={currentPage === Math.ceil(filteredPublicaciones.length / ITEMS_PER_PAGE)}
+                  className="gap-1"
+                >
+                  Siguiente
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
           </>
         )}
       </main>
