@@ -132,28 +132,50 @@ const Marketplace = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className={`border-b sticky top-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50 transition-transform duration-300 ${
-        scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
+      <header className={`border-b border-border/50 sticky top-0 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 z-50 transition-all duration-500 ${
+        scrollDirection === "down" ? "-translate-y-full opacity-0" : "translate-y-0 opacity-100"
       }`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <img src={vvgiLogo} alt="VVGI Logo" className="h-10 w-10 object-contain" />
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                  Marketplace
+            {/* Logo y título */}
+            <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate("/")}>
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <img 
+                  src={vvgiLogo} 
+                  alt="VVGI Logo" 
+                  className="h-12 w-12 object-contain relative z-10 transition-transform duration-300 group-hover:scale-110" 
+                />
+              </div>
+              <div className="space-y-0.5">
+                <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+                  <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">
+                    Marketplace
+                  </span>
+                  <span className="ml-2 text-foreground font-semibold">VVGI</span>
                 </h1>
-                <p className="text-xs text-muted-foreground">Encuentra tu próxima oportunidad</p>
+                <p className="text-xs md:text-sm text-muted-foreground font-medium tracking-wide">
+                  Encuentra una nueva experiencia laboral
+                </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => navigate("/")}>
+
+            {/* Navegación */}
+            <nav className="flex items-center gap-2 md:gap-3">
+              <Button 
+                variant="ghost" 
+                onClick={() => navigate("/")}
+                className="text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-300"
+              >
                 Inicio
               </Button>
-              <Button onClick={() => navigate("/auth")}>
+              <Button 
+                onClick={() => navigate("/auth")}
+                className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
+              >
                 Iniciar Sesión
               </Button>
-            </div>
+            </nav>
           </div>
         </div>
       </header>
