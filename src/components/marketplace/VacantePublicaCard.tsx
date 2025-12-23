@@ -52,11 +52,13 @@ export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardP
 
   return (
     <Card 
-      className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+      className="cursor-pointer group transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 hover:border-primary/30 border-border/50"
       onClick={onClick}
     >
-      <CardHeader>
-        <CardTitle className="text-xl">{publicacion.titulo_puesto}</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-xl group-hover:text-primary transition-colors duration-300">
+          {publicacion.titulo_puesto}
+        </CardTitle>
         <div className="flex items-center gap-3 mt-1">
           <CardDescription className="flex items-center gap-1">
             <Briefcase className="h-4 w-4" />
@@ -69,16 +71,16 @@ export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardP
             </CardDescription>
           )}
         </div>
-        <Badge variant="secondary" className="w-fit">
+        <Badge variant="secondary" className="w-fit group-hover:bg-primary/10 group-hover:text-primary transition-colors duration-300">
           {getModalidadLabel(publicacion.lugar_trabajo)}
         </Badge>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+      <CardContent className="pt-0">
+        <div className="space-y-3">
           {publicacion.sueldo_bruto_aprobado && (
             <div className="flex items-center gap-2 text-sm">
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-              <span className="font-semibold">{formatSalary(publicacion.sueldo_bruto_aprobado)}</span>
+              <DollarSign className="h-4 w-4 text-primary/70" />
+              <span className="font-semibold text-primary">{formatSalary(publicacion.sueldo_bruto_aprobado)}</span>
             </div>
           )}
           {publicacion.perfil_requerido && (
@@ -86,9 +88,14 @@ export const VacantePublicaCard = ({ publicacion, onClick }: VacantePublicaCardP
               {publicacion.perfil_requerido}
             </p>
           )}
-          <p className="text-xs text-muted-foreground">
-            Publicado {new Date(publicacion.fecha_publicacion).toLocaleDateString('es-MX')}
-          </p>
+          <div className="flex items-center justify-between pt-2 border-t border-border/30">
+            <p className="text-xs text-muted-foreground">
+              Publicado {new Date(publicacion.fecha_publicacion).toLocaleDateString('es-MX')}
+            </p>
+            <span className="text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300 font-medium">
+              Ver detalles →
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>
