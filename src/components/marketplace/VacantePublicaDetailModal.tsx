@@ -200,27 +200,33 @@ export const VacantePublicaDetailModal = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">{publicacion.titulo_puesto}</DialogTitle>
-          <div className="flex items-center gap-3 mt-2">
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Briefcase className="h-4 w-4" />
-              <button 
-                onClick={() => setShowEmpresaInfo(true)}
-                className="hover:underline hover:text-foreground transition-colors"
-              >
-                {nombreEmpresa}
-              </button>
-            </div>
-            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <span>•</span>
-              <button 
-                onClick={() => setShowReclutadorInfo(true)}
-                className="hover:underline hover:text-foreground transition-colors"
-              >
-                {nombreReclutador}
-              </button>
-            </div>
+        <DialogHeader className="space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-2xl font-bold leading-tight">
+              {publicacion.titulo_puesto}
+            </DialogTitle>
+            <Badge variant="secondary" className="shrink-0">
+              {getModalidadLabel(publicacion.lugar_trabajo)}
+            </Badge>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button 
+              onClick={() => setShowEmpresaInfo(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors group"
+            >
+              <Building2 className="h-4 w-4 group-hover:text-primary" />
+              <span className="hover:underline">{nombreEmpresa}</span>
+            </button>
+            
+            <button 
+              onClick={() => setShowReclutadorInfo(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors group"
+            >
+              <Briefcase className="h-4 w-4 group-hover:text-primary" />
+              <span className="hover:underline">{nombreReclutador}</span>
+            </button>
+            
             {publicacion.ubicacion && (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
@@ -228,7 +234,9 @@ export const VacantePublicaDetailModal = ({
               </div>
             )}
           </div>
-          <DialogDescription>
+          
+          <DialogDescription className="flex items-center gap-1.5">
+            <Calendar className="h-4 w-4" />
             Publicado el {new Date(publicacion.fecha_publicacion).toLocaleDateString('es-MX', {
               year: 'numeric',
               month: 'long',
@@ -237,66 +245,74 @@ export const VacantePublicaDetailModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Badges principales */}
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="secondary">
-              {getModalidadLabel(publicacion.lugar_trabajo)}
-            </Badge>
-          </div>
-
-          <Separator />
-
-          {/* Sueldo */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm font-medium">
+        <div className="space-y-5 py-4">
+          {/* Compensación destacada */}
+          <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
+            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-1">
               <DollarSign className="h-4 w-4" />
-              Compensación
+              Compensación mensual
             </div>
-            <p className="text-lg font-semibold ml-6">
+            <p className="text-2xl font-bold text-primary">
               {formatSalary(publicacion.sueldo_bruto_aprobado)}
             </p>
           </div>
 
+          {/* Cliente/Área */}
+          {publicacion.cliente_area && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+                Área / Cliente
+              </div>
+              <p className="text-sm text-muted-foreground ml-6">
+                {publicacion.cliente_area}
+              </p>
+            </div>
+          )}
+
+          <Separator />
+
           {/* Perfil requerido */}
           {publicacion.perfil_requerido && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <FileText className="h-4 w-4" />
-                  Perfil Requerido
-                </div>
-                <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                Perfil Requerido
+              </div>
+              <div className="ml-6 p-3 rounded-md bg-muted/30 border border-border/50">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                   {publicacion.perfil_requerido}
                 </p>
               </div>
-            </>
+            </div>
           )}
 
           {/* La empresa ofrece */}
           {publicacion.observaciones && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Calendar className="h-4 w-4" />
-                  La empresa ofrece
-                </div>
-                <p className="text-sm text-muted-foreground ml-6 whitespace-pre-wrap">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                La empresa ofrece
+              </div>
+              <div className="ml-6 p-3 rounded-md bg-green-500/5 border border-green-500/10">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                   {publicacion.observaciones}
                 </p>
               </div>
-            </>
+            </div>
           )}
 
           <Separator />
 
           {/* Botón de postulación */}
-          <div className="flex justify-end">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Al postularte, tu perfil será visible para el reclutador
+            </p>
             {user ? (
               yaPostulado ? (
-                <Button size="lg" disabled>
+                <Button size="lg" disabled className="w-full sm:w-auto">
+                  <CheckCircle className="h-4 w-4 mr-2" />
                   Ya te postulaste
                 </Button>
               ) : (
@@ -304,12 +320,13 @@ export const VacantePublicaDetailModal = ({
                   size="lg" 
                   onClick={handlePostularse}
                   disabled={postulando || !tienePerfil}
+                  className="w-full sm:w-auto"
                 >
-                  {postulando ? "Enviando..." : tienePerfil ? "Postularme" : "Completa tu perfil primero"}
+                  {postulando ? "Enviando..." : tienePerfil ? "Postularme ahora" : "Completa tu perfil primero"}
                 </Button>
               )
             ) : (
-              <Button size="lg" variant="outline" onClick={() => window.location.href = '/auth'}>
+              <Button size="lg" onClick={() => window.location.href = '/auth'} className="w-full sm:w-auto">
                 Inicia sesión para postularte
               </Button>
             )}
