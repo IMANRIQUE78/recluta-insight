@@ -13,10 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertCircle, Shield, User, Briefcase, GraduationCap, Heart, Target, Link as LinkIcon } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 interface CandidateProfileModalProps {
   open: boolean;
@@ -27,24 +28,23 @@ interface CandidateProfileModalProps {
 interface ExperienciaLaboral {
   empresa: string;
   puesto: string;
-  fecha_inicio: string; // MMAAAA
-  fecha_fin: string; // MMAAAA o "Actual"
+  fecha_inicio: string;
+  fecha_fin: string;
   descripcion: string;
   tags: string;
 }
 
 interface Educacion {
-  tipo: string; // Licenciatura, Maestría, Curso, Diplomado
+  tipo: string;
   titulo: string;
   institucion: string;
   fecha_inicio: string;
   fecha_fin: string;
 }
 
-const nivelesSeniority = ["junior", "mid", "senior", "lead"];
 const modalidades = ["remoto", "presencial", "hibrido"];
-const disponibilidad = ["inmediata", "2_semanas", "1_mes"];
-const tiposEducacion = ["Licenciatura", "Maestría", "Doctorado", "Curso", "Diplomado", "Certificación"];
+const disponibilidad = ["inmediata", "2_semanas", "1_mes", "mas_1_mes"];
+const tiposEducacion = ["Licenciatura", "Maestría", "Doctorado", "Curso", "Diplomado", "Certificación", "Técnico", "Preparatoria"];
 
 const calcularDuracion = (inicio: string, fin: string): string => {
   if (!inicio) return "";
@@ -68,27 +68,25 @@ const calcularPorcentajeLlenado = (data: any): number => {
   let filled = 0;
   let total = 0;
 
-  // Campos básicos (20 puntos)
-  const basicFields = ['nombre_completo', 'email', 'telefono', 'ubicacion'];
-  basicFields.forEach(field => {
+  // Campos de identidad obligatorios (25 puntos)
+  const identityFields = ['nombre_completo', 'email', 'telefono', 'ubicacion', 'fecha_nacimiento'];
+  identityFields.forEach(field => {
     total += 5;
     if (data[field]) filled += 5;
   });
 
-  // Experiencia laboral (30 puntos)
-  total += 30;
-  if (data.experiencia_laboral && data.experiencia_laboral.length >= 3) {
-    filled += 30;
+  // Experiencia laboral (25 puntos)
+  total += 25;
+  if (data.experiencia_laboral && data.experiencia_laboral.length >= 2) {
+    filled += 25;
   } else if (data.experiencia_laboral && data.experiencia_laboral.length > 0) {
-    filled += (data.experiencia_laboral.length / 3) * 30;
+    filled += (data.experiencia_laboral.length / 2) * 25;
   }
 
-  // Educación (20 puntos)
-  total += 20;
-  if (data.educacion && data.educacion.length >= 3) {
-    filled += 20;
-  } else if (data.educacion && data.educacion.length > 0) {
-    filled += (data.educacion.length / 3) * 20;
+  // Educación (15 puntos)
+  total += 15;
+  if (data.educacion && data.educacion.length >= 1) {
+    filled += 15;
   }
 
   // Habilidades (15 puntos)
@@ -98,7 +96,11 @@ const calcularPorcentajeLlenado = (data: any): number => {
 
   // Resumen profesional (10 puntos)
   total += 10;
-  if (data.resumen_profesional && data.resumen_profesional.length > 100) filled += 10;
+  if (data.resumen_profesional && data.resumen_profesional.length > 50) filled += 10;
+
+  // Preferencias laborales (5 puntos)
+  total += 5;
+  if (data.modalidad_preferida && data.disponibilidad) filled += 5;
 
   // Enlaces profesionales (5 puntos)
   total += 5;
@@ -115,17 +117,26 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   const [codigoCandidato, setCodigoCandidato] = useState<string>("");
   
   const [formData, setFormData] = useState({
+    // Datos de identidad y contacto (sección restringida)
     nombre_completo: "",
     email: "",
     telefono: "",
     ubicacion: "",
+    // Perfil profesional
     resumen_profesional: "",
+    puesto_actual: "",
+    empresa_actual: "",
+    anos_experiencia: 0,
+    nivel_seniority: "",
+    // Habilidades
     habilidades_tecnicas: "",
     habilidades_blandas: "",
+    // Preferencias laborales
     salario_esperado_min: 0,
     salario_esperado_max: 0,
     modalidad_preferida: "",
     disponibilidad: "",
+    // Enlaces profesionales
     linkedin_url: "",
     github_url: "",
     portfolio_url: "",
@@ -133,13 +144,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
   const [experiencias, setExperiencias] = useState<ExperienciaLaboral[]>([
     { empresa: "", puesto: "", fecha_inicio: "", fecha_fin: "", descripcion: "", tags: "" },
-    { empresa: "", puesto: "", fecha_inicio: "", fecha_fin: "", descripcion: "", tags: "" },
-    { empresa: "", puesto: "", fecha_inicio: "", fecha_fin: "", descripcion: "", tags: "" },
   ]);
 
   const [educaciones, setEducaciones] = useState<Educacion[]>([
-    { tipo: "", titulo: "", institucion: "", fecha_inicio: "", fecha_fin: "" },
-    { tipo: "", titulo: "", institucion: "", fecha_inicio: "", fecha_fin: "" },
     { tipo: "", titulo: "", institucion: "", fecha_inicio: "", fecha_fin: "" },
   ]);
 
@@ -152,8 +159,8 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   useEffect(() => {
     const profileData = {
       ...formData,
-      experiencia_laboral: experiencias,
-      educacion: educaciones,
+      experiencia_laboral: experiencias.filter(e => e.empresa || e.puesto),
+      educacion: educaciones.filter(e => e.titulo || e.institucion),
     };
     setPorcentajeLlenado(calcularPorcentajeLlenado(profileData));
   }, [formData, experiencias, educaciones]);
@@ -176,6 +183,10 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         telefono: data.telefono || "",
         ubicacion: data.ubicacion || "",
         resumen_profesional: data.resumen_profesional || "",
+        puesto_actual: data.puesto_actual || "",
+        empresa_actual: data.empresa_actual || "",
+        anos_experiencia: 0,
+        nivel_seniority: "",
         habilidades_tecnicas: data.habilidades_tecnicas?.join(", ") || "",
         habilidades_blandas: data.habilidades_blandas?.join(", ") || "",
         salario_esperado_min: data.salario_esperado_min || 0,
@@ -214,6 +225,8 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         telefono: formData.telefono,
         ubicacion: formData.ubicacion,
         resumen_profesional: formData.resumen_profesional,
+        puesto_actual: formData.puesto_actual,
+        empresa_actual: formData.empresa_actual,
         habilidades_tecnicas: formData.habilidades_tecnicas.split(",").map(h => h.trim()).filter(h => h),
         habilidades_blandas: formData.habilidades_blandas.split(",").map(h => h.trim()).filter(h => h),
         salario_esperado_min: formData.salario_esperado_min,
@@ -258,7 +271,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   };
 
   const eliminarExperiencia = (index: number) => {
-    setExperiencias(experiencias.filter((_, i) => i !== index));
+    if (experiencias.length > 1) {
+      setExperiencias(experiencias.filter((_, i) => i !== index));
+    }
   };
 
   const actualizarExperiencia = (index: number, field: keyof ExperienciaLaboral, value: string) => {
@@ -272,7 +287,9 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   };
 
   const eliminarEducacion = (index: number) => {
-    setEducaciones(educaciones.filter((_, i) => i !== index));
+    if (educaciones.length > 1) {
+      setEducaciones(educaciones.filter((_, i) => i !== index));
+    }
   };
 
   const actualizarEducacion = (index: number, field: keyof Educacion, value: string) => {
@@ -287,14 +304,17 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl">Mi Perfil de Candidato</DialogTitle>
-              <DialogDescription>
-                No usamos documentos por cuestiones de espacio y eficiencia. El reclutador puede descargar tu perfil como PDF.
+              <DialogTitle className="text-2xl flex items-center gap-2">
+                <User className="h-6 w-6 text-primary" />
+                Mi Perfil Profesional
+              </DialogTitle>
+              <DialogDescription className="mt-1">
+                Completa tu perfil para aumentar tus oportunidades laborales
               </DialogDescription>
             </div>
             {codigoCandidato && (
-              <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
-                <span className="text-xs text-muted-foreground">Código único:</span>
+              <div className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg border border-primary/20">
+                <span className="text-xs text-muted-foreground">Código:</span>
                 <span className="font-mono font-bold text-primary">{codigoCandidato}</span>
               </div>
             )}
@@ -302,60 +322,107 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
         </DialogHeader>
 
         {/* Progress Bar */}
-        <div className="space-y-2">
+        <div className="space-y-2 bg-muted/30 p-4 rounded-lg">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Avance del perfil</span>
-            <span className="text-sm font-bold">{porcentajeLlenado}%</span>
+            <span className="text-sm font-medium">Completitud del perfil</span>
+            <span className={`text-sm font-bold ${porcentajeLlenado >= 80 ? 'text-green-600' : porcentajeLlenado >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+              {porcentajeLlenado}%
+            </span>
           </div>
           <Progress value={porcentajeLlenado} className="h-2" />
+          <p className="text-xs text-muted-foreground">
+            {porcentajeLlenado < 50 && "Completa más campos para mejorar tu visibilidad"}
+            {porcentajeLlenado >= 50 && porcentajeLlenado < 80 && "Buen progreso, sigue completando tu perfil"}
+            {porcentajeLlenado >= 80 && "¡Excelente! Tu perfil está casi completo"}
+          </p>
         </div>
 
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Un perfil completo aumenta tus posibilidades de ser seleccionado por los reclutadores.
-          </AlertDescription>
-        </Alert>
-
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información Personal */}
-          <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Información Personal</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nombre_completo">Nombre Completo *</Label>
+          
+          {/* ============================================ */}
+          {/* SECCIÓN RESTRINGIDA: DATOS DE IDENTIDAD Y CONTACTO */}
+          {/* ============================================ */}
+          <div className="border-2 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800 rounded-xl p-5 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-lg">
+                <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg flex items-center gap-2">
+                  Datos de Identidad y Contacto
+                  <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">
+                    Sección Protegida
+                  </Badge>
+                </h3>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Esta información solo será visible para reclutadores cuando te postules a una vacante o cuando cuenten con un plan de pago activo.
+                </p>
+              </div>
+            </div>
+
+            <Alert className="bg-amber-100/50 border-amber-200 dark:bg-amber-900/30 dark:border-amber-700">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+                <strong>Tu privacidad es importante:</strong> Los reclutadores sin plan de pago o con plan heredado de empresa no podrán ver estos datos a menos que te postules directamente a sus vacantes.
+              </AlertDescription>
+            </Alert>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="md:col-span-2">
+                <Label htmlFor="nombre_completo" className="flex items-center gap-1">
+                  Nombre Completo <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="nombre_completo"
                   required
+                  placeholder="Tu nombre completo como aparece en documentos oficiales"
                   value={formData.nombre_completo}
                   onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
+                  className="mt-1"
                 />
               </div>
+              
               <div>
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email" className="flex items-center gap-1">
+                  Correo Electrónico <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   required
+                  placeholder="correo@ejemplo.com"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="mt-1"
                 />
               </div>
+              
               <div>
-                <Label htmlFor="telefono">Teléfono</Label>
+                <Label htmlFor="telefono" className="flex items-center gap-1">
+                  Teléfono <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="telefono"
+                  required
+                  placeholder="+52 55 1234 5678"
                   value={formData.telefono}
                   onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
+                  className="mt-1"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Incluye código de país</p>
               </div>
-              <div>
-                <Label htmlFor="ubicacion">Ubicación</Label>
+              
+              <div className="md:col-span-2">
+                <Label htmlFor="ubicacion" className="flex items-center gap-1">
+                  Ubicación <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="ubicacion"
+                  required
+                  placeholder="Ciudad, Estado, País (ej: Guadalajara, Jalisco, México)"
                   value={formData.ubicacion}
                   onChange={(e) => setFormData({ ...formData, ubicacion: e.target.value })}
-                  placeholder="Ciudad, País"
+                  className="mt-1"
                 />
               </div>
             </div>
@@ -363,37 +430,76 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
           <Separator />
 
-          {/* Resumen Profesional */}
+          {/* ============================================ */}
+          {/* PERFIL PROFESIONAL */}
+          {/* ============================================ */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Resumen Profesional</h3>
+            <div className="flex items-center gap-2">
+              <Briefcase className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Perfil Profesional</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="puesto_actual">Puesto Actual</Label>
+                <Input
+                  id="puesto_actual"
+                  placeholder="Ej: Desarrollador Senior, Gerente de Ventas"
+                  value={formData.puesto_actual}
+                  onChange={(e) => setFormData({ ...formData, puesto_actual: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="empresa_actual">Empresa Actual</Label>
+                <Input
+                  id="empresa_actual"
+                  placeholder="Nombre de la empresa donde trabajas actualmente"
+                  value={formData.empresa_actual}
+                  onChange={(e) => setFormData({ ...formData, empresa_actual: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
             <div>
-              <Label htmlFor="resumen_profesional">Resumen</Label>
+              <Label htmlFor="resumen_profesional">Resumen Profesional</Label>
               <Textarea
                 id="resumen_profesional"
                 rows={4}
-                placeholder="Describe brevemente tu experiencia y objetivos profesionales..."
+                placeholder="Describe brevemente tu perfil profesional, logros destacados y lo que te hace un candidato ideal. Este texto es lo primero que verán los reclutadores..."
                 value={formData.resumen_profesional}
                 onChange={(e) => setFormData({ ...formData, resumen_profesional: e.target.value })}
+                className="mt-1"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                💡 Tip: Incluye palabras clave relevantes para tu industria y destaca logros cuantificables
+              </p>
             </div>
           </div>
 
           <Separator />
 
-          {/* Experiencia Laboral */}
+          {/* ============================================ */}
+          {/* EXPERIENCIA LABORAL */}
+          {/* ============================================ */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">Experiencia Laboral</h3>
+              <div className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Experiencia Laboral</h3>
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={agregarExperiencia}>
                 <Plus className="h-4 w-4 mr-1" /> Agregar
               </Button>
             </div>
             
             {experiencias.map((exp, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-sm">
-                    {index === 0 ? "Experiencia más reciente" : "Experiencia previa"}
+                  <h4 className="font-medium text-sm text-primary">
+                    {index === 0 ? "Experiencia más reciente" : `Experiencia ${index + 1}`}
                   </h4>
                   {experiencias.length > 1 && (
                     <Button
@@ -401,6 +507,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                       variant="ghost"
                       size="sm"
                       onClick={() => eliminarExperiencia(index)}
+                      className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -409,69 +516,69 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label>Empresa</Label>
+                    <Label className="text-sm">Empresa</Label>
                     <Input
                       value={exp.empresa}
                       onChange={(e) => actualizarExperiencia(index, 'empresa', e.target.value)}
                       placeholder="Nombre de la empresa"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label>Puesto</Label>
+                    <Label className="text-sm">Puesto</Label>
                     <Input
                       value={exp.puesto}
                       onChange={(e) => actualizarExperiencia(index, 'puesto', e.target.value)}
                       placeholder="Título del puesto"
+                      className="mt-1"
                     />
                   </div>
-                  <div>
-                    <Label className="text-xs">Fecha Inicio</Label>
-                    <Input
-                      value={exp.fecha_inicio}
-                      onChange={(e) => actualizarExperiencia(index, 'fecha_inicio', e.target.value)}
-                      placeholder="MM AAAA"
-                      maxLength={7}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Fecha Fin</Label>
-                    <Input
-                      value={exp.fecha_fin}
-                      onChange={(e) => actualizarExperiencia(index, 'fecha_fin', e.target.value)}
-                      placeholder="MM AAAA"
-                      maxLength={7}
-                      className="h-8 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Duración</Label>
-                    <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center">
-                      {calcularDuracion(exp.fecha_inicio, exp.fecha_fin)}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Label className="text-xs">Inicio</Label>
+                      <Input
+                        value={exp.fecha_inicio}
+                        onChange={(e) => actualizarExperiencia(index, 'fecha_inicio', e.target.value)}
+                        placeholder="MM/AAAA"
+                        maxLength={7}
+                        className="h-8 text-sm mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Fin</Label>
+                      <Input
+                        value={exp.fecha_fin}
+                        onChange={(e) => actualizarExperiencia(index, 'fecha_fin', e.target.value)}
+                        placeholder="Actual"
+                        maxLength={7}
+                        className="h-8 text-sm mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Duración</Label>
+                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center mt-1">
+                        {calcularDuracion(exp.fecha_inicio, exp.fecha_fin) || "-"}
+                      </div>
                     </div>
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Descripción de la experiencia</Label>
+                    <Label className="text-sm">Descripción y logros</Label>
                     <Textarea
                       value={exp.descripcion}
                       onChange={(e) => actualizarExperiencia(index, 'descripcion', e.target.value)}
-                      placeholder="Describe tus logros y responsabilidades. Resalta palabras clave relevantes como tecnologías, herramientas y metodologías que dominaste."
+                      placeholder="Describe tus responsabilidades y logros. Usa verbos de acción y cifras cuando sea posible."
                       rows={3}
+                      className="mt-1"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      💡 Tip: Incluye logros cuantificables y palabras clave relevantes
-                    </p>
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Etiquetas de habilidades</Label>
+                    <Label className="text-sm">Tecnologías y habilidades utilizadas</Label>
                     <Input
                       value={exp.tags}
                       onChange={(e) => actualizarExperiencia(index, 'tags', e.target.value)}
-                      placeholder="#Python #SAP #LIDERAZGO #ASPEL #NOI #Scrum"
+                      placeholder="React, Node.js, Liderazgo, SAP, Excel Avanzado..."
+                      className="mt-1"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Usa # para separar cada habilidad o tecnología
-                    </p>
                   </div>
                 </div>
               </div>
@@ -480,20 +587,25 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
           <Separator />
 
-          {/* Educación */}
+          {/* ============================================ */}
+          {/* EDUCACIÓN */}
+          {/* ============================================ */}
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-lg">Educación, Cursos y Certificaciones</h3>
+              <div className="flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Educación y Certificaciones</h3>
+              </div>
               <Button type="button" variant="outline" size="sm" onClick={agregarEducacion}>
                 <Plus className="h-4 w-4 mr-1" /> Agregar
               </Button>
             </div>
             
             {educaciones.map((edu, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30">
+              <div key={index} className="border rounded-lg p-4 space-y-3 bg-muted/30 hover:bg-muted/50 transition-colors">
                 <div className="flex justify-between items-start">
-                  <h4 className="font-medium text-sm">
-                    {index === 0 ? "Educación más reciente" : "Educación previa"}
+                  <h4 className="font-medium text-sm text-primary">
+                    {index === 0 ? "Formación principal" : `Formación ${index + 1}`}
                   </h4>
                   {educaciones.length > 1 && (
                     <Button
@@ -501,6 +613,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                       variant="ghost"
                       size="sm"
                       onClick={() => eliminarEducacion(index)}
+                      className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -509,12 +622,12 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
-                    <Label>Tipo</Label>
+                    <Label className="text-sm">Tipo</Label>
                     <Select 
                       value={edu.tipo} 
                       onValueChange={(value) => actualizarEducacion(index, 'tipo', value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue placeholder="Seleccionar tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -525,46 +638,48 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                     </Select>
                   </div>
                   <div>
-                    <Label>Título / Nombre del curso</Label>
+                    <Label className="text-sm">Título / Nombre</Label>
                     <Input
                       value={edu.titulo}
                       onChange={(e) => actualizarEducacion(index, 'titulo', e.target.value)}
-                      placeholder="Ej: Ingeniería en Sistemas"
+                      placeholder="Ej: Ingeniería en Sistemas, MBA"
+                      className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label>Institución</Label>
+                    <Label className="text-sm">Institución</Label>
                     <Input
                       value={edu.institucion}
                       onChange={(e) => actualizarEducacion(index, 'institucion', e.target.value)}
                       placeholder="Nombre de la institución"
+                      className="mt-1"
                     />
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <Label className="text-xs">Fecha Inicio</Label>
+                      <Label className="text-xs">Inicio</Label>
                       <Input
                         value={edu.fecha_inicio}
                         onChange={(e) => actualizarEducacion(index, 'fecha_inicio', e.target.value)}
-                        placeholder="MM AAAA"
+                        placeholder="MM/AAAA"
                         maxLength={7}
-                        className="h-8 text-sm"
+                        className="h-8 text-sm mt-1"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Fecha Fin</Label>
+                      <Label className="text-xs">Fin</Label>
                       <Input
                         value={edu.fecha_fin}
                         onChange={(e) => actualizarEducacion(index, 'fecha_fin', e.target.value)}
-                        placeholder="MM AAAA"
+                        placeholder="MM/AAAA"
                         maxLength={7}
-                        className="h-8 text-sm"
+                        className="h-8 text-sm mt-1"
                       />
                     </div>
                     <div>
                       <Label className="text-xs">Duración</Label>
-                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center">
-                        {calcularDuracion(edu.fecha_inicio, edu.fecha_fin)}
+                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center mt-1">
+                        {calcularDuracion(edu.fecha_inicio, edu.fecha_fin) || "-"}
                       </div>
                     </div>
                   </div>
@@ -575,80 +690,101 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
           <Separator />
 
-          {/* Habilidades */}
+          {/* ============================================ */}
+          {/* HABILIDADES */}
+          {/* ============================================ */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Habilidades</h3>
+            <div className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Habilidades</h3>
+            </div>
+            
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label htmlFor="habilidades_tecnicas">Habilidades Técnicas (separadas por coma)</Label>
+                <Label htmlFor="habilidades_tecnicas">Habilidades Técnicas</Label>
                 <Input
                   id="habilidades_tecnicas"
-                  placeholder="React, TypeScript, Node.js, Python, SQL"
+                  placeholder="React, TypeScript, Node.js, Python, SQL, Excel, SAP..."
                   value={formData.habilidades_tecnicas}
                   onChange={(e) => setFormData({ ...formData, habilidades_tecnicas: e.target.value })}
+                  className="mt-1"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Separa cada habilidad con coma</p>
               </div>
               <div>
-                <Label htmlFor="habilidades_blandas">Habilidades Blandas (separadas por coma)</Label>
+                <Label htmlFor="habilidades_blandas">Habilidades Blandas</Label>
                 <Input
                   id="habilidades_blandas"
-                  placeholder="Comunicación, Trabajo en equipo, Liderazgo, Resolución de problemas"
+                  placeholder="Comunicación, Trabajo en equipo, Liderazgo, Negociación..."
                   value={formData.habilidades_blandas}
                   onChange={(e) => setFormData({ ...formData, habilidades_blandas: e.target.value })}
+                  className="mt-1"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Separa cada habilidad con coma</p>
               </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* Preferencias Laborales */}
+          {/* ============================================ */}
+          {/* PREFERENCIAS LABORALES */}
+          {/* ============================================ */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Preferencias Laborales</h3>
+            <div className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Preferencias Laborales</h3>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="salario_esperado_min">Salario Mínimo Esperado</Label>
+                <Label htmlFor="salario_esperado_min">Salario Mínimo Esperado (MXN)</Label>
                 <Input
                   id="salario_esperado_min"
                   type="number"
-                  value={formData.salario_esperado_min}
+                  min="0"
+                  value={formData.salario_esperado_min || ""}
                   onChange={(e) => setFormData({ ...formData, salario_esperado_min: parseFloat(e.target.value) || 0 })}
-                  placeholder="0"
+                  placeholder="Ej: 25000"
+                  className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="salario_esperado_max">Salario Máximo Esperado</Label>
+                <Label htmlFor="salario_esperado_max">Salario Máximo Esperado (MXN)</Label>
                 <Input
                   id="salario_esperado_max"
                   type="number"
-                  value={formData.salario_esperado_max}
+                  min="0"
+                  value={formData.salario_esperado_max || ""}
                   onChange={(e) => setFormData({ ...formData, salario_esperado_max: parseFloat(e.target.value) || 0 })}
-                  placeholder="0"
+                  placeholder="Ej: 35000"
+                  className="mt-1"
                 />
               </div>
               <div>
                 <Label htmlFor="modalidad_preferida">Modalidad Preferida</Label>
                 <Select value={formData.modalidad_preferida} onValueChange={(value) => setFormData({ ...formData, modalidad_preferida: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Seleccionar modalidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    {modalidades.map((mod) => (
-                      <SelectItem key={mod} value={mod}>{mod}</SelectItem>
-                    ))}
+                    <SelectItem value="remoto">Remoto</SelectItem>
+                    <SelectItem value="presencial">Presencial</SelectItem>
+                    <SelectItem value="hibrido">Híbrido</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="disponibilidad">Disponibilidad</Label>
+                <Label htmlFor="disponibilidad">Disponibilidad para iniciar</Label>
                 <Select value={formData.disponibilidad} onValueChange={(value) => setFormData({ ...formData, disponibilidad: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Seleccionar disponibilidad" />
                   </SelectTrigger>
                   <SelectContent>
-                    {disponibilidad.map((disp) => (
-                      <SelectItem key={disp} value={disp}>{disp}</SelectItem>
-                    ))}
+                    <SelectItem value="inmediata">Inmediata</SelectItem>
+                    <SelectItem value="2_semanas">2 semanas</SelectItem>
+                    <SelectItem value="1_mes">1 mes</SelectItem>
+                    <SelectItem value="mas_1_mes">Más de 1 mes</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -657,9 +793,15 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
 
           <Separator />
 
-          {/* Enlaces Profesionales */}
+          {/* ============================================ */}
+          {/* ENLACES PROFESIONALES */}
+          {/* ============================================ */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">Enlaces Profesionales</h3>
+            <div className="flex items-center gap-2">
+              <LinkIcon className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Enlaces Profesionales</h3>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="linkedin_url">LinkedIn</Label>
@@ -668,6 +810,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                   placeholder="https://linkedin.com/in/..."
                   value={formData.linkedin_url}
                   onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                  className="mt-1"
                 />
               </div>
               <div>
@@ -677,25 +820,30 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                   placeholder="https://github.com/..."
                   value={formData.github_url}
                   onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
+                  className="mt-1"
                 />
               </div>
               <div>
-                <Label htmlFor="portfolio_url">Portfolio</Label>
+                <Label htmlFor="portfolio_url">Portfolio / Web Personal</Label>
                 <Input
                   id="portfolio_url"
                   placeholder="https://..."
                   value={formData.portfolio_url}
                   onChange={(e) => setFormData({ ...formData, portfolio_url: e.target.value })}
+                  className="mt-1"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
+          {/* ============================================ */}
+          {/* BOTONES DE ACCIÓN */}
+          {/* ============================================ */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="min-w-32">
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Guardar Perfil
             </Button>
