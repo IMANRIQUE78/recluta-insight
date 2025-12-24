@@ -5,17 +5,20 @@ import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserCircle, Briefcase, BarChart3, LogOut, Store } from "lucide-react";
+import { UserCircle, Briefcase, BarChart3, LogOut, Store, Eye } from "lucide-react";
 import { CandidateProfileModal } from "@/components/candidate/CandidateProfileModal";
+import { CandidateProfilePreviewModal } from "@/components/candidate/CandidateProfilePreviewModal";
 import { CandidateStats } from "@/components/candidate/CandidateStats";
 import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
 import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
 import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
+
 export default function CandidateDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [profilePreviewOpen, setProfilePreviewOpen] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
   const [userName, setUserName] = useState("");
   const [codigoCandidato, setCodigoCandidato] = useState("");
@@ -73,9 +76,9 @@ export default function CandidateDashboard() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setProfileModalOpen(true)}>
-              <UserCircle className="h-4 w-4 mr-2" />
-              Mi Perfil
+            <Button variant="outline" onClick={() => setProfilePreviewOpen(true)}>
+              <Eye className="h-4 w-4 mr-2" />
+              Ver Perfil
             </Button>
             <Button variant="ghost" onClick={handleSignOut}>
               <LogOut className="h-4 w-4 mr-2" />
@@ -133,8 +136,14 @@ export default function CandidateDashboard() {
       </main>
 
       <CandidateProfileModal open={profileModalOpen} onOpenChange={setProfileModalOpen} onSuccess={() => {
-      setHasProfile(true);
-      checkAuth();
-    }} />
+        setHasProfile(true);
+        checkAuth();
+      }} />
+
+      <CandidateProfilePreviewModal 
+        open={profilePreviewOpen} 
+        onOpenChange={setProfilePreviewOpen} 
+        onEditClick={() => setProfileModalOpen(true)} 
+      />
     </div>;
 }
