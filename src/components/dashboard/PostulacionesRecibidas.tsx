@@ -522,6 +522,7 @@ export const PostulacionesRecibidas = () => {
           open={showProfileModal}
           onOpenChange={setShowProfileModal}
           candidatoUserId={selectedCandidatoUserId}
+          hasFullAccess={true}
         />
       )}
 
