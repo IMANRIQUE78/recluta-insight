@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Calendar, Clock, MapPin, Video, Users, CheckCircle, XCircle, 
-  MessageSquare, Send, User 
+  MessageSquare, Send, User, Eye 
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 
 interface Entrevista {
   id: string;
@@ -48,6 +49,7 @@ export const PostulacionDetailDialog = ({
   const [nuevaNota, setNuevaNota] = useState("");
   const [notas, setNotas] = useState<Nota[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   useEffect(() => {
     if (open && postulacion) {
@@ -191,7 +193,17 @@ export const PostulacionDetailDialog = ({
           <div className="space-y-4">
             {/* Información del Candidato */}
             <div>
-              <h3 className="font-semibold text-lg mb-3">Información del Candidato</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg">Información del Candidato</h3>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowProfileModal(true)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Ver Perfil Completo
+                </Button>
+              </div>
               <div className="space-y-3 bg-muted/30 p-4 rounded-lg text-sm">
                 {postulacion?.perfil?.email && (
                   <div>
@@ -402,6 +414,15 @@ export const PostulacionDetailDialog = ({
           </div>
         </div>
       </DialogContent>
+
+      {postulacion?.candidato_user_id && (
+        <CandidateProfileViewModal
+          open={showProfileModal}
+          onOpenChange={setShowProfileModal}
+          candidatoUserId={postulacion.candidato_user_id}
+          hasFullAccess={true}
+        />
+      )}
     </Dialog>
   );
 };

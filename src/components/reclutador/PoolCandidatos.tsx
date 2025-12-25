@@ -472,7 +472,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
           open={showProfileModal}
           onOpenChange={setShowProfileModal}
           candidatoUserId={selectedCandidatoUserId}
-          hasFullAccess={hasAccess}
+          hasFullAccess={false}
         />
       )}
     </>
