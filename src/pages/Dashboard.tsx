@@ -10,6 +10,7 @@ import { ReclutadorProfileModal } from "@/components/dashboard/ReclutadorProfile
 import { InvitarReclutadorDialog } from "@/components/dashboard/InvitarReclutadorDialog";
 import { ReclutadoresAsociadosTable } from "@/components/dashboard/ReclutadoresAsociadosTable";
 import { AttentionBadges } from "@/components/dashboard/AttentionBadges";
+import { WalletEmpresaCard } from "@/components/dashboard/WalletEmpresaCard";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
 import { supabase } from "@/integrations/supabase/client";
@@ -437,6 +438,9 @@ const Dashboard = () => {
 
           {/* Columna Lateral */}
           <div className="space-y-6">
+            {/* Wallet de Empresa */}
+            <WalletEmpresaCard />
+            
             <AttentionBadges 
               refreshTrigger={refreshTrigger}
               onItemClick={(item) => {
