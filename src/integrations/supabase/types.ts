@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      asignacion_creditos: {
+        Row: {
+          activa: boolean
+          created_at: string
+          creditos_asignados: number
+          creditos_consumidos: number
+          fecha_asignacion: string
+          fecha_expiracion: string | null
+          id: string
+          notas: string | null
+          updated_at: string
+          wallet_empresa_id: string
+          wallet_reclutador_id: string
+        }
+        Insert: {
+          activa?: boolean
+          created_at?: string
+          creditos_asignados: number
+          creditos_consumidos?: number
+          fecha_asignacion?: string
+          fecha_expiracion?: string | null
+          id?: string
+          notas?: string | null
+          updated_at?: string
+          wallet_empresa_id: string
+          wallet_reclutador_id: string
+        }
+        Update: {
+          activa?: boolean
+          created_at?: string
+          creditos_asignados?: number
+          creditos_consumidos?: number
+          fecha_asignacion?: string
+          fecha_expiracion?: string | null
+          id?: string
+          notas?: string | null
+          updated_at?: string
+          wallet_empresa_id?: string
+          wallet_reclutador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asignacion_creditos_wallet_empresa_id_fkey"
+            columns: ["wallet_empresa_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asignacion_creditos_wallet_reclutador_id_fkey"
+            columns: ["wallet_reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria_acceso_empresas: {
         Row: {
           accion: string
@@ -681,6 +738,108 @@ export type Database = {
             columns: ["postulacion_id"]
             isOneToOne: false
             referencedRelation: "postulaciones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      movimientos_creditos: {
+        Row: {
+          candidato_user_id: string | null
+          created_at: string
+          creditos_antes: number
+          creditos_cantidad: number
+          creditos_despues: number
+          descripcion: string
+          empresa_id: string | null
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          metodo: Database["public"]["Enums"]["metodo_ejecucion"]
+          origen_pago: Database["public"]["Enums"]["origen_pago"]
+          postulacion_id: string | null
+          reclutador_user_id: string
+          tipo_accion: Database["public"]["Enums"]["tipo_accion_credito"]
+          user_agent: string | null
+          vacante_id: string | null
+          wallet_empresa_id: string | null
+          wallet_reclutador_id: string | null
+        }
+        Insert: {
+          candidato_user_id?: string | null
+          created_at?: string
+          creditos_antes: number
+          creditos_cantidad: number
+          creditos_despues: number
+          descripcion: string
+          empresa_id?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          metodo?: Database["public"]["Enums"]["metodo_ejecucion"]
+          origen_pago: Database["public"]["Enums"]["origen_pago"]
+          postulacion_id?: string | null
+          reclutador_user_id: string
+          tipo_accion: Database["public"]["Enums"]["tipo_accion_credito"]
+          user_agent?: string | null
+          vacante_id?: string | null
+          wallet_empresa_id?: string | null
+          wallet_reclutador_id?: string | null
+        }
+        Update: {
+          candidato_user_id?: string | null
+          created_at?: string
+          creditos_antes?: number
+          creditos_cantidad?: number
+          creditos_despues?: number
+          descripcion?: string
+          empresa_id?: string | null
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          metodo?: Database["public"]["Enums"]["metodo_ejecucion"]
+          origen_pago?: Database["public"]["Enums"]["origen_pago"]
+          postulacion_id?: string | null
+          reclutador_user_id?: string
+          tipo_accion?: Database["public"]["Enums"]["tipo_accion_credito"]
+          user_agent?: string | null
+          vacante_id?: string | null
+          wallet_empresa_id?: string | null
+          wallet_reclutador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimientos_creditos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_creditos_postulacion_id_fkey"
+            columns: ["postulacion_id"]
+            isOneToOne: false
+            referencedRelation: "postulaciones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_creditos_vacante_id_fkey"
+            columns: ["vacante_id"]
+            isOneToOne: false
+            referencedRelation: "vacantes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_creditos_wallet_empresa_id_fkey"
+            columns: ["wallet_empresa_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "movimientos_creditos_wallet_reclutador_id_fkey"
+            columns: ["wallet_reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_reclutador"
             referencedColumns: ["id"]
           },
         ]
@@ -1597,6 +1756,82 @@ export type Database = {
           },
         ]
       }
+      wallet_empresa: {
+        Row: {
+          created_at: string
+          creditos_disponibles: number
+          creditos_heredados_totales: number
+          creditos_totales_comprados: number
+          empresa_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creditos_disponibles?: number
+          creditos_heredados_totales?: number
+          creditos_totales_comprados?: number
+          empresa_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creditos_disponibles?: number
+          creditos_heredados_totales?: number
+          creditos_totales_comprados?: number
+          empresa_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_reclutador: {
+        Row: {
+          created_at: string
+          creditos_heredados: number
+          creditos_propios: number
+          creditos_totales_comprados: number
+          id: string
+          reclutador_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creditos_heredados?: number
+          creditos_propios?: number
+          creditos_totales_comprados?: number
+          id?: string
+          reclutador_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creditos_heredados?: number
+          creditos_propios?: number
+          creditos_totales_comprados?: number
+          id?: string
+          reclutador_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_reclutador_reclutador_id_fkey"
+            columns: ["reclutador_id"]
+            isOneToOne: true
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -1608,6 +1843,10 @@ export type Database = {
       }
       encrypt_sensitive_data: { Args: { data: string }; Returns: string }
       generate_unique_code: { Args: { prefix: string }; Returns: string }
+      get_creditos_disponibles_reclutador: {
+        Args: { p_reclutador_id: string }
+        Returns: number
+      }
       get_empresa_decrypted: {
         Args: { empresa_id: string }
         Returns: {
@@ -1646,6 +1885,24 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
+      registrar_movimiento_creditos: {
+        Args: {
+          p_candidato_user_id?: string
+          p_creditos_cantidad: number
+          p_descripcion: string
+          p_empresa_id: string
+          p_metadata?: Json
+          p_metodo?: Database["public"]["Enums"]["metodo_ejecucion"]
+          p_origen_pago: Database["public"]["Enums"]["origen_pago"]
+          p_postulacion_id?: string
+          p_reclutador_user_id: string
+          p_tipo_accion: Database["public"]["Enums"]["tipo_accion_credito"]
+          p_vacante_id?: string
+          p_wallet_empresa_id: string
+          p_wallet_reclutador_id: string
+        }
+        Returns: string
+      }
       safe_decrypt: {
         Args: { encrypted_data: string; fallback_data?: string }
         Returns: string
@@ -1678,6 +1935,7 @@ export type Database = {
       estado_asociacion: "activa" | "inactiva" | "finalizada"
       estado_invitacion: "pendiente" | "aceptada" | "rechazada" | "expirada"
       estatus_vacante: "abierta" | "cerrada" | "cancelada"
+      metodo_ejecucion: "manual" | "automatico_ia" | "sistema"
       modalidad_trabajo: "hibrido" | "remoto" | "presencial"
       motivo_vacante:
         | "reposicion"
@@ -1687,10 +1945,24 @@ export type Database = {
         | "incapacidad"
         | "crecimiento_negocio"
         | "nuevo_puesto"
+      origen_pago: "empresa" | "reclutador" | "heredado_empresa"
       plan_empresa: "basico" | "profesional" | "enterprise"
       plan_reclutador: "basico" | "profesional" | "premium"
       senioridad: "junior" | "senior"
       tamano_empresa: "micro" | "pyme" | "mediana" | "grande"
+      tipo_accion_credito:
+        | "compra_creditos"
+        | "publicacion_vacante"
+        | "acceso_pool_candidatos"
+        | "descarga_cv"
+        | "contacto_candidato"
+        | "estudio_socioeconomico"
+        | "evaluacion_psicometrica"
+        | "sourcing_ia"
+        | "herencia_creditos"
+        | "devolucion_creditos"
+        | "ajuste_manual"
+        | "expiracion_creditos"
       tipo_reclutador: "interno" | "freelance"
       tipo_usuario: "dueno_direccion" | "profesional_rrhh"
       tipo_vinculacion: "interno" | "freelance"
@@ -1833,6 +2105,7 @@ export const Constants = {
       estado_asociacion: ["activa", "inactiva", "finalizada"],
       estado_invitacion: ["pendiente", "aceptada", "rechazada", "expirada"],
       estatus_vacante: ["abierta", "cerrada", "cancelada"],
+      metodo_ejecucion: ["manual", "automatico_ia", "sistema"],
       modalidad_trabajo: ["hibrido", "remoto", "presencial"],
       motivo_vacante: [
         "reposicion",
@@ -1843,10 +2116,25 @@ export const Constants = {
         "crecimiento_negocio",
         "nuevo_puesto",
       ],
+      origen_pago: ["empresa", "reclutador", "heredado_empresa"],
       plan_empresa: ["basico", "profesional", "enterprise"],
       plan_reclutador: ["basico", "profesional", "premium"],
       senioridad: ["junior", "senior"],
       tamano_empresa: ["micro", "pyme", "mediana", "grande"],
+      tipo_accion_credito: [
+        "compra_creditos",
+        "publicacion_vacante",
+        "acceso_pool_candidatos",
+        "descarga_cv",
+        "contacto_candidato",
+        "estudio_socioeconomico",
+        "evaluacion_psicometrica",
+        "sourcing_ia",
+        "herencia_creditos",
+        "devolucion_creditos",
+        "ajuste_manual",
+        "expiracion_creditos",
+      ],
       tipo_reclutador: ["interno", "freelance"],
       tipo_usuario: ["dueno_direccion", "profesional_rrhh"],
       tipo_vinculacion: ["interno", "freelance"],
