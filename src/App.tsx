@@ -15,6 +15,7 @@ import Marketplace from "./pages/Marketplace";
 import CandidateDashboard from "./pages/CandidateDashboard";
 import NOM035Dashboard from "./pages/NOM035Dashboard";
 import CuestionarioPublico from "./pages/CuestionarioPublico";
+import WalletEmpresa from "./pages/WalletEmpresa";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -76,6 +77,11 @@ const App = () => (
           <Route path="/verificador-dashboard" element={
             <ProtectedRoute>
               <VerificadorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/wallet-empresa" element={
+            <ProtectedRoute>
+              <WalletEmpresa />
             </ProtectedRoute>
           } />
           {/* Ruta pública para cuestionarios NOM-035 */}

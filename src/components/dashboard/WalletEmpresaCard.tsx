@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,7 @@ import {
   ArrowDownLeft, 
   History,
   Users,
-  Plus,
+  ExternalLink,
   RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
@@ -51,6 +52,7 @@ const tipoAccionLabels: Record<string, string> = {
 };
 
 export const WalletEmpresaCard = () => {
+  const navigate = useNavigate();
   const [wallet, setWallet] = useState<WalletData | null>(null);
   const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,17 +178,16 @@ export const WalletEmpresaCard = () => {
           </div>
         </div>
 
-        {/* Acciones */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" className="gap-1 text-xs">
-            <Plus className="h-3 w-3" />
-            Comprar Créditos
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1 text-xs">
-            <Users className="h-3 w-3" />
-            Asignar a Reclutador
-          </Button>
-        </div>
+        {/* Acción */}
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full gap-2 text-xs"
+          onClick={() => navigate("/wallet-empresa")}
+        >
+          <ExternalLink className="h-3 w-3" />
+          Ver Wallet Completa
+        </Button>
 
         <Separator />
 
