@@ -218,6 +218,36 @@ export type Database = {
         }
         Relationships: []
       }
+      creditos_heredados_reclutador: {
+        Row: {
+          created_at: string
+          creditos_disponibles: number
+          creditos_totales_recibidos: number
+          empresa_id: string
+          id: string
+          reclutador_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creditos_disponibles?: number
+          creditos_totales_recibidos?: number
+          empresa_id: string
+          id?: string
+          reclutador_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creditos_disponibles?: number
+          creditos_totales_recibidos?: number
+          empresa_id?: string
+          id?: string
+          reclutador_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       empresas: {
         Row: {
           ciudad: string | null

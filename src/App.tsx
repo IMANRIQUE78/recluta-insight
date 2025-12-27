@@ -16,6 +16,7 @@ import CandidateDashboard from "./pages/CandidateDashboard";
 import NOM035Dashboard from "./pages/NOM035Dashboard";
 import CuestionarioPublico from "./pages/CuestionarioPublico";
 import WalletEmpresa from "./pages/WalletEmpresa";
+import WalletReclutador from "./pages/WalletReclutador";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -82,6 +83,11 @@ const App = () => (
           <Route path="/wallet-empresa" element={
             <ProtectedRoute>
               <WalletEmpresa />
+            </ProtectedRoute>
+          } />
+          <Route path="/wallet-reclutador" element={
+            <ProtectedRoute>
+              <WalletReclutador />
             </ProtectedRoute>
           } />
           {/* Ruta pública para cuestionarios NOM-035 */}

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch, ChevronDown, ChevronUp } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch, ChevronDown, ChevronUp, Wallet } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { VacantesGestionCard } from "@/components/reclutador/VacantesGestionCard";
@@ -363,6 +363,24 @@ const ReclutadorDashboard = () => {
               
               {/* Acciones Secundarias */}
               <div className="flex items-center gap-1 sm:gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/wallet-reclutador")}
+                  className="hidden sm:flex h-9 px-3 hover:bg-primary/10 hover:text-primary transition-colors"
+                >
+                  <Wallet className="mr-1.5 h-4 w-4" />
+                  Mi Wallet
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/wallet-reclutador")}
+                  className="sm:hidden h-9 w-9 hover:bg-primary/10 hover:text-primary"
+                >
+                  <Wallet className="h-4 w-4" />
+                </Button>
+                
                 <Button
                   variant="ghost"
                   size="sm"
