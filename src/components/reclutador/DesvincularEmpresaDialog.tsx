@@ -33,23 +33,29 @@ export const DesvincularEmpresaDialog = ({
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [vacantesAsignadas, setVacantesAsignadas] = useState<number>(0);
+  const [creditosPendientes, setCreditosPendientes] = useState<number>(0);
   const [canDesvincular, setCanDesvincular] = useState(false);
+  const [blockReason, setBlockReason] = useState<"vacantes" | "creditos" | "ambos" | null>(null);
 
   useEffect(() => {
     if (open && asociacionId) {
       // Reset states when dialog opens or asociacionId changes
       setChecking(true);
       setVacantesAsignadas(0);
+      setCreditosPendientes(0);
       setCanDesvincular(false);
-      checkVacantesAsignadas();
+      setBlockReason(null);
+      checkDesvinculacion();
     } else if (!open) {
       // Reset states when dialog closes
       setVacantesAsignadas(0);
+      setCreditosPendientes(0);
       setCanDesvincular(false);
+      setBlockReason(null);
     }
   }, [open, asociacionId]);
 
-  const checkVacantesAsignadas = async () => {
+  const checkDesvinculacion = async () => {
     setChecking(true);
     try {
       // Obtener información de la asociación
@@ -74,39 +80,51 @@ export const DesvincularEmpresaDialog = ({
 
       const empresaUserIds = empresaUsers?.map(u => u.user_id) || [];
 
-      // Obtener todas las vacantes abiertas asignadas al reclutador
+      // 1. Verificar vacantes abiertas asignadas al reclutador para esta empresa
       const { data: vacantes, error: vacantesError } = await supabase
         .from("vacantes")
         .select("id, empresa_id, user_id")
         .eq("reclutador_asignado_id", asociacion.reclutador_id)
         .eq("estatus", "abierta");
 
-      if (vacantesError) {
-        console.error("Error cargando vacantes asignadas:", vacantesError);
-        setVacantesAsignadas(0);
-        setCanDesvincular(false);
-      } else {
-        // Filtrar vacantes que pertenecen a esta empresa:
-        // 1. Vacantes con empresa_id que coincide
-        // 2. Vacantes sin empresa_id pero creadas por usuarios de esta empresa
-        const vacantesDeEmpresa = vacantes?.filter(v => 
+      let totalVacantes = 0;
+      if (!vacantesError && vacantes) {
+        // Filtrar vacantes que pertenecen a esta empresa
+        const vacantesDeEmpresa = vacantes.filter(v => 
           v.empresa_id === asociacion.empresa_id ||
           (v.empresa_id === null && empresaUserIds.includes(v.user_id))
-        ) || [];
+        );
+        totalVacantes = vacantesDeEmpresa.length;
+      }
+      setVacantesAsignadas(totalVacantes);
 
-        const totalVacantes = vacantesDeEmpresa.length;
-        console.log("Vacantes abiertas encontradas para desvinculación (reclutador):", {
-          asociacion,
-          empresa_id: asociacion.empresa_id,
-          empresaUserIds,
-          totalVacantes,
-          vacantesDeEmpresa,
-        });
-        setVacantesAsignadas(totalVacantes);
-        setCanDesvincular(totalVacantes === 0);
+      // 2. Verificar créditos heredados pendientes de esta empresa
+      const { data: creditosHeredados } = await supabase
+        .from("creditos_heredados_reclutador")
+        .select("creditos_disponibles")
+        .eq("reclutador_id", asociacion.reclutador_id)
+        .eq("empresa_id", asociacion.empresa_id)
+        .maybeSingle();
+
+      const creditosPend = creditosHeredados?.creditos_disponibles || 0;
+      setCreditosPendientes(creditosPend);
+
+      // Determinar si puede desvincularse
+      const puedeDesvincular = totalVacantes === 0 && creditosPend === 0;
+      setCanDesvincular(puedeDesvincular);
+
+      // Determinar razón de bloqueo
+      if (!puedeDesvincular) {
+        if (totalVacantes > 0 && creditosPend > 0) {
+          setBlockReason("ambos");
+        } else if (totalVacantes > 0) {
+          setBlockReason("vacantes");
+        } else {
+          setBlockReason("creditos");
+        }
       }
     } catch (error) {
-      console.error("Error verificando vacantes:", error);
+      console.error("Error verificando desvinculación:", error);
       setCanDesvincular(false);
     } finally {
       setChecking(false);
@@ -171,14 +189,37 @@ export const DesvincularEmpresaDialog = ({
                   <AlertDescription>
                     <strong>No puedes desvincularte en este momento.</strong>
                     <br />
-                    Tienes {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'} por esta empresa.
+                    {blockReason === "ambos" && (
+                      <>
+                        Tienes {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'} y {creditosPendientes} créditos pendientes de devolver.
+                      </>
+                    )}
+                    {blockReason === "vacantes" && (
+                      <>
+                        Tienes {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'} por esta empresa.
+                      </>
+                    )}
+                    {blockReason === "creditos" && (
+                      <>
+                        Tienes {creditosPendientes} créditos heredados pendientes de devolver a esta empresa.
+                      </>
+                    )}
                   </AlertDescription>
                 </Alert>
                 <p className="text-sm">
-                  Para desvincularte, primero debes solicitar a {empresaNombre} que reasigne tus vacantes abiertas a otro reclutador o las cierre.
+                  {blockReason === "vacantes" || blockReason === "ambos" ? (
+                    <>Para desvincularte, primero debes solicitar a {empresaNombre} que reasigne tus vacantes abiertas a otro reclutador o las cierre.</>
+                  ) : null}
+                  {blockReason === "creditos" || blockReason === "ambos" ? (
+                    <> Además, debes devolver los créditos no utilizados desde tu Wallet.</>
+                  ) : null}
                 </p>
                 <p className="text-sm font-medium">
-                  Contacta al administrador de la empresa para coordinar la reasignación de vacantes.
+                  {blockReason === "creditos" ? (
+                    <>Ve a tu Wallet para devolver los créditos pendientes.</>
+                  ) : (
+                    <>Contacta al administrador de la empresa para coordinar la reasignación de vacantes.</>
+                  )}
                 </p>
               </>
             ) : (

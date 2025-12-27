@@ -30,11 +30,13 @@ import {
   UserCheck,
   Gift,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  UserPlus
 } from "lucide-react";
 import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
+import { AsignarCreditosReclutadorDialog } from "@/components/wallet/AsignarCreditosReclutadorDialog";
 
 interface WalletData {
   id: string;
@@ -89,6 +91,9 @@ const WalletEmpresa = () => {
   // Compra de créditos
   const [cantidadCompra, setCantidadCompra] = useState<number>(100);
   const [comprando, setComprando] = useState(false);
+  
+  // Dialog asignar créditos
+  const [asignarDialogOpen, setAsignarDialogOpen] = useState(false);
 
   // Estadísticas
   const [stats, setStats] = useState({
@@ -341,6 +346,18 @@ const WalletEmpresa = () => {
                   </div>
                 </div>
               </div>
+              
+              <div className="mt-4 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2"
+                  onClick={() => setAsignarDialogOpen(true)}
+                  disabled={!wallet || wallet.creditos_disponibles <= 0}
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Asignar Créditos a Reclutador
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
@@ -591,6 +608,18 @@ const WalletEmpresa = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Dialog Asignar Créditos */}
+      {wallet && empresaId && (
+        <AsignarCreditosReclutadorDialog
+          open={asignarDialogOpen}
+          onOpenChange={setAsignarDialogOpen}
+          empresaId={empresaId}
+          walletEmpresaId={wallet.id}
+          creditosDisponibles={wallet.creditos_disponibles}
+          onSuccess={() => { loadWallet(); loadMovimientos(); }}
+        />
+      )}
     </div>
   );
 };

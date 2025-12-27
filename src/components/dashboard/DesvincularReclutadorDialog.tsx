@@ -32,15 +32,22 @@ export const DesvincularReclutadorDialog = ({
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [vacantesAsignadas, setVacantesAsignadas] = useState<number>(0);
+  const [creditosPendientes, setCreditosPendientes] = useState<number>(0);
   const [canDesvincular, setCanDesvincular] = useState(false);
+  const [blockReason, setBlockReason] = useState<"vacantes" | "creditos" | "ambos" | null>(null);
 
   useEffect(() => {
     if (open && asociacionId) {
-      checkVacantesAsignadas();
+      setChecking(true);
+      setVacantesAsignadas(0);
+      setCreditosPendientes(0);
+      setCanDesvincular(false);
+      setBlockReason(null);
+      checkDesvinculacion();
     }
   }, [open, asociacionId]);
 
-  const checkVacantesAsignadas = async () => {
+  const checkDesvinculacion = async () => {
     setChecking(true);
     try {
       // Obtener información de la asociación
@@ -56,29 +63,44 @@ export const DesvincularReclutadorDialog = ({
         return;
       }
 
-      // Contar vacantes asignadas (solo abiertas)
-      const { data: vacantes, count, error: vacantesError } = await supabase
+      // 1. Contar vacantes asignadas (solo abiertas) para esta empresa
+      const { data: vacantes } = await supabase
         .from("vacantes")
-        .select("id", { count: "exact", head: false })
+        .select("id")
         .eq("reclutador_asignado_id", asociacion.reclutador_id)
+        .eq("empresa_id", asociacion.empresa_id)
         .eq("estatus", "abierta");
 
-      if (vacantesError) {
-        console.error("Error cargando vacantes asignadas:", vacantesError);
-        setVacantesAsignadas(0);
-        setCanDesvincular(false);
-      } else {
-        const totalVacantes = count ?? vacantes?.length ?? 0;
-        console.log("Vacantes abiertas encontradas para desvinculación:", {
-          asociacion,
-          totalVacantes,
-          vacantes,
-        });
-        setVacantesAsignadas(totalVacantes);
-        setCanDesvincular(totalVacantes === 0);
+      const totalVacantes = vacantes?.length || 0;
+      setVacantesAsignadas(totalVacantes);
+
+      // 2. Verificar créditos heredados pendientes de esta empresa
+      const { data: creditosHeredados } = await supabase
+        .from("creditos_heredados_reclutador")
+        .select("creditos_disponibles")
+        .eq("reclutador_id", asociacion.reclutador_id)
+        .eq("empresa_id", asociacion.empresa_id)
+        .maybeSingle();
+
+      const creditosPend = creditosHeredados?.creditos_disponibles || 0;
+      setCreditosPendientes(creditosPend);
+
+      // Determinar si puede desvincularse
+      const puedeDesvincular = totalVacantes === 0 && creditosPend === 0;
+      setCanDesvincular(puedeDesvincular);
+
+      // Determinar razón de bloqueo
+      if (!puedeDesvincular) {
+        if (totalVacantes > 0 && creditosPend > 0) {
+          setBlockReason("ambos");
+        } else if (totalVacantes > 0) {
+          setBlockReason("vacantes");
+        } else {
+          setBlockReason("creditos");
+        }
       }
     } catch (error) {
-      console.error("Error verificando vacantes:", error);
+      console.error("Error verificando desvinculación:", error);
       setCanDesvincular(false);
     } finally {
       setChecking(false);
@@ -143,14 +165,37 @@ export const DesvincularReclutadorDialog = ({
                   <AlertDescription>
                     <strong>No puedes desvincular a este reclutador en este momento.</strong>
                     <br />
-                    {reclutadorNombre} tiene {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'}.
+                    {blockReason === "ambos" && (
+                      <>
+                        {reclutadorNombre} tiene {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'} y {creditosPendientes} créditos asignados sin usar.
+                      </>
+                    )}
+                    {blockReason === "vacantes" && (
+                      <>
+                        {reclutadorNombre} tiene {vacantesAsignadas} {vacantesAsignadas === 1 ? 'vacante abierta asignada' : 'vacantes abiertas asignadas'}.
+                      </>
+                    )}
+                    {blockReason === "creditos" && (
+                      <>
+                        {reclutadorNombre} tiene {creditosPendientes} créditos asignados sin usar que deben ser devueltos.
+                      </>
+                    )}
                   </AlertDescription>
                 </Alert>
                 <p className="text-sm">
-                  Para desvincular a este reclutador, primero debes reasignar sus vacantes abiertas a otro reclutador o cerrarlas.
+                  {blockReason === "vacantes" || blockReason === "ambos" ? (
+                    <>Para desvincular a este reclutador, primero debes reasignar sus vacantes abiertas a otro reclutador o cerrarlas.</>
+                  ) : null}
+                  {blockReason === "creditos" || blockReason === "ambos" ? (
+                    <> El reclutador debe devolver los créditos no utilizados desde su Wallet antes de poder desvincularse.</>
+                  ) : null}
                 </p>
                 <p className="text-sm font-medium">
-                  Ve al panel de gestión de vacantes para cambiar la asignación o cerrar las vacantes pendientes.
+                  {blockReason === "creditos" ? (
+                    <>Solicita al reclutador que devuelva los créditos desde su Wallet.</>
+                  ) : (
+                    <>Ve al panel de gestión de vacantes para cambiar la asignación o cerrar las vacantes pendientes.</>
+                  )}
                 </p>
               </>
             ) : (
