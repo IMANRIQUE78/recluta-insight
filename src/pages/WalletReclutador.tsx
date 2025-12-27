@@ -11,9 +11,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Wallet, CreditCard, Building2, TrendingUp, TrendingDown, Search, Filter, RefreshCw } from "lucide-react";
+import { ArrowLeft, Wallet, CreditCard, Building2, TrendingUp, TrendingDown, Search, Filter, RefreshCw, ArrowLeftRight } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { DevolverCreditosDialog } from "@/components/wallet/DevolverCreditosDialog";
 
 interface CreditoHeredado {
   id: string;
@@ -58,6 +59,9 @@ export default function WalletReclutador() {
   // Compra de créditos
   const [cantidadCompra, setCantidadCompra] = useState(10);
   const [comprando, setComprando] = useState(false);
+  
+  // Dialog devolver créditos
+  const [devolverDialogOpen, setDevolverDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -330,6 +334,17 @@ export default function WalletReclutador() {
                   </div>
                 ))}
               </div>
+              
+              <div className="mt-4 pt-4 border-t">
+                <Button 
+                  variant="outline" 
+                  className="w-full gap-2"
+                  onClick={() => setDevolverDialogOpen(true)}
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                  Devolver Créditos a Empresa
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -508,6 +523,17 @@ export default function WalletReclutador() {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Dialog Devolver Créditos */}
+      {reclutadorId && user && (
+        <DevolverCreditosDialog
+          open={devolverDialogOpen}
+          onOpenChange={setDevolverDialogOpen}
+          reclutadorId={reclutadorId}
+          reclutadorUserId={user.id}
+          onSuccess={fetchData}
+        />
+      )}
     </div>
   );
 }
