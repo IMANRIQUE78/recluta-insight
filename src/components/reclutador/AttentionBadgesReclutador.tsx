@@ -8,13 +8,14 @@ import {
   FileText, 
   MessageSquare,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Megaphone
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AttentionItem {
   id: string;
-  type: "entrevista_pendiente" | "postulacion_nueva" | "feedback_pendiente";
+  type: "entrevista_pendiente" | "postulacion_nueva" | "feedback_pendiente" | "requisicion_sin_publicar";
   title: string;
   subtitle: string;
   urgency: "alta" | "media" | "baja";
@@ -23,12 +24,14 @@ interface AttentionItem {
 
 interface AttentionBadgesReclutadorProps {
   reclutadorUserId: string;
+  reclutadorId?: string;
   onItemClick?: (item: AttentionItem) => void;
   refreshTrigger?: number;
 }
 
 export const AttentionBadgesReclutador = ({ 
   reclutadorUserId, 
+  reclutadorId,
   onItemClick, 
   refreshTrigger 
 }: AttentionBadgesReclutadorProps) => {
@@ -39,11 +42,98 @@ export const AttentionBadgesReclutador = ({
     if (reclutadorUserId) {
       loadAttentionItems();
     }
-  }, [reclutadorUserId, refreshTrigger]);
+  }, [reclutadorUserId, reclutadorId, refreshTrigger]);
+
+  // Suscripción en tiempo real a nuevas vacantes asignadas
+  useEffect(() => {
+    if (!reclutadorId) return;
+
+    const channel = supabase
+      .channel('vacantes_asignadas_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'vacantes',
+        },
+        async (payload) => {
+          // Verificar si la vacante fue asignada a este reclutador
+          if (payload.new.reclutador_asignado_id === reclutadorId && 
+              payload.old.reclutador_asignado_id !== reclutadorId) {
+            // Recargar items
+            loadAttentionItems();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [reclutadorId]);
 
   const loadAttentionItems = async () => {
     try {
       const attentionItems: AttentionItem[] = [];
+
+      // Obtener el reclutador_id si no lo tenemos
+      let currentReclutadorId = reclutadorId;
+      if (!currentReclutadorId) {
+        const { data: perfil } = await supabase
+          .from("perfil_reclutador")
+          .select("id")
+          .eq("user_id", reclutadorUserId)
+          .single();
+        currentReclutadorId = perfil?.id;
+      }
+
+      // 0. NUEVO: Requisiciones asignadas pendientes de publicar
+      if (currentReclutadorId) {
+        const { data: vacantesAsignadas } = await supabase
+          .from("vacantes")
+          .select(`
+            id,
+            folio,
+            titulo_puesto,
+            fecha_solicitud,
+            empresas (
+              nombre_empresa
+            ),
+            clientes_areas (
+              cliente_nombre,
+              area
+            )
+          `)
+          .eq("reclutador_asignado_id", currentReclutadorId)
+          .eq("estatus", "abierta");
+
+        if (vacantesAsignadas && vacantesAsignadas.length > 0) {
+          // Verificar cuáles NO tienen publicación en marketplace
+          const vacanteIds = vacantesAsignadas.map(v => v.id);
+          const { data: publicaciones } = await supabase
+            .from("publicaciones_marketplace")
+            .select("vacante_id")
+            .in("vacante_id", vacanteIds);
+
+          const vacantesPublicadas = new Set(publicaciones?.map(p => p.vacante_id) || []);
+
+          vacantesAsignadas.forEach((vac: any) => {
+            if (!vacantesPublicadas.has(vac.id)) {
+              const empresa = vac.empresas?.nombre_empresa || 
+                            `${vac.clientes_areas?.cliente_nombre} - ${vac.clientes_areas?.area}`;
+              attentionItems.push({
+                id: vac.id,
+                type: "requisicion_sin_publicar",
+                title: vac.titulo_puesto,
+                subtitle: `${empresa} • ${vac.folio} • Pendiente de publicar`,
+                urgency: "alta",
+                data: vac
+              });
+            }
+          });
+        }
+      }
 
       // 1. Entrevistas propuestas pendientes de respuesta del candidato
       const { data: entrevistasPendientes } = await supabase
@@ -180,6 +270,7 @@ export const AttentionBadgesReclutador = ({
     }
   };
 
+  const requisicionSinPublicarItems = items.filter(i => i.type === "requisicion_sin_publicar");
   const entrevistaPendienteItems = items.filter(i => i.type === "entrevista_pendiente");
   const postulacionNuevaItems = items.filter(i => i.type === "postulacion_nueva");
   const feedbackPendienteItems = items.filter(i => i.type === "feedback_pendiente");
@@ -254,7 +345,14 @@ export const AttentionBadgesReclutador = ({
         <AlertTriangle className="h-5 w-5 text-amber-600" />
         <h2 className="text-lg font-semibold">Lo que requiere mi atención</h2>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {renderCard(
+          "Requisiciones por Publicar",
+          <Megaphone className="h-4 w-4 text-purple-600" />,
+          requisicionSinPublicarItems,
+          "border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-950/20",
+          "border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-950/20"
+        )}
         {renderCard(
           "Entrevistas Sin Confirmar",
           <Calendar className="h-4 w-4 text-red-600" />,
