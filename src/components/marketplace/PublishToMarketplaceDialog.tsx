@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Globe } from "lucide-react";
+import { Loader2, Globe, Coins, AlertTriangle } from "lucide-react";
+import { consumirCreditosPublicacion, verificarCreditosDisponibles, COSTO_PUBLICACION } from "@/hooks/useCreditoPublicacion";
 
 interface PublishToMarketplaceDialogProps {
   open: boolean;
@@ -25,6 +27,13 @@ export const PublishToMarketplaceDialog = ({
   const [loading, setLoading] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [publicationId, setPublicationId] = useState<string | null>(null);
+  const [reclutadorId, setReclutadorId] = useState<string | null>(null);
+  const [creditosInfo, setCreditosInfo] = useState<{
+    suficientes: boolean;
+    creditosPropios: number;
+    creditosHeredados: number;
+    total: number;
+  } | null>(null);
   
   const [selectedFields, setSelectedFields] = useState({
     sueldo_bruto_aprobado: true,
@@ -38,8 +47,28 @@ export const PublishToMarketplaceDialog = ({
   useEffect(() => {
     if (open && vacante) {
       checkIfPublished();
+      loadReclutadorAndCreditos();
     }
   }, [open, vacante]);
+
+  const loadReclutadorAndCreditos = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Obtener perfil reclutador
+    const { data: perfil } = await supabase
+      .from("perfil_reclutador")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (perfil) {
+      setReclutadorId(perfil.id);
+      // Verificar créditos disponibles
+      const creditos = await verificarCreditosDisponibles(perfil.id, vacante.empresa_id);
+      setCreditosInfo(creditos);
+    }
+  };
 
   const checkIfPublished = async () => {
     const { data } = await supabase
@@ -62,6 +91,19 @@ export const PublishToMarketplaceDialog = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuario no autenticado");
+      if (!reclutadorId) throw new Error("No se encontró el perfil de reclutador");
+
+      // Consumir créditos primero
+      const resultado = await consumirCreditosPublicacion(
+        user.id,
+        reclutadorId,
+        vacante.id,
+        vacante.empresa_id
+      );
+
+      if (!resultado.success) {
+        throw new Error(resultado.error || "Error al consumir créditos");
+      }
 
       const publicationData = {
         vacante_id: vacante.id,
@@ -84,7 +126,7 @@ export const PublishToMarketplaceDialog = ({
 
       toast({
         title: "Vacante publicada",
-        description: "La vacante se ha publicado en el marketplace correctamente",
+        description: `Se descontaron ${COSTO_PUBLICACION} créditos (${resultado.origen_pago === "heredado_empresa" ? "empresa" : "propios"})`,
       });
 
       onSuccess();
@@ -146,6 +188,29 @@ export const PublishToMarketplaceDialog = ({
 
         {!isPublished && (
           <div className="space-y-4 py-4">
+            {/* Información de créditos */}
+            <Alert className={creditosInfo?.suficientes ? "bg-green-500/10 border-green-200" : "bg-destructive/10 border-destructive/30"}>
+              <Coins className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>
+                  Costo de publicación: <strong>{COSTO_PUBLICACION} créditos</strong>
+                </span>
+                <span className="text-sm">
+                  Disponibles: {creditosInfo?.total || 0}
+                  {creditosInfo?.creditosHeredados ? ` (${creditosInfo.creditosHeredados} de empresa)` : ""}
+                </span>
+              </AlertDescription>
+            </Alert>
+
+            {!creditosInfo?.suficientes && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Créditos insuficientes. Necesitas {COSTO_PUBLICACION} créditos para publicar.
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-3">
               <p className="text-sm font-medium">Información siempre pública:</p>
               <ul className="text-sm text-muted-foreground space-y-1 ml-4">
@@ -243,9 +308,12 @@ export const PublishToMarketplaceDialog = ({
               Despublicar
             </Button>
           ) : (
-            <Button onClick={handlePublish} disabled={loading}>
+            <Button 
+              onClick={handlePublish} 
+              disabled={loading || !creditosInfo?.suficientes}
+            >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Publicar
+              Publicar ({COSTO_PUBLICACION} créditos)
             </Button>
           )}
         </div>
