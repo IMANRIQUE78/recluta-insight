@@ -4,14 +4,14 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
-  type: 'postulacion' | 'entrevista' | 'mensaje' | 'feedback';
+  type: 'postulacion' | 'entrevista' | 'mensaje' | 'feedback' | 'requisicion';
   title: string;
   message: string;
   read: boolean;
   created_at: string;
 }
 
-export const useNotifications = (userId: string | null) => {
+export const useNotifications = (userId: string | null, reclutadorId?: string | null) => {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -116,6 +116,38 @@ export const useNotifications = (userId: string | null) => {
       supabase.removeChannel(feedbackChannel);
     };
   }, [userId, toast]);
+
+  // Suscripción a nuevas requisiciones asignadas (para reclutadores)
+  useEffect(() => {
+    if (!reclutadorId) return;
+
+    const vacantesChannel = supabase
+      .channel('vacantes_asignadas_reclutador')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'vacantes',
+        },
+        async (payload) => {
+          // Verificar si la vacante fue asignada a este reclutador
+          if (payload.new.reclutador_asignado_id === reclutadorId && 
+              payload.old.reclutador_asignado_id !== reclutadorId) {
+            toast({
+              title: "🆕 Nueva requisición asignada",
+              description: `Se te ha asignado la vacante "${payload.new.titulo_puesto}". Revisa tu bandeja para publicarla.`,
+              duration: 8000,
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(vacantesChannel);
+    };
+  }, [reclutadorId, toast]);
 
   return { notifications, unreadCount };
 };

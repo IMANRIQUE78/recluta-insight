@@ -503,7 +503,10 @@ const ReclutadorDashboard = () => {
 
             {/* AttentionBadges - Acciones Pendientes */}
             {perfilReclutador?.user_id && (
-              <AttentionBadgesReclutador reclutadorUserId={perfilReclutador.user_id} />
+              <AttentionBadgesReclutador 
+                reclutadorUserId={perfilReclutador.user_id} 
+                reclutadorId={perfilReclutador.id}
+              />
             )}
 
             {/* ══════════════════════════════════════════════════════════════════
