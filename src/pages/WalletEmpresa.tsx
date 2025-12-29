@@ -33,10 +33,11 @@ import {
   CheckCircle2,
   UserPlus
 } from "lucide-react";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, subDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import { AsignarCreditosReclutadorDialog } from "@/components/wallet/AsignarCreditosReclutadorDialog";
+import { useWalletPdf } from "@/hooks/useWalletPdf";
 
 interface WalletData {
   id: string;
@@ -94,6 +95,10 @@ const WalletEmpresa = () => {
   
   // Dialog asignar créditos
   const [asignarDialogOpen, setAsignarDialogOpen] = useState(false);
+  
+  // PDF
+  const { generarPdf } = useWalletPdf();
+  const [nombreEmpresa, setNombreEmpresa] = useState("");
 
   // Estadísticas
   const [stats, setStats] = useState({
@@ -135,6 +140,17 @@ const WalletEmpresa = () => {
       }
 
       setEmpresaId(userRole.empresa_id);
+
+      // Obtener nombre de empresa
+      const { data: empresaData } = await supabase
+        .from("empresas")
+        .select("nombre_empresa")
+        .eq("id", userRole.empresa_id)
+        .single();
+      
+      if (empresaData) {
+        setNombreEmpresa(empresaData.nombre_empresa);
+      }
 
       let { data: walletData } = await supabase
         .from("wallet_empresa")
@@ -259,6 +275,32 @@ const WalletEmpresa = () => {
     m.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tipoAccionConfig[m.tipo_accion]?.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const getPeriodoLabel = () => {
+    switch (periodoFiltro) {
+      case "7": return "Últimos 7 días";
+      case "30": return "Últimos 30 días";
+      case "90": return "Últimos 90 días";
+      case "365": return "Último año";
+      default: return "Todo el historial";
+    }
+  };
+
+  const handleDescargarPdf = () => {
+    if (!wallet) return;
+    
+    generarPdf(
+      {
+        tipo: 'empresa',
+        nombreTitular: nombreEmpresa,
+        creditosDisponibles: wallet.creditos_disponibles,
+        creditosTotalesComprados: wallet.creditos_totales_comprados
+      },
+      filteredMovimientos,
+      getPeriodoLabel()
+    );
+    toast.success("Estado de cuenta descargado");
+  };
 
   if (loading) {
     return (
@@ -477,9 +519,15 @@ const WalletEmpresa = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" className="gap-1">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1"
+                  onClick={handleDescargarPdf}
+                  disabled={filteredMovimientos.length === 0}
+                >
                   <Download className="h-4 w-4" />
-                  Exportar
+                  Descargar PDF
                 </Button>
               </div>
             </div>
