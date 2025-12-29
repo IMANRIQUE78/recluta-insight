@@ -11,8 +11,8 @@ interface ResultadoConsumo {
 
 /**
  * Consume créditos para publicar una vacante.
- * Primero intenta usar créditos heredados de la empresa de la vacante.
- * Si no hay suficientes, usa créditos propios del reclutador.
+ * Usa créditos heredados de la empresa de la vacante (obligatorio).
+ * La vacante DEBE tener empresa_id para poder publicarse.
  */
 export async function consumirCreditosPublicacion(
   userId: string,
@@ -21,103 +21,97 @@ export async function consumirCreditosPublicacion(
   empresaId: string | null
 ): Promise<ResultadoConsumo> {
   try {
-    // 1. Obtener wallet del reclutador
-    const { data: wallet, error: walletError } = await supabase
-      .from("wallet_reclutador")
+    // VALIDACIÓN: La vacante debe tener empresa_id
+    if (!empresaId) {
+      return { 
+        success: false, 
+        error: "La vacante debe estar asociada a una empresa para poder publicarla." 
+      };
+    }
+
+    // 1. Obtener wallet de la empresa
+    const { data: walletEmpresa, error: walletEmpresaError } = await supabase
+      .from("wallet_empresa")
       .select("*")
+      .eq("empresa_id", empresaId)
+      .single();
+
+    if (walletEmpresaError || !walletEmpresa) {
+      return { success: false, error: "No se encontró la wallet de la empresa. La empresa debe tener créditos disponibles." };
+    }
+
+    // 2. Verificar que la empresa tenga créditos suficientes
+    if (walletEmpresa.creditos_disponibles < COSTO_PUBLICACION) {
+      return { 
+        success: false, 
+        error: `Créditos insuficientes en la empresa. Se necesitan ${COSTO_PUBLICACION} créditos. La empresa tiene ${walletEmpresa.creditos_disponibles} créditos disponibles.` 
+      };
+    }
+
+    // 3. Obtener wallet del reclutador para auditoría
+    const { data: walletReclutador } = await supabase
+      .from("wallet_reclutador")
+      .select("id")
       .eq("reclutador_id", reclutadorId)
       .single();
 
-    if (walletError || !wallet) {
-      return { success: false, error: "No se encontró la wallet del reclutador" };
+    // 4. Descontar créditos de la wallet de la empresa
+    const creditosAntes = walletEmpresa.creditos_disponibles;
+    const creditosDespues = creditosAntes - COSTO_PUBLICACION;
+
+    const { error: updateWalletError } = await supabase
+      .from("wallet_empresa")
+      .update({
+        creditos_disponibles: creditosDespues
+      })
+      .eq("id", walletEmpresa.id);
+
+    if (updateWalletError) {
+      console.error("Error actualizando wallet empresa:", updateWalletError);
+      return { success: false, error: "Error al descontar créditos de la empresa" };
     }
 
-    let origenPago: "reclutador" | "heredado_empresa" = "reclutador";
-    let walletEmpresaId: string | null = null;
-    let creditoHeredadoId: string | null = null;
+    // 5. Si el reclutador tenía créditos heredados de esta empresa, también actualizarlos
+    const { data: creditoHeredado } = await supabase
+      .from("creditos_heredados_reclutador")
+      .select("*")
+      .eq("reclutador_id", reclutadorId)
+      .eq("empresa_id", empresaId)
+      .maybeSingle();
 
-    // 2. Si hay empresa_id, verificar si tiene créditos heredados de esa empresa
-    if (empresaId) {
-      const { data: creditoHeredado, error: heredadoError } = await supabase
+    if (creditoHeredado && creditoHeredado.creditos_disponibles >= COSTO_PUBLICACION) {
+      // Descontar de los créditos heredados del reclutador
+      await supabase
         .from("creditos_heredados_reclutador")
-        .select("*")
+        .update({
+          creditos_disponibles: creditoHeredado.creditos_disponibles - COSTO_PUBLICACION
+        })
+        .eq("id", creditoHeredado.id);
+
+      // Actualizar el total en wallet_reclutador
+      const { data: walletRec } = await supabase
+        .from("wallet_reclutador")
+        .select("creditos_heredados")
         .eq("reclutador_id", reclutadorId)
-        .eq("empresa_id", empresaId)
         .single();
 
-      if (!heredadoError && creditoHeredado && creditoHeredado.creditos_disponibles >= COSTO_PUBLICACION) {
-        // Usar créditos heredados
-        origenPago = "heredado_empresa";
-        creditoHeredadoId = creditoHeredado.id;
-
-        // Obtener wallet de la empresa para auditoría
-        const { data: walletEmpresa } = await supabase
-          .from("wallet_empresa")
-          .select("id")
-          .eq("empresa_id", empresaId)
-          .single();
-
-        walletEmpresaId = walletEmpresa?.id || null;
-
-        // Descontar de créditos heredados
-        const { error: updateError } = await supabase
-          .from("creditos_heredados_reclutador")
-          .update({
-            creditos_disponibles: creditoHeredado.creditos_disponibles - COSTO_PUBLICACION
-          })
-          .eq("id", creditoHeredado.id);
-
-        if (updateError) {
-          return { success: false, error: "Error al descontar créditos heredados" };
-        }
-
-        // También actualizar el total en wallet_reclutador
-        const { error: walletUpdateError } = await supabase
+      if (walletRec) {
+        await supabase
           .from("wallet_reclutador")
           .update({
-            creditos_heredados: Math.max(0, wallet.creditos_heredados - COSTO_PUBLICACION)
+            creditos_heredados: Math.max(0, walletRec.creditos_heredados - COSTO_PUBLICACION)
           })
-          .eq("id", wallet.id);
-
-        if (walletUpdateError) {
-          console.error("Error actualizando wallet_reclutador:", walletUpdateError);
-        }
+          .eq("reclutador_id", reclutadorId);
       }
     }
 
-    // 3. Si no usamos créditos heredados, usar propios
-    if (origenPago === "reclutador") {
-      if (wallet.creditos_propios < COSTO_PUBLICACION) {
-        return { 
-          success: false, 
-          error: `Créditos insuficientes. Necesitas ${COSTO_PUBLICACION} créditos para publicar. Tienes ${wallet.creditos_propios} créditos propios.` 
-        };
-      }
-
-      // Descontar de créditos propios
-      const { error: updateError } = await supabase
-        .from("wallet_reclutador")
-        .update({
-          creditos_propios: wallet.creditos_propios - COSTO_PUBLICACION
-        })
-        .eq("id", wallet.id);
-
-      if (updateError) {
-        return { success: false, error: "Error al descontar créditos propios" };
-      }
-    }
-
-    // 4. Registrar movimiento de créditos (auditoría)
-    const creditosAntes = origenPago === "heredado_empresa" 
-      ? wallet.creditos_heredados 
-      : wallet.creditos_propios;
-
+    // 6. Registrar movimiento de créditos (auditoría completa)
     const { error: movError } = await supabase
       .from("movimientos_creditos")
       .insert({
-        origen_pago: origenPago as any,
-        wallet_reclutador_id: wallet.id,
-        wallet_empresa_id: walletEmpresaId,
+        origen_pago: "empresa" as any,
+        wallet_empresa_id: walletEmpresa.id,
+        wallet_reclutador_id: walletReclutador?.id || null,
         empresa_id: empresaId,
         reclutador_user_id: userId,
         vacante_id: vacanteId,
@@ -125,10 +119,8 @@ export async function consumirCreditosPublicacion(
         metodo: "manual" as any,
         creditos_cantidad: -COSTO_PUBLICACION,
         creditos_antes: creditosAntes,
-        creditos_despues: creditosAntes - COSTO_PUBLICACION,
-        descripcion: origenPago === "heredado_empresa" 
-          ? `Publicación de vacante (créditos empresa)` 
-          : `Publicación de vacante (créditos propios)`
+        creditos_despues: creditosDespues,
+        descripcion: `Publicación de vacante al marketplace (${COSTO_PUBLICACION} créditos)`
       });
 
     if (movError) {
@@ -138,7 +130,7 @@ export async function consumirCreditosPublicacion(
 
     return { 
       success: true, 
-      origen_pago: origenPago, 
+      origen_pago: "heredado_empresa", 
       creditos_consumidos: COSTO_PUBLICACION 
     };
 
@@ -149,50 +141,40 @@ export async function consumirCreditosPublicacion(
 }
 
 /**
- * Verifica si el reclutador tiene suficientes créditos para publicar.
- * Considera tanto créditos propios como heredados de la empresa.
+ * Verifica si la empresa tiene suficientes créditos para publicar.
+ * Los créditos se deducen de la wallet de la empresa, no del reclutador.
  */
 export async function verificarCreditosDisponibles(
   reclutadorId: string,
   empresaId: string | null
-): Promise<{ suficientes: boolean; creditosPropios: number; creditosHeredados: number; total: number }> {
+): Promise<{ suficientes: boolean; creditosEmpresa: number; nombreEmpresa: string | null }> {
   try {
-    // Obtener wallet del reclutador
-    const { data: wallet, error: walletError } = await supabase
-      .from("wallet_reclutador")
-      .select("creditos_propios, creditos_heredados")
-      .eq("reclutador_id", reclutadorId)
+    // VALIDACIÓN: Debe haber empresa_id
+    if (!empresaId) {
+      return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
+    }
+
+    // Obtener wallet de la empresa
+    const { data: walletEmpresa, error: walletError } = await supabase
+      .from("wallet_empresa")
+      .select("creditos_disponibles, empresas(nombre_empresa)")
+      .eq("empresa_id", empresaId)
       .single();
 
-    if (walletError || !wallet) {
-      return { suficientes: false, creditosPropios: 0, creditosHeredados: 0, total: 0 };
+    if (walletError || !walletEmpresa) {
+      return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
     }
 
-    let creditosHeredadosEmpresa = 0;
-
-    // Si hay empresa, verificar créditos heredados específicos
-    if (empresaId) {
-      const { data: creditoHeredado } = await supabase
-        .from("creditos_heredados_reclutador")
-        .select("creditos_disponibles")
-        .eq("reclutador_id", reclutadorId)
-        .eq("empresa_id", empresaId)
-        .single();
-
-      creditosHeredadosEmpresa = creditoHeredado?.creditos_disponibles || 0;
-    }
-
-    const total = wallet.creditos_propios + creditosHeredadosEmpresa;
+    const nombreEmpresa = (walletEmpresa.empresas as any)?.nombre_empresa || null;
 
     return {
-      suficientes: total >= COSTO_PUBLICACION,
-      creditosPropios: wallet.creditos_propios,
-      creditosHeredados: creditosHeredadosEmpresa,
-      total
+      suficientes: walletEmpresa.creditos_disponibles >= COSTO_PUBLICACION,
+      creditosEmpresa: walletEmpresa.creditos_disponibles,
+      nombreEmpresa
     };
   } catch (error) {
     console.error("Error verificando créditos:", error);
-    return { suficientes: false, creditosPropios: 0, creditosHeredados: 0, total: 0 };
+    return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
   }
 }
 
