@@ -30,9 +30,8 @@ export const PublishToMarketplaceDialog = ({
   const [reclutadorId, setReclutadorId] = useState<string | null>(null);
   const [creditosInfo, setCreditosInfo] = useState<{
     suficientes: boolean;
-    creditosPropios: number;
-    creditosHeredados: number;
-    total: number;
+    creditosEmpresa: number;
+    nombreEmpresa: string | null;
   } | null>(null);
   
   const [selectedFields, setSelectedFields] = useState({
@@ -191,14 +190,20 @@ export const PublishToMarketplaceDialog = ({
             {/* Información de créditos */}
             <Alert className={creditosInfo?.suficientes ? "bg-green-500/10 border-green-200" : "bg-destructive/10 border-destructive/30"}>
               <Coins className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>
-                  Costo de publicación: <strong>{COSTO_PUBLICACION} créditos</strong>
-                </span>
-                <span className="text-sm">
-                  Disponibles: {creditosInfo?.total || 0}
-                  {creditosInfo?.creditosHeredados ? ` (${creditosInfo.creditosHeredados} de empresa)` : ""}
-                </span>
+              <AlertDescription className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span>
+                    Costo de publicación: <strong>{COSTO_PUBLICACION} créditos</strong>
+                  </span>
+                  <span className="text-sm">
+                    Disponibles: {creditosInfo?.creditosEmpresa || 0} créditos
+                  </span>
+                </div>
+                {creditosInfo?.nombreEmpresa && (
+                  <span className="text-xs text-muted-foreground">
+                    Se descontarán de la wallet de: {creditosInfo.nombreEmpresa}
+                  </span>
+                )}
               </AlertDescription>
             </Alert>
 
@@ -206,7 +211,16 @@ export const PublishToMarketplaceDialog = ({
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  Créditos insuficientes. Necesitas {COSTO_PUBLICACION} créditos para publicar.
+                  La empresa no tiene créditos suficientes. Se necesitan {COSTO_PUBLICACION} créditos para publicar.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!vacante.empresa_id && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Esta vacante no tiene empresa asociada. No se puede publicar.
                 </AlertDescription>
               </Alert>
             )}
