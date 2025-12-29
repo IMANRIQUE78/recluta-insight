@@ -11,7 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { ArrowLeft, Wallet, CreditCard, Building2, TrendingUp, TrendingDown, Search, Filter, RefreshCw, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, Wallet, CreditCard, Building2, TrendingUp, TrendingDown, Search, Filter, RefreshCw, ArrowLeftRight, Download, FileText } from "lucide-react";
+import { useWalletPdf } from "@/hooks/useWalletPdf";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { DevolverCreditosDialog } from "@/components/wallet/DevolverCreditosDialog";
@@ -62,6 +63,10 @@ export default function WalletReclutador() {
   
   // Dialog devolver créditos
   const [devolverDialogOpen, setDevolverDialogOpen] = useState(false);
+  
+  // PDF
+  const { generarPdf } = useWalletPdf();
+  const [nombreReclutador, setNombreReclutador] = useState("");
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -77,7 +82,7 @@ export default function WalletReclutador() {
       // Obtener perfil de reclutador
       const { data: perfil, error: perfilError } = await supabase
         .from("perfil_reclutador")
-        .select("id")
+        .select("id, nombre_reclutador")
         .eq("user_id", user.id)
         .single();
 
@@ -87,6 +92,7 @@ export default function WalletReclutador() {
       }
 
       setReclutadorId(perfil.id);
+      setNombreReclutador(perfil.nombre_reclutador || "Reclutador");
 
       // Obtener wallet
       const { data: wallet, error: walletError } = await supabase
@@ -224,10 +230,27 @@ export default function WalletReclutador() {
   };
 
   const getOrigenBadge = (origen: string) => {
-    if (origen === "empresa") {
+    if (origen === "empresa" || origen === "heredado_empresa") {
       return <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-200">Empresa</Badge>;
     }
     return <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">Propio</Badge>;
+  };
+
+  const handleDescargarPdf = () => {
+    if (!walletData) return;
+    
+    generarPdf(
+      {
+        tipo: 'reclutador',
+        nombreTitular: nombreReclutador,
+        creditosDisponibles: totalCreditos,
+        creditosTotalesComprados: walletData.creditos_totales_comprados,
+        creditosHeredados: totalHeredados
+      },
+      movimientosFiltrados,
+      tipoFiltro === "todos" ? "Todos los movimientos" : `Filtrado por: ${tipoFiltro}`
+    );
+    toast.success("Estado de cuenta descargado");
   };
 
   const movimientosFiltrados = movimientos.filter(m => 
@@ -445,36 +468,55 @@ export default function WalletReclutador() {
         <Card>
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <CardTitle className="text-lg">Estado de Cuenta</CardTitle>
-                <CardDescription>Historial de movimientos de créditos</CardDescription>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Estado de Cuenta</CardTitle>
+                  <CardDescription>Historial de movimientos de créditos</CardDescription>
+                </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar..."
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    className="pl-9 w-[200px]"
-                  />
-                </div>
-                <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
-                  <SelectTrigger className="w-[150px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filtrar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="compra">Compras</SelectItem>
-                    <SelectItem value="asignacion">Asignaciones</SelectItem>
-                    <SelectItem value="consumo">Consumos</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline" size="icon" onClick={fetchData}>
-                  <RefreshCw className="h-4 w-4" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleDescargarPdf}
+                  disabled={movimientosFiltrados.length === 0}
+                  className="gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Descargar PDF
                 </Button>
               </div>
+            </div>
+            
+            {/* Filtros */}
+            <div className="grid gap-3 sm:grid-cols-3 mt-4">
+              <div className="relative sm:col-span-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar..."
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={tipoFiltro} onValueChange={setTipoFiltro}>
+                <SelectTrigger>
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filtrar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  <SelectItem value="compra_creditos">Compras</SelectItem>
+                  <SelectItem value="herencia_creditos">Asignaciones</SelectItem>
+                  <SelectItem value="publicacion_vacante">Publicaciones</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="icon" onClick={fetchData}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
