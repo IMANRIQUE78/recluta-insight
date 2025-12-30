@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, Calendar, MessageSquare, Settings } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AgendarEntrevistaDialog } from "./AgendarEntrevistaDialog";
-import { PostulacionDetailDialog } from "./PostulacionDetailDialog";
 import { PostulacionChatDialog } from "@/components/postulacion/PostulacionChatDialog";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 import { GestionEstatusPostulacionDialog } from "@/components/reclutador/GestionEstatusPostulacionDialog";
@@ -85,8 +84,6 @@ export const PostulacionesRecibidas = () => {
   const { toast } = useToast();
   const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPostulacion, setSelectedPostulacion] = useState<Postulacion | null>(null);
-  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [etapaFilter, setEtapaFilter] = useState<string>("todas");
   const [agendarDialogOpen, setAgendarDialogOpen] = useState(false);
   const [agendarPostulacion, setAgendarPostulacion] = useState<{
@@ -285,11 +282,6 @@ export const PostulacionesRecibidas = () => {
     }
   };
 
-  const handleVerDetalle = (postulacion: Postulacion) => {
-    setSelectedPostulacion(postulacion);
-    setDetailModalOpen(true);
-  };
-
   const matchesEtapaFilter = (p: Postulacion, filter: string) => {
     switch (filter) {
       case "recibida":
@@ -422,8 +414,11 @@ export const PostulacionesRecibidas = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleVerDetalle(postulacion)}
-                              title="Ver Detalles"
+                              onClick={() => {
+                                setSelectedCandidatoUserId(postulacion.candidato_user_id);
+                                setShowProfileModal(true);
+                              }}
+                              title="Ver Perfil Completo"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -485,15 +480,6 @@ export const PostulacionesRecibidas = () => {
           )}
         </CardContent>
       </Card>
-
-      {selectedPostulacion && (
-        <PostulacionDetailDialog
-          open={detailModalOpen}
-          onOpenChange={setDetailModalOpen}
-          postulacion={selectedPostulacion}
-          onEtapaChange={(newEtapa) => handleEtapaChangeFromDetail(selectedPostulacion.id, newEtapa)}
-        />
-      )}
 
       {agendarPostulacion && (
         <AgendarEntrevistaDialog
