@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   User, 
   MapPin, 
@@ -21,10 +22,16 @@ import {
   DollarSign,
   Shield,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  FileSearch,
+  Home,
+  CheckCircle,
+  Clock
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { format, differenceInMonths } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface CandidateProfileViewModalProps {
   open: boolean;
@@ -56,6 +63,29 @@ interface CandidateProfile {
   codigo_candidato?: string;
 }
 
+interface EstudioSocioeconomico {
+  id: string;
+  folio: string;
+  estatus: string;
+  fecha_entrega: string | null;
+  calificacion_riesgo: string | null;
+  resultado_general: string | null;
+  datos_sociodemograficos: any;
+  datos_vivienda: any;
+  datos_economicos: any;
+  datos_referencias: any;
+  observaciones_finales: string | null;
+  fecha_visita: string | null;
+  candidato_presente: boolean | null;
+}
+
+const riesgoConfig: Record<string, { label: string; color: string }> = {
+  bajo: { label: "Bajo", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" },
+  medio: { label: "Medio", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200" },
+  alto: { label: "Alto", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200" },
+  muy_alto: { label: "Muy Alto", color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" },
+};
+
 export const CandidateProfileViewModal = ({
   open,
   onOpenChange,
@@ -64,10 +94,12 @@ export const CandidateProfileViewModal = ({
 }: CandidateProfileViewModalProps) => {
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [estudios, setEstudios] = useState<EstudioSocioeconomico[]>([]);
 
   useEffect(() => {
     if (open && candidatoUserId) {
       loadProfile();
+      loadEstudios();
     }
   }, [open, candidatoUserId]);
 
@@ -87,6 +119,34 @@ export const CandidateProfileViewModal = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadEstudios = async () => {
+    try {
+      // Solo cargar estudios entregados de los últimos 6 meses
+      const seisaMesesAtras = new Date();
+      seisaMesesAtras.setMonth(seisaMesesAtras.getMonth() - 6);
+
+      const { data, error } = await supabase
+        .from("estudios_socioeconomicos")
+        .select("*")
+        .eq("candidato_user_id", candidatoUserId)
+        .eq("estatus", "entregado")
+        .not("fecha_entrega", "is", null)
+        .gte("fecha_entrega", seisaMesesAtras.toISOString())
+        .order("fecha_entrega", { ascending: false });
+
+      if (error) throw error;
+      setEstudios(data || []);
+    } catch (error: any) {
+      console.error("Error loading estudios:", error);
+    }
+  };
+
+  // Verificar si un estudio es visible (dentro de 6 meses desde su entrega)
+  const isEstudioVisible = (fechaEntrega: string) => {
+    const mesesTranscurridos = differenceInMonths(new Date(), new Date(fechaEntrega));
+    return mesesTranscurridos < 6;
   };
 
   const formatDisponibilidad = (disp: string | null) => {
@@ -463,6 +523,166 @@ export const CandidateProfileViewModal = ({
                   )}
                 </div>
               </div>
+            )}
+
+            {/* ============================================ */}
+            {/* SECCIÓN: ESTUDIOS SOCIOECONÓMICOS (visibilidad 6 meses) */}
+            {/* ============================================ */}
+            {hasFullAccess && estudios.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <FileSearch className="h-5 w-5 text-primary" />
+                    Estudios Socioeconómicos
+                    <Badge variant="secondary" className="ml-2">{estudios.length}</Badge>
+                  </h3>
+                  
+                  <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800 dark:text-blue-200 text-sm">
+                      Los estudios socioeconómicos son visibles durante 6 meses desde su fecha de entrega.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="space-y-4">
+                    {estudios.filter(e => e.fecha_entrega && isEstudioVisible(e.fecha_entrega)).map((estudio) => {
+                      const riesgoInfo = estudio.calificacion_riesgo ? riesgoConfig[estudio.calificacion_riesgo] : null;
+                      
+                      return (
+                        <Card key={estudio.id} className="border-primary/20">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <CardTitle className="text-sm font-mono text-muted-foreground">
+                                  {estudio.folio}
+                                </CardTitle>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    Entregado
+                                  </Badge>
+                                  {riesgoInfo && (
+                                    <Badge className={riesgoInfo.color}>
+                                      Riesgo {riesgoInfo.label}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </div>
+                              {estudio.fecha_entrega && (
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(estudio.fecha_entrega), "dd MMM yyyy", { locale: es })}
+                                </span>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-3 text-sm">
+                            {/* Resultado General */}
+                            {estudio.resultado_general && (
+                              <div className="p-3 bg-muted/50 rounded-lg">
+                                <p className="text-xs text-muted-foreground mb-1">Resultado General</p>
+                                <p className="font-medium capitalize">{estudio.resultado_general.replace(/_/g, ' ')}</p>
+                              </div>
+                            )}
+
+                            {/* Datos Sociodemográficos */}
+                            {estudio.datos_sociodemograficos && Object.keys(estudio.datos_sociodemograficos).length > 0 && (
+                              <div className="grid grid-cols-2 gap-2">
+                                {estudio.datos_sociodemograficos.estado_civil && (
+                                  <div className="p-2 bg-muted/30 rounded">
+                                    <p className="text-xs text-muted-foreground">Estado Civil</p>
+                                    <p className="font-medium text-sm">{estudio.datos_sociodemograficos.estado_civil}</p>
+                                  </div>
+                                )}
+                                {estudio.datos_sociodemograficos.numero_dependientes && (
+                                  <div className="p-2 bg-muted/30 rounded">
+                                    <p className="text-xs text-muted-foreground">Dependientes</p>
+                                    <p className="font-medium text-sm">{estudio.datos_sociodemograficos.numero_dependientes}</p>
+                                  </div>
+                                )}
+                                {estudio.datos_sociodemograficos.escolaridad && (
+                                  <div className="p-2 bg-muted/30 rounded col-span-2">
+                                    <p className="text-xs text-muted-foreground">Escolaridad Verificada</p>
+                                    <p className="font-medium text-sm">{estudio.datos_sociodemograficos.escolaridad}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Datos de Vivienda */}
+                            {estudio.datos_vivienda && Object.keys(estudio.datos_vivienda).length > 0 && (
+                              <div className="p-3 border rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Home className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-sm">Vivienda</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {estudio.datos_vivienda.tipo_vivienda && (
+                                    <div>
+                                      <span className="text-muted-foreground">Tipo:</span>{' '}
+                                      <span>{estudio.datos_vivienda.tipo_vivienda}</span>
+                                    </div>
+                                  )}
+                                  {estudio.datos_vivienda.propiedad_vivienda && (
+                                    <div>
+                                      <span className="text-muted-foreground">Propiedad:</span>{' '}
+                                      <span>{estudio.datos_vivienda.propiedad_vivienda}</span>
+                                    </div>
+                                  )}
+                                  {estudio.datos_vivienda.estado_vivienda && (
+                                    <div className="col-span-2">
+                                      <span className="text-muted-foreground">Estado:</span>{' '}
+                                      <span>{estudio.datos_vivienda.estado_vivienda}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Datos Económicos */}
+                            {estudio.datos_economicos && Object.keys(estudio.datos_economicos).length > 0 && (
+                              <div className="p-3 border rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <DollarSign className="h-4 w-4 text-primary" />
+                                  <span className="font-medium text-sm">Datos Económicos</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {estudio.datos_economicos.ingreso_mensual && (
+                                    <div>
+                                      <span className="text-muted-foreground">Ingreso:</span>{' '}
+                                      <span>{estudio.datos_economicos.ingreso_mensual}</span>
+                                    </div>
+                                  )}
+                                  {estudio.datos_economicos.gastos_mensuales && (
+                                    <div>
+                                      <span className="text-muted-foreground">Gastos:</span>{' '}
+                                      <span>{estudio.datos_economicos.gastos_mensuales}</span>
+                                    </div>
+                                  )}
+                                  {estudio.datos_economicos.vehiculo_propio && (
+                                    <div>
+                                      <span className="text-muted-foreground">Vehículo:</span>{' '}
+                                      <span>{estudio.datos_economicos.vehiculo_propio}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Observaciones Finales */}
+                            {estudio.observaciones_finales && (
+                              <div className="p-3 bg-muted/30 rounded-lg">
+                                <p className="text-xs text-muted-foreground mb-1">Observaciones del Verificador</p>
+                                <p className="text-sm">{estudio.observaciones_finales}</p>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </ScrollArea>
