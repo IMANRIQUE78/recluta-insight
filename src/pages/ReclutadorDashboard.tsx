@@ -25,6 +25,7 @@ import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculad
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
 import { SolicitarEstudioDialog } from "@/components/reclutador/SolicitarEstudioDialog";
+import { EstudiosSolicitadosCard } from "@/components/reclutador/EstudiosSolicitadosCard";
 import { AttentionBadgesReclutador } from "@/components/reclutador/AttentionBadgesReclutador";
 import { ObjetivosPersonalesCard } from "@/components/reclutador/ObjetivosPersonalesCard";
 import vvgiLogo from "@/assets/vvgi-logo.png";
@@ -611,8 +612,11 @@ const ReclutadorDashboard = () => {
               </div>
             </div>
 
-            {/* Calendario de Entrevistas */}
-            <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
+            {/* Calendario de Entrevistas y Estudios Solicitados */}
+            <div className="grid gap-4 lg:grid-cols-2">
+              <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
+              <EstudiosSolicitadosCard reclutadorUserId={perfilReclutador?.user_id} />
+            </div>
 
             {/* ══════════════════════════════════════════════════════════════════
                 ZONA 3: EMPRESAS COLABORADORAS - Información importante para vender vacantes
