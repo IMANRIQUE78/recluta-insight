@@ -35,54 +35,43 @@ export const useKPIs = (
         return;
       }
 
-      // Ejecutar queries en paralelo para máximo rendimiento
-      const [cerradasResult, filteredResult] = await Promise.all([
-        // Query 1: Vacantes cerradas para tiempo de cobertura (sin filtros)
-        supabase
-          .from("vacantes")
-          .select("id, fecha_solicitud, fecha_cierre")
-          .eq("user_id", user.id)
-          .eq("estatus", "cerrada")
-          .not("fecha_cierre", "is", null),
-        
-        // Query 2: Vacantes con filtros para demás KPIs
-        (() => {
-          let query = supabase
-            .from("vacantes")
-            .select("id, estatus, fecha_solicitud, fecha_cierre")
-            .eq("user_id", user.id);
+      // Construir query con filtros aplicados
+      let query = supabase
+        .from("vacantes")
+        .select("id, estatus, fecha_solicitud, fecha_cierre")
+        .eq("user_id", user.id);
 
-          if (selectedCliente !== "todos") {
-            query = query.eq("cliente_area_id", selectedCliente);
-          }
-          if (selectedReclutador !== "todos") {
-            query = query.eq("reclutador_asignado_id", selectedReclutador);
-          }
-          if (selectedEstatus !== "todos") {
-            query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
-          }
-          return query;
-        })()
-      ]);
-
-      const todasVacantesCerradas = cerradasResult.data;
-      const vacantes = filteredResult.data;
-
-      if (filteredResult.error) {
-        console.error("Error fetching vacantes:", filteredResult.error);
-        throw filteredResult.error;
+      if (selectedCliente !== "todos") {
+        query = query.eq("cliente_area_id", selectedCliente);
+      }
+      if (selectedReclutador !== "todos") {
+        query = query.eq("reclutador_asignado_id", selectedReclutador);
+      }
+      if (selectedEstatus !== "todos") {
+        query = query.eq("estatus", selectedEstatus as "abierta" | "cerrada" | "cancelada");
       }
 
-      // Calcular tiempo promedio de cobertura
+      const { data: vacantes, error } = await query;
+
+      if (error) {
+        console.error("Error fetching vacantes:", error);
+        throw error;
+      }
+
+      // Calcular tiempo promedio de cobertura (solo vacantes cerradas dentro del filtro)
+      const vacantesCerradas = vacantes?.filter(v => 
+        v.estatus === "cerrada" && v.fecha_cierre
+      ) || [];
+      
       let tiempoPromedio = 0;
-      if (todasVacantesCerradas && todasVacantesCerradas.length > 0) {
-        const totalDias = todasVacantesCerradas.reduce((sum, v) => {
+      if (vacantesCerradas.length > 0) {
+        const totalDias = vacantesCerradas.reduce((sum, v) => {
           const inicio = new Date(v.fecha_solicitud);
           const fin = new Date(v.fecha_cierre!);
           const dias = Math.ceil((fin.getTime() - inicio.getTime()) / (1000 * 60 * 60 * 24));
           return sum + Math.max(0, dias);
         }, 0);
-        tiempoPromedio = Math.round(totalDias / todasVacantesCerradas.length);
+        tiempoPromedio = Math.round(totalDias / vacantesCerradas.length);
       }
 
       const totalVacantes = vacantes?.length || 0;
