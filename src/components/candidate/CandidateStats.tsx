@@ -121,29 +121,72 @@ export const CandidateStats = () => {
 
       setTotalCount(count || 0);
 
-      // Get paginated data - include ALL postulaciones
-      const { data, error } = await supabase
+      // Get paginated postulaciones first
+      const { data: postulacionesData, error: postError } = await supabase
         .from("postulaciones")
-        .select(`
-          id,
-          estado,
-          etapa,
-          fecha_postulacion,
-          publicacion:publicaciones_marketplace(
-            titulo_puesto,
-            ubicacion,
-            lugar_trabajo,
-            sueldo_bruto_aprobado,
-            vacante:vacantes(estatus)
-          )
-        `)
+        .select("id, estado, etapa, fecha_postulacion, publicacion_id")
         .eq("candidato_user_id", session.user.id)
         .order("fecha_postulacion", { ascending: false })
         .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
 
-      if (error) throw error;
+      if (postError) throw postError;
 
-      setPostulaciones((data || []) as Postulacion[]);
+      if (!postulacionesData || postulacionesData.length === 0) {
+        setPostulaciones([]);
+        return;
+      }
+
+      // Get publication IDs
+      const pubIds = postulacionesData.map(p => p.publicacion_id);
+
+      // Fetch publications separately (RLS allows seeing published ones)
+      const { data: publicacionesData } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id, titulo_puesto, ubicacion, lugar_trabajo, sueldo_bruto_aprobado, vacante_id")
+        .in("id", pubIds);
+
+      // Get vacancy IDs from publications
+      const vacanteIds = (publicacionesData || [])
+        .map(p => p.vacante_id)
+        .filter(Boolean);
+
+      // Fetch vacancies to get status
+      const { data: vacantesData } = await supabase
+        .from("vacantes")
+        .select("id, estatus, titulo_puesto")
+        .in("id", vacanteIds);
+
+      // Build map for quick lookup
+      const vacantesMap = new Map(
+        (vacantesData || []).map(v => [v.id, v])
+      );
+
+      const publicacionesMap = new Map(
+        (publicacionesData || []).map(p => [p.id, {
+          ...p,
+          vacante: p.vacante_id ? vacantesMap.get(p.vacante_id) || null : null
+        }])
+      );
+
+      // Combine data
+      const combinedData: Postulacion[] = postulacionesData.map(post => {
+        const pub = publicacionesMap.get(post.publicacion_id);
+        return {
+          id: post.id,
+          estado: post.estado,
+          etapa: post.etapa,
+          fecha_postulacion: post.fecha_postulacion,
+          publicacion: pub ? {
+            titulo_puesto: pub.titulo_puesto,
+            ubicacion: pub.ubicacion,
+            lugar_trabajo: pub.lugar_trabajo,
+            sueldo_bruto_aprobado: pub.sueldo_bruto_aprobado,
+            vacante: pub.vacante ? { estatus: pub.vacante.estatus } : null
+          } : null
+        };
+      });
+
+      setPostulaciones(combinedData);
     } catch (error) {
       console.error("Error loading postulaciones:", error);
     }
