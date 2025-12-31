@@ -569,61 +569,6 @@ const ReclutadorDashboard = () => {
                   promedioDiasCierre={stats.promedioDiasCierre}
                   calificacionPromedio={stats.calificacionPromedio}
                 />
-                
-                {/* KPIs Compactos */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4 text-primary" />
-                      Indicadores
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-2">
-                    <button 
-                      onClick={() => handleKPIClick("Promedio Cierre")}
-                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Promedio</span>
-                      </div>
-                      <p className="text-lg font-bold">{stats.promedioDiasCierre}<span className="text-xs font-normal text-muted-foreground ml-1">días</span></p>
-                    </button>
-                    
-                    <button 
-                      onClick={() => handleKPIClick("Vacantes Cerradas")}
-                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Cerradas</span>
-                      </div>
-                      <p className="text-lg font-bold">{stats.vacantesCerradas}</p>
-                    </button>
-                    
-                    <button 
-                      onClick={() => handleKPIClick("Entrevistas / Cierre")}
-                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Conversión</span>
-                      </div>
-                      <p className="text-lg font-bold">{stats.porcentajeExito}<span className="text-xs font-normal text-muted-foreground ml-1">%</span></p>
-                    </button>
-                    
-                    <button 
-                      onClick={() => handleKPIClick("Calificación")}
-                      className="text-left p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Star className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">Rating</span>
-                      </div>
-                      <p className="text-lg font-bold">{stats.calificacionPromedio}<span className="text-xs font-normal text-muted-foreground ml-1">★</span></p>
-                    </button>
-                  </CardContent>
-                </Card>
 
                 {/* Resumen Compacto */}
                 <Card>
