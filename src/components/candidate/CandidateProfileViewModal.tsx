@@ -524,17 +524,17 @@ export const CandidateProfileViewModal = ({
                             <p className="text-xs text-muted-foreground">
                               {exp.fecha_inicio} - {exp.fecha_fin || "Actual"}
                             </p>
-                            {exp.descripcion && (
-                              <p className="text-sm mt-2">{exp.descripcion}</p>
-                            )}
-                            {exp.tags && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {exp.tags.map((tag: string, tIdx: number) => (
-                                  <Badge key={tIdx} variant="secondary" className="text-xs">
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
+                          {exp.descripcion && (
+                            <p className="text-sm mt-2">{exp.descripcion}</p>
+                          )}
+                          {exp.tags && Array.isArray(exp.tags) && exp.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {exp.tags.map((tag: string, tIdx: number) => (
+                                <Badge key={tIdx} variant="secondary" className="text-xs">
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
                             )}
                           </div>
                         </div>
