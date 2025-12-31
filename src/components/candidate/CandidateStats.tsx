@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, Send, Calendar, MessageSquare } from "lucide-react";
+import { BarChart3, Send, Calendar, MessageSquare, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
+import { PostulacionesTableModal } from "./PostulacionesTableModal";
 
 interface Stats {
   totalPostulaciones: number;
   postulacionesMes: number;
+  postulacionesMesAnterior: number;
   entrevistasAsistidas: number;
   feedbackRecibido: number;
 }
@@ -20,15 +23,24 @@ interface Feedback {
   };
 }
 
+interface MonthlyData {
+  mes: string;
+  postulaciones: number;
+  isCurrent: boolean;
+}
+
 export const CandidateStats = () => {
   const [stats, setStats] = useState<Stats>({
     totalPostulaciones: 0,
     postulacionesMes: 0,
+    postulacionesMesAnterior: 0,
     entrevistasAsistidas: 0,
     feedbackRecibido: 0,
   });
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [postulacionesModalOpen, setPostulacionesModalOpen] = useState(false);
 
   useEffect(() => {
     loadStats();
@@ -55,6 +67,31 @@ export const CandidateStats = () => {
         .select("*", { count: "exact", head: true })
         .eq("candidato_user_id", session.user.id)
         .gte("fecha_postulacion", inicioMes.toISOString());
+
+      // Postulaciones del mes anterior
+      const inicioMesAnterior = new Date();
+      inicioMesAnterior.setMonth(inicioMesAnterior.getMonth() - 1);
+      inicioMesAnterior.setDate(1);
+      inicioMesAnterior.setHours(0, 0, 0, 0);
+      
+      const finMesAnterior = new Date(inicioMes);
+      finMesAnterior.setSeconds(-1);
+
+      const { count: mesAnteriorCount } = await supabase
+        .from("postulaciones")
+        .select("*", { count: "exact", head: true })
+        .eq("candidato_user_id", session.user.id)
+        .gte("fecha_postulacion", inicioMesAnterior.toISOString())
+        .lt("fecha_postulacion", inicioMes.toISOString());
+
+      // Build monthly chart data (current + previous month)
+      const currentMonthName = inicioMes.toLocaleDateString('es-MX', { month: 'short' });
+      const prevMonthName = inicioMesAnterior.toLocaleDateString('es-MX', { month: 'short' });
+      
+      setMonthlyData([
+        { mes: prevMonthName.charAt(0).toUpperCase() + prevMonthName.slice(1), postulaciones: mesAnteriorCount || 0, isCurrent: false },
+        { mes: currentMonthName.charAt(0).toUpperCase() + currentMonthName.slice(1), postulaciones: mesCount || 0, isCurrent: true },
+      ]);
 
       // Entrevistas asistidas
       const { count: entrevistasCount } = await supabase
@@ -104,6 +141,7 @@ export const CandidateStats = () => {
       setStats({
         totalPostulaciones: totalCount || 0,
         postulacionesMes: mesCount || 0,
+        postulacionesMesAnterior: mesAnteriorCount || 0,
         entrevistasAsistidas: entrevistasCount || 0,
         feedbackRecibido: feedbackCount || 0,
       });
@@ -114,20 +152,34 @@ export const CandidateStats = () => {
     }
   };
 
+  const getTrend = () => {
+    const diff = stats.postulacionesMes - stats.postulacionesMesAnterior;
+    if (diff > 0) return { icon: TrendingUp, color: "text-green-500", text: `+${diff} vs mes anterior` };
+    if (diff < 0) return { icon: TrendingDown, color: "text-red-500", text: `${diff} vs mes anterior` };
+    return { icon: Minus, color: "text-muted-foreground", text: "Sin cambio" };
+  };
+
   if (loading) {
     return <div className="animate-pulse">Cargando estadísticas...</div>;
   }
 
+  const trend = getTrend();
+  const TrendIcon = trend.icon;
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className="cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => setPostulacionesModalOpen(true)}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Postulaciones</CardTitle>
             <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalPostulaciones}</div>
+            <p className="text-xs text-muted-foreground mt-1">Click para ver detalle</p>
           </CardContent>
         </Card>
 
@@ -138,6 +190,10 @@ export const CandidateStats = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.postulacionesMes}</div>
+            <div className={`flex items-center gap-1 text-xs mt-1 ${trend.color}`}>
+              <TrendIcon className="h-3 w-3" />
+              {trend.text}
+            </div>
           </CardContent>
         </Card>
 
@@ -161,6 +217,49 @@ export const CandidateStats = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Chart: Postulaciones por mes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Postulaciones por Mes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="mes" 
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                />
+                <YAxis 
+                  allowDecimals={false}
+                  tick={{ fontSize: 12 }}
+                  className="text-muted-foreground"
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }}
+                  formatter={(value: number) => [value, 'Postulaciones']}
+                />
+                <Bar dataKey="postulaciones" radius={[4, 4, 0, 0]}>
+                  {monthlyData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.isCurrent ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'} 
+                      opacity={entry.isCurrent ? 1 : 0.5}
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Feedback de Reclutadores */}
       {feedbacks.length > 0 && (
@@ -206,6 +305,11 @@ export const CandidateStats = () => {
           </CardContent>
         </Card>
       )}
+
+      <PostulacionesTableModal 
+        open={postulacionesModalOpen} 
+        onOpenChange={setPostulacionesModalOpen} 
+      />
     </div>
   );
 };

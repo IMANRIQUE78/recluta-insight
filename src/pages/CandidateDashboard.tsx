@@ -13,6 +13,7 @@ import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
 import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
 import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
+import vvgiLogo from "@/assets/vvgi-logo.png";
 
 export default function CandidateDashboard() {
   const navigate = useNavigate();
@@ -23,9 +24,11 @@ export default function CandidateDashboard() {
   const [userName, setUserName] = useState("");
   const [codigoCandidato, setCodigoCandidato] = useState("");
   const scrollDirection = useScrollDirection();
+
   useEffect(() => {
     checkAuth();
   }, []);
+
   const checkAuth = async () => {
     const {
       data: {
@@ -50,30 +53,50 @@ export default function CandidateDashboard() {
     }
     setLoading(false);
   };
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
   };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">
         <div className="animate-pulse">Cargando...</div>
       </div>;
   }
+
   return <div className="min-h-screen bg-background">
       <header className={`sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-transform duration-300 ${
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}>
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-left">Dashboard de Candidato</h1>
-            {hasProfile && (
-              <div className="flex items-center gap-3">
-                <p className="text-muted-foreground">Bienvenido, {userName}</p>
-                {codigoCandidato && (
-                  <span className="font-mono text-xs bg-primary/10 px-2 py-1 rounded text-primary">{codigoCandidato}</span>
-                )}
-              </div>
-            )}
+          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => navigate("/")}>
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <img 
+                src={vvgiLogo} 
+                alt="VVGI Logo" 
+                className="h-12 w-12 object-contain relative z-10 transition-transform duration-300 group-hover:scale-110" 
+              />
+            </div>
+            <div className="space-y-0.5">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">
+                <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent font-bold">
+                  Portal
+                </span>
+                <span className="ml-2 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent font-bold">
+                  Candidato
+                </span>
+              </h1>
+              {hasProfile && (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted-foreground font-medium">{userName}</p>
+                  {codigoCandidato && (
+                    <span className="font-mono text-xs bg-primary/10 px-2 py-0.5 rounded text-primary">{codigoCandidato}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setProfilePreviewOpen(true)}>
