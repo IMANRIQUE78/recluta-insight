@@ -92,7 +92,11 @@ export const MisPostulaciones = () => {
 
       if (error) throw error;
 
-      setPostulaciones(data || []);
+      // Filter out postulaciones where publicacion is null (orphaned records)
+      const validPostulaciones = (data || []).filter(
+        (p) => p.publicacion !== null
+      );
+      setPostulaciones(validPostulaciones as Postulacion[]);
     } catch (error) {
       console.error("Error loading postulaciones:", error);
     } finally {
