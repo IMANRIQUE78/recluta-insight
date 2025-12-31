@@ -29,11 +29,42 @@ export const MarketplaceReclutador = ({ reclutadorUserId }: MarketplaceReclutado
 
   const loadPublicaciones = async () => {
     try {
+      // Primero obtenemos el perfil_reclutador.id del user_id
+      const { data: perfilReclutador } = await supabase
+        .from("perfil_reclutador")
+        .select("id")
+        .eq("user_id", reclutadorUserId)
+        .maybeSingle();
+
+      if (!perfilReclutador) {
+        setPublicaciones([]);
+        setFilteredPublicaciones([]);
+        setLoading(false);
+        return;
+      }
+
+      // Obtener vacantes asignadas al reclutador que estén abiertas
+      const { data: vacantesAsignadas } = await supabase
+        .from("vacantes")
+        .select("id")
+        .eq("reclutador_asignado_id", perfilReclutador.id)
+        .eq("estatus", "abierta");
+
+      if (!vacantesAsignadas || vacantesAsignadas.length === 0) {
+        setPublicaciones([]);
+        setFilteredPublicaciones([]);
+        setLoading(false);
+        return;
+      }
+
+      const vacanteIds = vacantesAsignadas.map(v => v.id);
+
+      // Obtener publicaciones de esas vacantes que estén publicadas
       const { data, error } = await supabase
         .from("publicaciones_marketplace")
         .select("*")
         .eq("publicada", true)
-        .eq("user_id", reclutadorUserId)
+        .in("vacante_id", vacanteIds)
         .order("fecha_publicacion", { ascending: false });
 
       if (error) throw error;
