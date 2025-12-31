@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      acceso_identidad_candidato: {
+        Row: {
+          candidato_user_id: string
+          created_at: string
+          creditos_consumidos: number
+          empresa_id: string | null
+          fecha_desbloqueo: string
+          id: string
+          origen_pago: string
+          reclutador_id: string
+        }
+        Insert: {
+          candidato_user_id: string
+          created_at?: string
+          creditos_consumidos?: number
+          empresa_id?: string | null
+          fecha_desbloqueo?: string
+          id?: string
+          origen_pago?: string
+          reclutador_id: string
+        }
+        Update: {
+          candidato_user_id?: string
+          created_at?: string
+          creditos_consumidos?: number
+          empresa_id?: string | null
+          fecha_desbloqueo?: string
+          id?: string
+          origen_pago?: string
+          reclutador_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acceso_identidad_candidato_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acceso_identidad_candidato_reclutador_id_fkey"
+            columns: ["reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asignacion_creditos: {
         Row: {
           activa: boolean

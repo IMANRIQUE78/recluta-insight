@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Eye, Briefcase, MapPin, DollarSign, Calendar, Lock, Search, X, Filter } from "lucide-react";
+import { Users, Eye, Briefcase, MapPin, DollarSign, Calendar, Lock, Search, X, Filter, Coins } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -41,6 +41,8 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [accessReason, setAccessReason] = useState<string>("");
+  const [creditosDisponibles, setCreditosDisponibles] = useState<number>(0);
+  const [empresaActiva, setEmpresaActiva] = useState<string | null>(null);
   
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,77 +58,35 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const checkAccess = async () => {
     setLoading(true);
     try {
-      // Verificar que el reclutador tenga:
-      // 1. Asociación activa con alguna empresa
-      const { data: asociaciones } = await supabase
-        .from("reclutador_empresa")
-        .select(`
-          *,
-          empresas:empresa_id (
-            id,
-            nombre_empresa,
-            suscripcion_empresa (
-              plan,
-              activa
-            )
-          )
-        `)
+      // Obtener créditos disponibles del reclutador
+      const { data: wallet } = await supabase
+        .from("wallet_reclutador")
+        .select("creditos_propios, creditos_heredados")
         .eq("reclutador_id", reclutadorId)
-        .eq("estado", "activa");
+        .maybeSingle();
 
-      if (!asociaciones || asociaciones.length === 0) {
+      const totalCreditos = (wallet?.creditos_propios || 0) + (wallet?.creditos_heredados || 0);
+      setCreditosDisponibles(totalCreditos);
+
+      // Obtener empresa activa (para usar créditos heredados si aplica)
+      const { data: asociacion } = await supabase
+        .from("reclutador_empresa")
+        .select("empresa_id")
+        .eq("reclutador_id", reclutadorId)
+        .eq("estado", "activa")
+        .limit(1)
+        .maybeSingle();
+
+      setEmpresaActiva(asociacion?.empresa_id || null);
+
+      // Nuevo criterio: tiene acceso si tiene al menos 2 créditos
+      if (totalCreditos >= 2) {
+        setHasAccess(true);
+        await loadCandidatos();
+      } else {
         setHasAccess(false);
-        setAccessReason("No tienes asociaciones activas con empresas");
-        setLoading(false);
-        return;
+        setAccessReason("Necesitas al menos 2 créditos para acceder al pool de candidatos");
       }
-
-      // 2. Verificar que al menos una empresa tenga plan premium (enterprise)
-      // suscripcion_empresa es relación 1:1, puede ser objeto o array según Supabase
-      const empresasConPremium = asociaciones.filter((asoc: any) => {
-        const empresa = asoc.empresas;
-        const suscripcion = empresa?.suscripcion_empresa;
-        
-        // Manejar tanto array como objeto
-        if (Array.isArray(suscripcion)) {
-          return suscripcion.some((sub: any) => sub.plan === 'enterprise' && sub.activa);
-        } else if (suscripcion) {
-          return suscripcion.plan === 'enterprise' && suscripcion.activa;
-        }
-        return false;
-      });
-
-      console.log("Asociaciones:", asociaciones);
-      console.log("Empresas con premium:", empresasConPremium);
-
-      if (empresasConPremium.length === 0) {
-        setHasAccess(false);
-        setAccessReason("Las empresas asociadas no tienen plan premium activo");
-        setLoading(false);
-        return;
-      }
-
-      // Obtener IDs de empresas con premium
-      const empresasConPremiumIds = empresasConPremium.map((asoc: any) => asoc.empresa_id);
-
-      // 3. Verificar que tenga vacantes asignadas y abiertas de alguna empresa con premium
-      const { data: vacantes } = await supabase
-        .from("vacantes")
-        .select("*")
-        .eq("reclutador_asignado_id", reclutadorId)
-        .eq("estatus", "abierta")
-        .in("empresa_id", empresasConPremiumIds);
-
-      if (!vacantes || vacantes.length === 0) {
-        setHasAccess(false);
-        setAccessReason("No tienes vacantes asignadas y abiertas de empresas con plan premium");
-        setLoading(false);
-        return;
-      }
-
-      // Si pasa todas las verificaciones, tiene acceso
-      setHasAccess(true);
-      await loadCandidatos();
     } catch (error: any) {
       console.error("Error checking access:", error);
       setHasAccess(false);
@@ -167,11 +127,11 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   useEffect(() => {
     let filtered = [...candidatos];
 
-    // Filtro de búsqueda por nombre o puesto
+    // Filtro de búsqueda por puesto (sin nombre para privacidad)
     if (searchTerm) {
       filtered = filtered.filter(c => 
-        c.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.puesto_actual?.toLowerCase().includes(searchTerm.toLowerCase())
+        c.puesto_actual?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.habilidades_tecnicas?.some(h => h.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -186,7 +146,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
         const experiencias = c.experiencia_laboral;
         if (!Array.isArray(experiencias)) return false;
         
-        const yearsOfExperience = experiencias.length; // Simplificado
+        const yearsOfExperience = experiencias.length;
         
         if (experienciaFilter === "0-2") return yearsOfExperience <= 2;
         if (experienciaFilter === "3-5") return yearsOfExperience >= 3 && yearsOfExperience <= 5;
@@ -230,6 +190,10 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     return map[disp] || disp;
   };
 
+  const handleRefreshCredits = () => {
+    checkAccess();
+  };
+
   if (loading) {
     return (
       <Card>
@@ -262,20 +226,18 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
         </CardHeader>
         <CardContent>
           <Alert>
-            <Lock className="h-4 w-4" />
-            <AlertTitle>Acceso Restringido</AlertTitle>
+            <Coins className="h-4 w-4" />
+            <AlertTitle>Créditos Insuficientes</AlertTitle>
             <AlertDescription>
               <p className="mb-2">{accessReason}</p>
               <p className="text-sm text-muted-foreground">
-                Para acceder al pool de candidatos necesitas:
+                Actualmente tienes <strong>{creditosDisponibles} créditos</strong>.
               </p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-muted-foreground">
-                <li>Tener una asociación activa con una empresa con plan premium</li>
-                <li>Tener al menos una vacante asignada y abierta de esa empresa</li>
+                <li>Navegar el pool de candidatos requiere al menos 2 créditos</li>
+                <li>Desbloquear la identidad de un candidato cuesta 2 créditos</li>
+                <li>Compra créditos desde tu wallet para acceder</li>
               </ul>
-              <p className="text-sm text-muted-foreground mt-3">
-                Actualmente todas las empresas registradas tienen plan premium activo.
-              </p>
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -288,15 +250,32 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-6 w-6" />
-              Pool de Candidatos
-            </CardTitle>
-            <CardDescription>
-              {filteredCandidatos.length} de {candidatos.length} candidatos disponibles
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-6 w-6" />
+                  Pool de Candidatos
+                </CardTitle>
+                <CardDescription>
+                  {filteredCandidatos.length} de {candidatos.length} candidatos disponibles
+                </CardDescription>
+              </div>
+              <Badge variant="outline" className="flex items-center gap-1 px-3 py-1">
+                <Coins className="h-4 w-4" />
+                {creditosDisponibles} créditos
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Info de costos */}
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
+              <Coins className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-800 dark:text-blue-200 text-sm">
+                <strong>Costo de desbloqueo:</strong> Ver los datos de contacto e identidad de un candidato cuesta 2 créditos. 
+                La experiencia, habilidades y perfil profesional están disponibles sin costo.
+              </AlertDescription>
+            </Alert>
+
             {/* Filtros */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -317,7 +296,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre o puesto..."
+                    placeholder="Buscar por puesto o habilidad..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -388,7 +367,11 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 space-y-1">
-                            <h3 className="font-semibold text-lg">{candidato.nombre_completo}</h3>
+                            {/* No mostrar nombre, solo indicador */}
+                            <h3 className="font-semibold text-lg flex items-center gap-2">
+                              <Lock className="h-4 w-4 text-muted-foreground" />
+                              Candidato
+                            </h3>
                             {candidato.puesto_actual && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Briefcase className="h-3 w-3" />
@@ -410,12 +393,6 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                          {candidato.ubicacion && (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {candidato.ubicacion}
-                            </Badge>
-                          )}
                           {candidato.modalidad_preferida && (
                             <Badge variant="secondary" className="capitalize">
                               {candidato.modalidad_preferida}
@@ -444,18 +421,14 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                         )}
 
                         <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                          {(candidato.salario_esperado_min || candidato.salario_esperado_max) && (
-                            <div className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3" />
-                              {formatSalario(candidato.salario_esperado_min, candidato.salario_esperado_max)}
-                            </div>
-                          )}
-                          {candidato.disponibilidad && (
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDisponibilidad(candidato.disponibilidad)}
-                            </div>
-                          )}
+                          <span className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />
+                            {formatSalario(candidato.salario_esperado_min, candidato.salario_esperado_max)}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {formatDisponibilidad(candidato.disponibilidad)}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -467,12 +440,23 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
         </Card>
       </div>
 
+      {/* Modal de perfil con soporte para desbloqueo */}
       {selectedCandidatoUserId && (
         <CandidateProfileViewModal
           open={showProfileModal}
-          onOpenChange={setShowProfileModal}
+          onOpenChange={(open) => {
+            setShowProfileModal(open);
+            if (!open) {
+              setSelectedCandidatoUserId(null);
+              // Refrescar créditos al cerrar
+              handleRefreshCredits();
+            }
+          }}
           candidatoUserId={selectedCandidatoUserId}
           hasFullAccess={false}
+          reclutadorId={reclutadorId}
+          empresaId={empresaActiva}
+          allowUnlock={true}
         />
       )}
     </>
