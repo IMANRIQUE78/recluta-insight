@@ -779,6 +779,42 @@ export type Database = {
           },
         ]
       }
+      lista_espera_lanzamiento: {
+        Row: {
+          confirmado: boolean | null
+          created_at: string
+          email: string
+          fuente: string | null
+          id: string
+          ip_registro: string | null
+          nombre: string
+          perfil_interes: string
+          whatsapp: string | null
+        }
+        Insert: {
+          confirmado?: boolean | null
+          created_at?: string
+          email: string
+          fuente?: string | null
+          id?: string
+          ip_registro?: string | null
+          nombre: string
+          perfil_interes: string
+          whatsapp?: string | null
+        }
+        Update: {
+          confirmado?: boolean | null
+          created_at?: string
+          email?: string
+          fuente?: string | null
+          id?: string
+          ip_registro?: string | null
+          nombre?: string
+          perfil_interes?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       mensajes_postulacion: {
         Row: {
           created_at: string

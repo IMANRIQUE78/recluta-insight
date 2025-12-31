@@ -1,8 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useNavigate } from "react-router-dom";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 import { 
   TrendingUp, 
@@ -28,12 +34,98 @@ import {
   Briefcase,
   Heart,
   Globe,
-  Phone
+  Phone,
+  Gift,
+  Crown,
+  Timer,
+  PartyPopper,
+  Loader2
 } from "lucide-react";
 
 export default function Home() {
   const navigate = useNavigate();
   const scrollDirection = useScrollDirection();
+  
+  // Waiting list state
+  const [waitlistForm, setWaitlistForm] = useState({
+    nombre: "",
+    email: "",
+    whatsapp: "",
+    perfilInteres: ""
+  });
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  
+  // Countdown state
+  const launchDate = new Date("2026-03-29T00:00:00");
+  const [countdown, setCountdown] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  
+  useEffect(() => {
+    const updateCountdown = () => {
+      const now = new Date();
+      const diff = launchDate.getTime() - now.getTime();
+      
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        setCountdown({ days, hours, minutes, seconds });
+      }
+    };
+    
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+  
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!waitlistForm.nombre || !waitlistForm.email || !waitlistForm.perfilInteres) {
+      toast.error("Por favor completa los campos requeridos");
+      return;
+    }
+    
+    setIsSubmittingWaitlist(true);
+    
+    try {
+      const { error } = await supabase
+        .from('lista_espera_lanzamiento')
+        .insert({
+          nombre: waitlistForm.nombre.trim(),
+          email: waitlistForm.email.trim().toLowerCase(),
+          whatsapp: waitlistForm.whatsapp.trim() || null,
+          perfil_interes: waitlistForm.perfilInteres,
+          fuente: 'landing'
+        });
+      
+      if (error) {
+        if (error.code === '23505') { // Unique constraint violation
+          toast.error("Este correo ya está registrado en la lista de espera");
+        } else {
+          throw error;
+        }
+        return;
+      }
+      
+      toast.success("¡Bienvenido a la lista VIP!", {
+        description: "Te avisaremos antes que a nadie con beneficios exclusivos."
+      });
+      
+      setWaitlistForm({ nombre: "", email: "", whatsapp: "", perfilInteres: "" });
+    } catch (error) {
+      console.error("Error registering to waitlist:", error);
+      toast.error("Error al registrarse. Intenta de nuevo.");
+    } finally {
+      setIsSubmittingWaitlist(false);
+    }
+  };
 
   const features = [
     {
@@ -254,6 +346,18 @@ export default function Home() {
         
         <div className="container mx-auto px-4 relative">
           <div className="max-w-4xl mx-auto text-center space-y-8">
+            {/* Prominent Logo */}
+            <div className="flex justify-center mb-6">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-3xl blur-2xl scale-150" />
+                <img 
+                  src={vvgiLogo} 
+                  alt="VVGI Logo" 
+                  className="h-28 w-28 md:h-36 md:w-36 object-contain relative z-10 drop-shadow-2xl" 
+                />
+              </div>
+            </div>
+
             <Badge variant="secondary" className="mb-4 shadow-lg">
               <Sparkles className="h-4 w-4 mr-2" />
               Plataforma de Reclutamiento con IA
@@ -270,9 +374,9 @@ export default function Home() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all">
+              <Button size="lg" onClick={() => document.getElementById('waitlist-section')?.scrollIntoView({ behavior: 'smooth' })} className="text-lg px-8 shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all">
                 <Rocket className="h-5 w-5 mr-2" />
-                Comenzar Ahora — Es Gratis
+                Únete a la Lista VIP
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/marketplace")} className="text-lg px-8">
                 Explorar Vacantes
@@ -292,32 +396,200 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Trusted By Section */}
-      <section className="py-12 border-y bg-muted/20">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-muted-foreground mb-8 text-sm font-medium uppercase tracking-wider">
-            Confían en VVGI empresas de toda Latinoamérica
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60">
-            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
-              <Building2 className="h-6 w-6" />
-              TechMex
+      {/* Waitlist Section - Launch Countdown */}
+      <section id="waitlist-section" className="py-16 border-y bg-gradient-to-br from-primary/5 via-accent/10 to-primary/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,hsl(var(--primary)/0.1),transparent_70%)]" />
+        <div className="container mx-auto px-4 relative">
+          <div className="max-w-5xl mx-auto">
+            {/* VIP Badge */}
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4 shadow-lg bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-600 border-amber-500/30">
+                <Crown className="h-4 w-4 mr-2" />
+                Acceso VIP Exclusivo
+              </Badge>
+              <h3 className="text-3xl md:text-4xl font-bold mb-4">
+                Sé de los <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Primeros en Acceder</span>
+              </h3>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                Regístrate ahora y obtén <span className="font-semibold text-primary">descuentos exclusivos</span> y 
+                <span className="font-semibold text-accent"> beneficios especiales</span> en nuestro lanzamiento oficial.
+              </p>
             </div>
-            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
-              <Building2 className="h-6 w-6" />
-              InnovaGroup
+
+            {/* Countdown Timer */}
+            <div className="flex justify-center gap-4 md:gap-8 mb-10">
+              <div className="text-center">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-xl shadow-primary/30">
+                  <span className="text-3xl md:text-4xl font-bold text-primary-foreground">{countdown.days}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">Días</p>
+              </div>
+              <div className="text-center">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-gradient-to-br from-accent to-accent/80 flex items-center justify-center shadow-xl shadow-accent/30">
+                  <span className="text-3xl md:text-4xl font-bold text-accent-foreground">{countdown.hours}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">Horas</p>
+              </div>
+              <div className="text-center">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-gradient-to-br from-primary/80 to-accent/80 flex items-center justify-center shadow-xl">
+                  <span className="text-3xl md:text-4xl font-bold text-primary-foreground">{countdown.minutes}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">Minutos</p>
+              </div>
+              <div className="text-center">
+                <div className="h-20 w-20 md:h-24 md:w-24 rounded-2xl bg-gradient-to-br from-accent/80 to-primary/80 flex items-center justify-center shadow-xl">
+                  <span className="text-3xl md:text-4xl font-bold text-accent-foreground">{countdown.seconds}</span>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">Segundos</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
-              <Building2 className="h-6 w-6" />
-              GlobalHR
-            </div>
-            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
-              <Building2 className="h-6 w-6" />
-              TalentCo
-            </div>
-            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
-              <Building2 className="h-6 w-6" />
-              RHPro
+
+            <p className="text-center text-muted-foreground mb-8">
+              <Timer className="h-4 w-4 inline-block mr-2" />
+              Lanzamiento oficial: <span className="font-semibold text-foreground">29 de Marzo, 2026</span>
+            </p>
+
+            {/* Registration Form */}
+            <Card className="border-2 border-primary/30 shadow-2xl bg-card/95 backdrop-blur-sm max-w-2xl mx-auto overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary via-accent to-primary" />
+              <CardContent className="pt-8 pb-8 px-6 md:px-8">
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  <Gift className="h-6 w-6 text-primary" />
+                  <h4 className="text-xl font-bold text-center">Únete a la Lista de Espera VIP</h4>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span>Descuentos de lanzamiento</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span>Acceso anticipado exclusivo</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span>Contenido premium gratuito</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary" />
+                    <span>Soporte prioritario</span>
+                  </div>
+                </div>
+
+                <form onSubmit={handleWaitlistSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="waitlist-nombre" className="text-sm font-medium">
+                        Nombre completo <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="waitlist-nombre"
+                        placeholder="Tu nombre"
+                        value={waitlistForm.nombre}
+                        onChange={(e) => setWaitlistForm(prev => ({ ...prev, nombre: e.target.value }))}
+                        required
+                        className="border-2 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="waitlist-email" className="text-sm font-medium">
+                        Correo electrónico <span className="text-destructive">*</span>
+                      </Label>
+                      <Input
+                        id="waitlist-email"
+                        type="email"
+                        placeholder="tu@correo.com"
+                        value={waitlistForm.email}
+                        onChange={(e) => setWaitlistForm(prev => ({ ...prev, email: e.target.value }))}
+                        required
+                        className="border-2 focus:border-primary"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="waitlist-whatsapp" className="text-sm font-medium">
+                        WhatsApp (opcional)
+                      </Label>
+                      <Input
+                        id="waitlist-whatsapp"
+                        type="tel"
+                        placeholder="+52 55 1234 5678"
+                        value={waitlistForm.whatsapp}
+                        onChange={(e) => setWaitlistForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                        className="border-2 focus:border-primary"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="waitlist-perfil" className="text-sm font-medium">
+                        ¿Cuál es tu perfil? <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={waitlistForm.perfilInteres}
+                        onValueChange={(value) => setWaitlistForm(prev => ({ ...prev, perfilInteres: value }))}
+                        required
+                      >
+                        <SelectTrigger className="border-2 focus:border-primary">
+                          <SelectValue placeholder="Selecciona tu perfil" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="empresa">
+                            <div className="flex items-center gap-2">
+                              <Building2 className="h-4 w-4" />
+                              Empresa
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="reclutador">
+                            <div className="flex items-center gap-2">
+                              <UserCheck className="h-4 w-4" />
+                              Reclutador
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="candidato">
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="h-4 w-4" />
+                              Candidato
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    size="lg" 
+                    className="w-full shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all text-lg"
+                    disabled={isSubmittingWaitlist}
+                  >
+                    {isSubmittingWaitlist ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Registrando...
+                      </>
+                    ) : (
+                      <>
+                        <PartyPopper className="h-5 w-5 mr-2" />
+                        ¡Quiero Mi Acceso VIP!
+                      </>
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-xs text-muted-foreground text-center mt-4">
+                  Al registrarte aceptas recibir comunicaciones sobre el lanzamiento. Sin spam, lo prometemos.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Urgency message */}
+            <div className="text-center mt-8">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-primary">+500 personas</span> ya se han registrado. 
+                Los primeros 1,000 recibirán un <span className="font-semibold text-accent">30% de descuento permanente</span>.
+              </p>
             </div>
           </div>
         </div>
