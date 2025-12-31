@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Users, Calendar, AlertTriangle, FileText } from "lucide-react";
+import { Loader2, Lock, Users, Calendar, AlertTriangle, FileText, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -31,6 +31,24 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   const [entrevistasCount, setEntrevistasCount] = useState(0);
   const [publicacionId, setPublicacionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("detalle");
+  const [showChangeWarning, setShowChangeWarning] = useState(false);
+  
+  // Estado inicial para comparar cambios
+  const [initialData, setInitialData] = useState<{
+    folio: string;
+    titulo_puesto: string;
+    sueldo_bruto_aprobado: string;
+    cliente_area_id: string;
+    fecha_solicitud: string;
+    estatus: "abierta" | "cerrada" | "cancelada";
+    reclutador_id: string;
+    lugar_trabajo: "hibrido" | "remoto" | "presencial";
+    motivo: "baja_personal" | "incapacidad" | "crecimiento_negocio" | "nuevo_puesto";
+    a_quien_sustituye: string;
+    perfil_requerido: string;
+    fecha_cierre: string;
+    observaciones: string;
+  } | null>(null);
   
   const [formData, setFormData] = useState<{
     folio: string;
@@ -83,7 +101,7 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         reclutadorId
       });
       
-      setFormData({
+      const loadedData = {
         folio: vacante.folio || "",
         titulo_puesto: vacante.titulo_puesto || "",
         sueldo_bruto_aprobado: vacante.sueldo_bruto_aprobado?.toString() || "",
@@ -97,9 +115,75 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
         perfil_requerido: vacante.perfil_requerido || "",
         fecha_cierre: vacante.fecha_cierre || "",
         observaciones: vacante.observaciones || "",
-      });
+      };
+      
+      setFormData(loadedData);
+      setInitialData(loadedData);
+      setShowChangeWarning(false);
     }
   }, [open, vacante]);
+
+  // Detectar cambios para mostrar warning
+  useEffect(() => {
+    if (initialData) {
+      const hasChanges = 
+        formData.titulo_puesto !== initialData.titulo_puesto ||
+        formData.sueldo_bruto_aprobado !== initialData.sueldo_bruto_aprobado ||
+        formData.cliente_area_id !== initialData.cliente_area_id ||
+        formData.estatus !== initialData.estatus ||
+        formData.reclutador_id !== initialData.reclutador_id ||
+        formData.lugar_trabajo !== initialData.lugar_trabajo ||
+        formData.motivo !== initialData.motivo ||
+        formData.a_quien_sustituye !== initialData.a_quien_sustituye ||
+        formData.perfil_requerido !== initialData.perfil_requerido ||
+        formData.observaciones !== initialData.observaciones;
+      
+      setShowChangeWarning(hasChanges);
+    }
+  }, [formData, initialData]);
+
+  // Obtener lista de cambios para mostrar en el warning
+  const getChangesList = () => {
+    if (!initialData) return [];
+    const changes: string[] = [];
+    
+    if (formData.titulo_puesto !== initialData.titulo_puesto) {
+      changes.push(`Nombre de vacante: "${initialData.titulo_puesto}" → "${formData.titulo_puesto}"`);
+    }
+    if (formData.sueldo_bruto_aprobado !== initialData.sueldo_bruto_aprobado) {
+      changes.push(`Sueldo: $${initialData.sueldo_bruto_aprobado || '0'} → $${formData.sueldo_bruto_aprobado || '0'}`);
+    }
+    if (formData.cliente_area_id !== initialData.cliente_area_id) {
+      const oldCliente = clientes.find(c => c.id === initialData.cliente_area_id);
+      const newCliente = clientes.find(c => c.id === formData.cliente_area_id);
+      changes.push(`Cliente/Área: "${oldCliente?.cliente_nombre || 'Sin asignar'}" → "${newCliente?.cliente_nombre || 'Sin asignar'}"`);
+    }
+    if (formData.estatus !== initialData.estatus) {
+      changes.push(`Estatus: ${initialData.estatus} → ${formData.estatus}`);
+    }
+    if (formData.reclutador_id !== initialData.reclutador_id) {
+      const oldRec = reclutadores.find(r => r.id === initialData.reclutador_id);
+      const newRec = reclutadores.find(r => r.id === formData.reclutador_id);
+      changes.push(`Reclutador: "${oldRec?.nombre || 'Sin asignar'}" → "${newRec?.nombre || 'Sin asignar'}"`);
+    }
+    if (formData.lugar_trabajo !== initialData.lugar_trabajo) {
+      changes.push(`Lugar de trabajo: ${initialData.lugar_trabajo} → ${formData.lugar_trabajo}`);
+    }
+    if (formData.motivo !== initialData.motivo) {
+      changes.push(`Motivo: ${initialData.motivo} → ${formData.motivo}`);
+    }
+    if (formData.a_quien_sustituye !== initialData.a_quien_sustituye) {
+      changes.push(`A quien sustituye: "${initialData.a_quien_sustituye}" → "${formData.a_quien_sustituye}"`);
+    }
+    if (formData.perfil_requerido !== initialData.perfil_requerido) {
+      changes.push("Perfil requerido modificado");
+    }
+    if (formData.observaciones !== initialData.observaciones) {
+      changes.push("Observaciones modificadas");
+    }
+    
+    return changes;
+  };
 
   const loadClientes = async () => {
     const { data, error } = await supabase
@@ -571,8 +655,9 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
             <div className="space-y-2">
               <Label htmlFor="reclutador">Reclutador</Label>
               <Select
-                value={formData.reclutador_id || "sin-asignar"}
-                onValueChange={(value) => setFormData({ ...formData, reclutador_id: value === "sin-asignar" ? "" : value })}
+                key={`reclutador-${formData.reclutador_id}`}
+                value={formData.reclutador_id}
+                onValueChange={(value) => setFormData({ ...formData, reclutador_id: value })}
                 disabled={isLocked}
               >
                 <SelectTrigger>
@@ -685,6 +770,23 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
               disabled={isLocked}
             />
           </div>
+
+              {/* Warning de cambios pendientes */}
+              {showChangeWarning && !isLocked && (
+                <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-300 dark:border-amber-700">
+                  <Info className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800 dark:text-amber-200">
+                    Cambios pendientes por guardar
+                  </AlertTitle>
+                  <AlertDescription className="text-amber-700 dark:text-amber-300">
+                    <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
+                      {getChangesList().map((change, index) => (
+                        <li key={index}>{change}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="flex justify-end items-center gap-3 pt-4 border-t">
                 <Button
