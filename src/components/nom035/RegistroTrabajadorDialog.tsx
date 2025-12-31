@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -19,9 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Calendar, Clock } from "lucide-react";
+import { Loader2, Clock, AlertCircle, Gift, Coins } from "lucide-react";
 import { differenceInMonths, differenceInYears, format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface RegistroTrabajadorDialogProps {
   open: boolean;
@@ -30,6 +30,9 @@ interface RegistroTrabajadorDialogProps {
   onSuccess: () => void;
 }
 
+const FREE_WORKER_LIMIT = 5;
+const CREDIT_COST_PER_WORKER = 2;
+
 export const RegistroTrabajadorDialog = ({
   open,
   onOpenChange,
@@ -37,6 +40,9 @@ export const RegistroTrabajadorDialog = ({
   onSuccess,
 }: RegistroTrabajadorDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [workerCount, setWorkerCount] = useState(0);
+  const [walletCredits, setWalletCredits] = useState(0);
+  const [walletId, setWalletId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     nombre_completo: "",
     email: "",
@@ -48,6 +54,40 @@ export const RegistroTrabajadorDialog = ({
     tipo_jornada: "completa",
     modalidad_contratacion: "indefinido",
   });
+
+  // Cargar conteo de trabajadores y créditos de wallet
+  useEffect(() => {
+    const loadData = async () => {
+      if (!empresaId || !open) return;
+
+      // Contar trabajadores actuales
+      const { count } = await supabase
+        .from("trabajadores_nom035")
+        .select("*", { count: "exact", head: true })
+        .eq("empresa_id", empresaId)
+        .eq("activo", true);
+
+      setWorkerCount(count || 0);
+
+      // Obtener wallet de empresa
+      const { data: wallet } = await supabase
+        .from("wallet_empresa")
+        .select("id, creditos_disponibles")
+        .eq("empresa_id", empresaId)
+        .maybeSingle();
+
+      if (wallet) {
+        setWalletId(wallet.id);
+        setWalletCredits(wallet.creditos_disponibles);
+      }
+    };
+
+    loadData();
+  }, [empresaId, open]);
+
+  const requiresCredits = workerCount >= FREE_WORKER_LIMIT;
+  const hasEnoughCredits = walletCredits >= CREDIT_COST_PER_WORKER;
+  const freeWorkersRemaining = Math.max(0, FREE_WORKER_LIMIT - workerCount);
 
   // Calcular antigüedad automáticamente
   const antiguedadCalculada = useMemo(() => {
@@ -122,13 +162,69 @@ export const RegistroTrabajadorDialog = ({
       return;
     }
 
+    // Verificar créditos si es necesario
+    if (requiresCredits && !hasEnoughCredits) {
+      toast.error("No tienes suficientes créditos para registrar más trabajadores");
+      return;
+    }
+
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuario no autenticado");
+
+      // Si requiere créditos, descontar de la wallet
+      if (requiresCredits && walletId) {
+        // Actualizar wallet
+        const { error: walletError } = await supabase
+          .from("wallet_empresa")
+          .update({ 
+            creditos_disponibles: walletCredits - CREDIT_COST_PER_WORKER,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", walletId);
+
+        if (walletError) throw walletError;
+
+        // Registrar movimiento en auditoría
+        const { error: movimientoError } = await supabase
+          .from("movimientos_creditos")
+          .insert({
+            origen_pago: "empresa",
+            wallet_empresa_id: walletId,
+            empresa_id: empresaId,
+            reclutador_user_id: user.id,
+            tipo_accion: "ajuste_manual",
+            metodo: "sistema",
+            creditos_cantidad: -CREDIT_COST_PER_WORKER,
+            creditos_antes: walletCredits,
+            creditos_despues: walletCredits - CREDIT_COST_PER_WORKER,
+            descripcion: `Registro de trabajador NOM-035: ${formData.nombre_completo.trim()}`,
+            metadata: {
+              modulo: "nom035",
+              accion: "registro_trabajador",
+              trabajador_nombre: formData.nombre_completo.trim(),
+              trabajador_email: formData.email.trim().toLowerCase()
+            }
+          });
+
+        if (movimientoError) {
+          console.error("Error registrando movimiento:", movimientoError);
+          // Revertir cambio en wallet
+          await supabase
+            .from("wallet_empresa")
+            .update({ creditos_disponibles: walletCredits })
+            .eq("id", walletId);
+          throw movimientoError;
+        }
+      }
+
+      // Registrar trabajador
       const { error } = await supabase
         .from("trabajadores_nom035")
         .insert({
           empresa_id: empresaId,
-          codigo_trabajador: "", // Se genera automáticamente por trigger
+          codigo_trabajador: "",
           nombre_completo: formData.nombre_completo.trim(),
           email: formData.email.trim().toLowerCase(),
           telefono: telefonoLimpio,
@@ -143,7 +239,11 @@ export const RegistroTrabajadorDialog = ({
 
       if (error) throw error;
 
-      toast.success("Trabajador registrado exitosamente");
+      const successMessage = requiresCredits 
+        ? `Trabajador registrado exitosamente. Se descontaron ${CREDIT_COST_PER_WORKER} créditos.`
+        : "Trabajador registrado exitosamente";
+      
+      toast.success(successMessage);
       setFormData({
         nombre_completo: "",
         email: "",
@@ -176,6 +276,36 @@ export const RegistroTrabajadorDialog = ({
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Aviso de créditos */}
+          {freeWorkersRemaining > 0 ? (
+            <Alert className="bg-green-50 border-green-200">
+              <Gift className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
+                <strong>¡Registros gratuitos!</strong> Te quedan {freeWorkersRemaining} registro{freeWorkersRemaining !== 1 ? 's' : ''} sin costo.
+                Después del 5° trabajador, cada registro costará {CREDIT_COST_PER_WORKER} créditos.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <Alert className={hasEnoughCredits ? "bg-amber-50 border-amber-200" : "bg-red-50 border-red-200"}>
+              {hasEnoughCredits ? (
+                <Coins className="h-4 w-4 text-amber-600" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-600" />
+              )}
+              <AlertDescription className={hasEnoughCredits ? "text-amber-700" : "text-red-700"}>
+                {hasEnoughCredits ? (
+                  <>
+                    <strong>Costo: {CREDIT_COST_PER_WORKER} créditos</strong> — Tienes {walletCredits} créditos disponibles.
+                  </>
+                ) : (
+                  <>
+                    <strong>Créditos insuficientes.</strong> Necesitas {CREDIT_COST_PER_WORKER} créditos para registrar más trabajadores.
+                    Tienes {walletCredits} créditos. <a href="/wallet-empresa" className="underline font-medium">Comprar créditos</a>
+                  </>
+                )}
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre Completo *</Label>
             <Input
@@ -302,9 +432,9 @@ export const RegistroTrabajadorDialog = ({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading || (requiresCredits && !hasEnoughCredits)}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Registrar Trabajador
+              {requiresCredits ? `Registrar (${CREDIT_COST_PER_WORKER} créditos)` : "Registrar Trabajador"}
             </Button>
           </DialogFooter>
         </form>
