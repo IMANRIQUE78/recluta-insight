@@ -6,31 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Building2, Users, UserCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { z } from "zod";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const authSchema = z.object({
-  email: z.string().email("Correo electrónico inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  email: z.string().trim().email("Correo electrónico inválido").max(255, "El correo no puede exceder 255 caracteres"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").max(72, "La contraseña no puede exceder 72 caracteres"),
 });
-
-type TipoPerfil = "empresa" | "reclutador" | "candidato";
 
 export const AuthForm = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [tipoPerfil, setTipoPerfil] = useState<TipoPerfil>("candidato");
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email: email.trim(), password });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -41,25 +37,21 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
-      // 1. Crear usuario
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
+        email: email.trim(),
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            tipo_perfil: tipoPerfil
-          }
+          emailRedirectTo: redirectUrl,
         },
       });
 
       if (authError) throw authError;
       if (!authData.user) throw new Error("No se pudo crear el usuario");
 
-      // NO creamos roles aquí - OnboardingFlow se encarga de crear el perfil completo
-      // El tipo de perfil se guarda en user metadata para usarlo en onboarding
-
-      toast.success("Cuenta creada exitosamente. Completa tu perfil para continuar.");
+      // Registro exitoso - redirigir a onboarding para seleccionar tipo de perfil
+      toast.success("Cuenta creada exitosamente. Selecciona tu tipo de perfil para continuar.");
       navigate("/onboarding");
     } catch (error: any) {
       if (error.message.includes("User already registered")) {
@@ -76,7 +68,7 @@ export const AuthForm = () => {
     e.preventDefault();
     
     try {
-      authSchema.parse({ email, password });
+      authSchema.parse({ email: email.trim(), password });
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -87,7 +79,7 @@ export const AuthForm = () => {
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 
@@ -139,6 +131,7 @@ export const AuthForm = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    maxLength={255}
                   />
                 </div>
                 <div className="space-y-2">
@@ -150,6 +143,7 @@ export const AuthForm = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    maxLength={72}
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -168,40 +162,6 @@ export const AuthForm = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tipo-perfil">Tipo de Perfil</Label>
-                  <Select value={tipoPerfil} onValueChange={(value) => setTipoPerfil(value as TipoPerfil)}>
-                    <SelectTrigger id="tipo-perfil">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="candidato">
-                        <div className="flex items-center gap-2">
-                          <UserCircle className="h-4 w-4" />
-                          <span>Candidato</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="reclutador">
-                        <div className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          <span>Reclutador</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="empresa">
-                        <div className="flex items-center gap-2">
-                          <Building2 className="h-4 w-4" />
-                          <span>Empresa</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {tipoPerfil === "candidato" && "Busca oportunidades de empleo"}
-                    {tipoPerfil === "reclutador" && "Gestiona procesos de reclutamiento"}
-                    {tipoPerfil === "empresa" && "Publica vacantes y contrata talento"}
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
                   <Label htmlFor="signup-email">Correo Electrónico</Label>
                   <Input
                     id="signup-email"
@@ -210,6 +170,7 @@ export const AuthForm = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    maxLength={255}
                   />
                 </div>
                 <div className="space-y-2">
@@ -221,7 +182,11 @@ export const AuthForm = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    maxLength={72}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Mínimo 6 caracteres
+                  </p>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
@@ -233,6 +198,9 @@ export const AuthForm = () => {
                     "Crear Cuenta"
                   )}
                 </Button>
+                <p className="text-xs text-center text-muted-foreground">
+                  Al registrarte podrás elegir tu tipo de perfil: Candidato, Reclutador, Empresa o Verificador
+                </p>
               </form>
             </TabsContent>
           </Tabs>
