@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useNavigate } from "react-router-dom";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
 import { useState, useEffect } from "react";
+import { TerminosCondicionesModal } from "@/components/legal/TerminosCondicionesModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import vvgiLogo from "@/assets/vvgi-logo.png";
@@ -54,6 +55,7 @@ export default function Home() {
     perfilInteres: ""
   });
   const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const [showTerminosModal, setShowTerminosModal] = useState(false);
   
   // Countdown state
   const launchDate = new Date("2026-03-29T00:00:00");
@@ -1194,12 +1196,22 @@ export default function Home() {
               </p>
               <div className="flex gap-6 text-sm text-muted-foreground">
                 <a href="#" className="hover:text-primary transition-colors">Aviso de Privacidad</a>
-                <a href="#" className="hover:text-primary transition-colors">Términos y Condiciones</a>
+                <button 
+                  onClick={() => setShowTerminosModal(true)}
+                  className="hover:text-primary transition-colors"
+                >
+                  Términos y Condiciones
+                </button>
               </div>
             </div>
           </div>
         </div>
       </footer>
+
+      <TerminosCondicionesModal 
+        open={showTerminosModal} 
+        onOpenChange={setShowTerminosModal} 
+      />
     </div>
   );
 }
