@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useVerificadorStats } from "@/hooks/useVerificadorStats";
 import {
   Dialog,
   DialogContent,
@@ -75,50 +76,8 @@ export function EditarPerfilVerificadorDialog({
     enabled: !!verificadorUserId && open,
   });
 
-  // Fetch estadísticas
-  const { data: estadisticas } = useQuery({
-    queryKey: ["estadisticas-verificador-edit", verificadorUserId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("estadisticas_verificador")
-        .select("*")
-        .eq("user_id", verificadorUserId)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!verificadorUserId && open,
-  });
-
-  // Fetch estudios para conteos
-  const { data: estudios = [] } = useQuery({
-    queryKey: ["estudios-verificador-edit", perfil?.id],
-    queryFn: async () => {
-      if (!perfil?.id) return [];
-      const { data, error } = await supabase
-        .from("estudios_socioeconomicos")
-        .select("id, estatus, fecha_limite, fecha_entrega")
-        .eq("verificador_id", perfil.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!perfil?.id && open,
-  });
-
-  // Fetch calificaciones
-  const { data: calificaciones = [] } = useQuery({
-    queryKey: ["calificaciones-verificador", perfil?.id],
-    queryFn: async () => {
-      if (!perfil?.id) return [];
-      const { data, error } = await supabase
-        .from("calificaciones_estudio")
-        .select("calificacion")
-        .in("estudio_id", estudios.filter(e => e.estatus === "entregado").map(e => e.id));
-      if (error) return [];
-      return data || [];
-    },
-    enabled: !!perfil?.id && estudios.length > 0 && open,
-  });
+  // Use centralized stats hook
+  const { stats } = useVerificadorStats(perfil?.id);
 
   useEffect(() => {
     if (perfil) {
@@ -131,25 +90,6 @@ export function EditarPerfilVerificadorDialog({
       });
     }
   }, [perfil]);
-
-  // Calculate metrics
-  const estudiosCompletados = estudios.filter(e => e.estatus === "entregado").length;
-  const estudiosEnProceso = estudios.filter(e => 
-    ["asignado", "en_proceso", "pendiente_carga"].includes(e.estatus)
-  ).length;
-  
-  const entregasATiempo = estudios.filter(e => {
-    if (e.estatus !== "entregado" || !e.fecha_entrega || !e.fecha_limite) return false;
-    return new Date(e.fecha_entrega) <= new Date(e.fecha_limite);
-  }).length;
-  
-  const porcentajeATiempo = estudiosCompletados > 0 
-    ? Math.round((entregasATiempo / estudiosCompletados) * 100) 
-    : 0;
-
-  const promedioCalificacion = calificaciones.length > 0
-    ? (calificaciones.reduce((acc, c) => acc + c.calificacion, 0) / calificaciones.length).toFixed(1)
-    : "N/A";
 
   const handleAddZona = () => {
     if (newZona.trim() && !formData.zona_cobertura.includes(newZona.trim())) {
@@ -249,29 +189,29 @@ export function EditarPerfilVerificadorDialog({
               <Card>
                 <CardContent className="pt-4 text-center">
                   <FileText className="h-5 w-5 mx-auto text-primary mb-1" />
-                  <p className="text-2xl font-bold">{estudiosCompletados}</p>
+                  <p className="text-2xl font-bold">{stats.estudiosCompletados}</p>
                   <p className="text-xs text-muted-foreground">Estudios Realizados</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4 text-center">
                   <Clock className="h-5 w-5 mx-auto text-amber-500 mb-1" />
-                  <p className="text-2xl font-bold">{estudiosEnProceso}</p>
+                  <p className="text-2xl font-bold">{stats.estudiosEnProceso}</p>
                   <p className="text-xs text-muted-foreground">En Proceso</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4 text-center">
                   <CheckCircle className="h-5 w-5 mx-auto text-green-500 mb-1" />
-                  <p className="text-2xl font-bold">{porcentajeATiempo}%</p>
+                  <p className="text-2xl font-bold">{stats.porcentajeATiempo}%</p>
                   <p className="text-xs text-muted-foreground">Entregas a Tiempo</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-4 text-center">
                   <Star className="h-5 w-5 mx-auto text-yellow-500 mb-1" />
-                  <p className="text-2xl font-bold">{promedioCalificacion}</p>
-                  <p className="text-xs text-muted-foreground">Calificación ({calificaciones.length})</p>
+                  <p className="text-2xl font-bold">{stats.promedioCalificacion > 0 ? stats.promedioCalificacion.toFixed(1) : "N/A"}</p>
+                  <p className="text-xs text-muted-foreground">Calificación ({stats.totalCalificaciones})</p>
                 </CardContent>
               </Card>
             </div>

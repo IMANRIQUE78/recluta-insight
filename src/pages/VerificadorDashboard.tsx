@@ -4,8 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
+import { useVerificadorStats } from "@/hooks/useVerificadorStats";
 import { 
-  ClipboardList, 
+  ClipboardList,
   Clock, 
   CheckCircle, 
   AlertTriangle,
@@ -78,9 +79,12 @@ export default function VerificadorDashboard() {
     enabled: !!user?.id,
   });
 
-  // Fetch estudios asignados
+  // Use centralized stats hook
+  const { stats } = useVerificadorStats(perfilVerificador?.id);
+
+  // Fetch estudios asignados para la lista (con datos adicionales)
   const { data: estudios = [], refetch: refetchEstudios } = useQuery({
-    queryKey: ["estudios-verificador", perfilVerificador?.id],
+    queryKey: ["estudios-verificador-list", perfilVerificador?.id],
     queryFn: async () => {
       if (!perfilVerificador?.id) return [];
       const { data, error } = await supabase
@@ -96,37 +100,6 @@ export default function VerificadorDashboard() {
     },
     enabled: !!perfilVerificador?.id,
   });
-
-  // Fetch estadísticas
-  const { data: estadisticas } = useQuery({
-    queryKey: ["estadisticas-verificador", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from("estadisticas_verificador")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id,
-  });
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const pendientes = estudios.filter(e => e.estatus === "asignado" || e.estatus === "solicitado").length;
-    const enProceso = estudios.filter(e => e.estatus === "en_proceso" || e.estatus === "pendiente_carga").length;
-    const completados30Dias = estudios.filter(e => {
-      if (e.estatus !== "entregado" || !e.fecha_entrega) return false;
-      const fechaEntrega = new Date(e.fecha_entrega);
-      const hace30Dias = new Date();
-      hace30Dias.setDate(hace30Dias.getDate() - 30);
-      return isAfter(fechaEntrega, hace30Dias);
-    }).length;
-    
-    return { pendientes, enProceso, completados30Dias };
-  }, [estudios]);
 
   // Filter and sort estudios
   const estudiosFiltrados = useMemo(() => {
@@ -264,7 +237,7 @@ export default function VerificadorDashboard() {
                   <ClipboardList className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.pendientes}</p>
+                  <p className="text-2xl font-bold">{stats.estudiosPendientes}</p>
                   <p className="text-xs text-muted-foreground">Pendientes</p>
                 </div>
               </div>
@@ -278,7 +251,7 @@ export default function VerificadorDashboard() {
                   <Clock className="h-5 w-5 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{stats.enProceso}</p>
+                  <p className="text-2xl font-bold">{stats.estudiosEnProceso}</p>
                   <p className="text-xs text-muted-foreground">En Proceso</p>
                 </div>
               </div>
@@ -307,7 +280,7 @@ export default function VerificadorDashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-1">
-                    <p className="text-2xl font-bold">{estadisticas?.calificacion_promedio?.toFixed(1) || "0.0"}</p>
+                    <p className="text-2xl font-bold">{stats.promedioCalificacion > 0 ? stats.promedioCalificacion.toFixed(1) : "N/A"}</p>
                     <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                   </div>
                   <p className="text-xs text-muted-foreground">Calificación</p>
@@ -329,15 +302,15 @@ export default function VerificadorDashboard() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Estudios Completados</p>
-                <p className="text-lg font-semibold">{estadisticas?.estudios_completados || 0}</p>
+                <p className="text-lg font-semibold">{stats.estudiosCompletados}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Tiempo Respuesta Prom.</p>
-                <p className="text-lg font-semibold">{estadisticas?.tiempo_respuesta_promedio_horas?.toFixed(1) || 0}h</p>
+                <p className="text-lg font-semibold">{stats.tiempoRespuestaPromedioHoras}h</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Entregados a Tiempo</p>
-                <p className="text-lg font-semibold">{estadisticas?.porcentaje_a_tiempo?.toFixed(0) || 100}%</p>
+                <p className="text-lg font-semibold">{stats.porcentajeATiempo}%</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Calificación Promedio</p>
@@ -346,7 +319,7 @@ export default function VerificadorDashboard() {
                     <Star 
                       key={star} 
                       className={`h-4 w-4 ${
-                        star <= (estadisticas?.calificacion_promedio || 0) 
+                        star <= stats.promedioCalificacion 
                           ? "text-yellow-500 fill-yellow-500" 
                           : "text-gray-300"
                       }`} 
