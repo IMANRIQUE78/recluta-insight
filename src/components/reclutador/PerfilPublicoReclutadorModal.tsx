@@ -17,6 +17,9 @@ import {
   Briefcase,
   Award,
   TrendingUp,
+  Clock,
+  CheckCircle2,
+  Calendar,
 } from "lucide-react";
 
 interface PerfilPublicoReclutadorModalProps {
@@ -27,6 +30,7 @@ interface PerfilPublicoReclutadorModalProps {
 
 interface PerfilData {
   id: string;
+  user_id: string;
   nombre_reclutador: string;
   email: string;
   telefono: string | null;
@@ -39,11 +43,16 @@ interface PerfilData {
   twitter_url: string | null;
   website_url: string | null;
   descripcion_reclutador: string | null;
+  created_at: string;
 }
 
 interface EstadisticasData {
   vacantes_cerradas: number;
   promedio_dias_cierre: number;
+  tasa_conversion: number;
+  calificacion_promedio: number;
+  total_calificaciones: number;
+  total_entrevistas: number;
 }
 
 export function PerfilPublicoReclutadorModal({
@@ -66,6 +75,7 @@ export function PerfilPublicoReclutadorModal({
     try {
       setLoading(true);
 
+      // Cargar perfil del reclutador
       const { data: perfilData, error: perfilError } = await supabase
         .from("perfil_reclutador")
         .select("*")
@@ -73,15 +83,68 @@ export function PerfilPublicoReclutadorModal({
         .single();
 
       if (perfilError) throw perfilError;
-
-      const { data: statsData } = await supabase
-        .from("estadisticas_reclutador")
-        .select("vacantes_cerradas, promedio_dias_cierre")
-        .eq("id", reclutadorId)
-        .single();
-
       setPerfil(perfilData);
-      setEstadisticas(statsData);
+
+      // Calcular estadísticas en tiempo real desde la base de datos
+      const [vacantesResult, entrevistasResult, feedbackResult] = await Promise.all([
+        supabase
+          .from("vacantes")
+          .select("id, estatus, fecha_solicitud, fecha_cierre")
+          .eq("reclutador_asignado_id", reclutadorId),
+        supabase
+          .from("entrevistas_candidato")
+          .select("id, asistio")
+          .eq("reclutador_user_id", perfilData.user_id),
+        supabase
+          .from("feedback_candidato")
+          .select("puntuacion")
+          .eq("reclutador_user_id", perfilData.user_id)
+          .not("puntuacion", "is", null)
+      ]);
+
+      const vacantes = vacantesResult.data || [];
+      const entrevistas = entrevistasResult.data || [];
+      const feedbacks = feedbackResult.data || [];
+
+      // Calcular estadísticas
+      const cerradas = vacantes.filter(v => v.estatus === "cerrada");
+      const totalEntrevistas = entrevistas.length;
+
+      // Promedio días de cierre
+      let promedioDias = 0;
+      if (cerradas.length > 0) {
+        const totalDias = cerradas.reduce((sum, v) => {
+          if (v.fecha_cierre && v.fecha_solicitud) {
+            const dias = Math.floor(
+              (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
+            );
+            return sum + Math.max(0, dias);
+          }
+          return sum;
+        }, 0);
+        promedioDias = Math.round(totalDias / cerradas.length);
+      }
+
+      // Tasa de conversión
+      const tasaConversion = totalEntrevistas > 0 
+        ? Math.round((cerradas.length / totalEntrevistas) * 100)
+        : 0;
+
+      // Calificación promedio
+      const totalCalificaciones = feedbacks.length;
+      const calificacionPromedio = totalCalificaciones > 0
+        ? Math.round((feedbacks.reduce((sum, f) => sum + (f.puntuacion || 0), 0) / totalCalificaciones) * 10) / 10
+        : 0;
+
+      setEstadisticas({
+        vacantes_cerradas: cerradas.length,
+        promedio_dias_cierre: promedioDias,
+        tasa_conversion: tasaConversion,
+        calificacion_promedio: calificacionPromedio,
+        total_calificaciones: totalCalificaciones,
+        total_entrevistas: totalEntrevistas,
+      });
+
     } catch (error) {
       console.error("Error cargando perfil público:", error);
       toast({
@@ -111,6 +174,13 @@ export function PerfilPublicoReclutadorModal({
       .join("")
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('es-MX', {
+      year: 'numeric',
+      month: 'long'
+    });
   };
 
   if (loading) {
@@ -147,41 +217,92 @@ export function PerfilPublicoReclutadorModal({
         <div className="pt-20 px-8 pb-8 space-y-6">
           {/* Nombre y tipo */}
           <div className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <h2 className="text-3xl font-bold">{perfil.nombre_reclutador}</h2>
               <Badge variant="secondary" className="text-sm">
                 {getTipoLabel(perfil.tipo_reclutador)}
               </Badge>
             </div>
-            {perfil.anos_experiencia > 0 && (
-              <p className="text-muted-foreground flex items-center gap-2">
-                <Briefcase className="h-4 w-4" />
-                {perfil.anos_experiencia} {perfil.anos_experiencia === 1 ? "año" : "años"} de
-                experiencia
-              </p>
-            )}
+            <div className="flex flex-wrap gap-4 text-muted-foreground text-sm">
+              {perfil.anos_experiencia > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <Briefcase className="h-4 w-4" />
+                  {perfil.anos_experiencia} {perfil.anos_experiencia === 1 ? "año" : "años"} de experiencia
+                </span>
+              )}
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                En la plataforma desde {formatDate(perfil.created_at)}
+              </span>
+            </div>
           </div>
 
-          {/* Estadísticas rápidas */}
-          {estadisticas && (estadisticas.vacantes_cerradas > 0 || estadisticas.promedio_dias_cierre > 0) && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-secondary/50 rounded-lg p-4 border border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Award className="h-4 w-4" />
-                  Vacantes Cerradas
+          {/* Indicadores de Rendimiento - Cards con mismo diseño */}
+          {estadisticas && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Indicadores de Rendimiento
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-md bg-primary/10">
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Vacantes Cerradas</span>
+                    </div>
+                    <p className="text-2xl font-bold">{estadisticas.vacantes_cerradas}</p>
+                  </div>
+                  
+                  <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-md bg-primary/10">
+                        <Clock className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Promedio Cierre</span>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {estadisticas.promedio_dias_cierre}
+                      <span className="text-sm ml-1 text-muted-foreground font-normal">días</span>
+                    </p>
+                  </div>
+                  
+                  <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-md bg-primary/10">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Conversión</span>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {estadisticas.tasa_conversion}
+                      <span className="text-sm ml-1 text-muted-foreground font-normal">%</span>
+                    </p>
+                  </div>
+                  
+                  <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-md bg-primary/10">
+                        <Star className="h-4 w-4 text-primary" />
+                      </div>
+                      <span className="text-xs text-muted-foreground uppercase tracking-wide">Calificación</span>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {estadisticas.calificacion_promedio}
+                      <span className="text-sm ml-1 text-muted-foreground font-normal">★</span>
+                    </p>
+                    {estadisticas.total_calificaciones > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        ({estadisticas.total_calificaciones} calificaciones)
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <p className="text-2xl font-bold">{estadisticas.vacantes_cerradas}</p>
               </div>
-              <div className="bg-secondary/50 rounded-lg p-4 border border-border">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <TrendingUp className="h-4 w-4" />
-                  Promedio de Cierre
-                </div>
-                <p className="text-2xl font-bold">
-                  {estadisticas.promedio_dias_cierre.toFixed(0)} días
-                </p>
-              </div>
-            </div>
+            </>
           )}
 
           <Separator />
@@ -268,7 +389,7 @@ export function PerfilPublicoReclutadorModal({
               <Separator />
               <div className="space-y-3">
                 <h3 className="font-semibold flex items-center gap-2">
-                  <Star className="h-5 w-5 text-primary" />
+                  <Award className="h-5 w-5 text-primary" />
                   Especialidades
                 </h3>
                 <div className="flex flex-wrap gap-2">

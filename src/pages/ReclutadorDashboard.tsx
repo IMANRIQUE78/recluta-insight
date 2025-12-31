@@ -511,7 +511,46 @@ const ReclutadorDashboard = () => {
             )}
 
             {/* ══════════════════════════════════════════════════════════════════
-                ZONA 2: TRABAJO PRINCIPAL - El corazón del workflow diario
+                ZONA 2: INDICADORES CLAVE - KPI Cards con diseño empresa
+            ══════════════════════════════════════════════════════════════════ */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-1 bg-primary rounded-full" />
+                <h2 className="text-lg font-bold">Mis Indicadores</h2>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <KPICard
+                  title="Vacantes Cerradas"
+                  value={stats.vacantesCerradas}
+                  icon={<CheckCircle2 className="h-4 w-4" />}
+                  onDoubleClick={() => handleKPIClick("Vacantes Cerradas")}
+                />
+                <KPICard
+                  title="Promedio Días Cierre"
+                  value={stats.promedioDiasCierre}
+                  unit="días"
+                  icon={<Clock className="h-4 w-4" />}
+                  onDoubleClick={() => handleKPIClick("Promedio Cierre")}
+                />
+                <KPICard
+                  title="Tasa de Conversión"
+                  value={stats.porcentajeExito}
+                  unit="%"
+                  icon={<TrendingUp className="h-4 w-4" />}
+                  onDoubleClick={() => handleKPIClick("Entrevistas / Cierre")}
+                />
+                <KPICard
+                  title="Calificación Promedio"
+                  value={stats.calificacionPromedio}
+                  unit="★"
+                  icon={<Star className="h-4 w-4" />}
+                  onDoubleClick={() => handleKPIClick("Calificación")}
+                />
+              </div>
+            </section>
+
+            {/* ══════════════════════════════════════════════════════════════════
+                ZONA 3: TRABAJO PRINCIPAL - El corazón del workflow diario
             ══════════════════════════════════════════════════════════════════ */}
             
             {/* Layout de 2 columnas en desktop para trabajo principal */}
