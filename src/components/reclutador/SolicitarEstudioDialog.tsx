@@ -24,8 +24,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, addDays } from "date-fns";
 import { es } from "date-fns/locale";
-import { CalendarIcon, FileSearch, User, Briefcase, MapPin, Building, Loader2 } from "lucide-react";
+import { CalendarIcon, FileSearch, User, Briefcase, MapPin, Building, Loader2, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VerificadorProfileModal } from "@/components/verificador/VerificadorProfileModal";
 
 interface SolicitarEstudioDialogProps {
   open: boolean;
@@ -48,6 +49,8 @@ export function SolicitarEstudioDialog({
   const [direccionVisita, setDireccionVisita] = useState("");
   const [fechaLimite, setFechaLimite] = useState<Date>(addDays(new Date(), 7));
   const [observaciones, setObservaciones] = useState("");
+  const [verificadorProfileOpen, setVerificadorProfileOpen] = useState(false);
+  const [selectedVerificadorId, setSelectedVerificadorId] = useState<string | null>(null);
 
   // Fetch vacantes asignadas al reclutador
   const { data: vacantes = [] } = useQuery({
@@ -325,24 +328,40 @@ export function SolicitarEstudioDialog({
 
           <div className="space-y-2">
             <Label>Verificador (opcional)</Label>
-            <Select value={selectedVerificador} onValueChange={setSelectedVerificador}>
-              <SelectTrigger>
-                <SelectValue placeholder="Asignar verificador ahora o después" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sin_asignar">Sin asignar por ahora</SelectItem>
-                {verificadores.map((v: any) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.nombre_verificador}
-                    {v.zona_cobertura?.length > 0 && (
-                      <span className="text-muted-foreground ml-1">
-                        ({v.zona_cobertura.slice(0, 2).join(", ")})
-                      </span>
-                    )}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={selectedVerificador} onValueChange={setSelectedVerificador}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Asignar verificador ahora o después" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sin_asignar">Sin asignar por ahora</SelectItem>
+                  {verificadores.map((v: any) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.nombre_verificador}
+                      {v.zona_cobertura?.length > 0 && (
+                        <span className="text-muted-foreground ml-1">
+                          ({v.zona_cobertura.slice(0, 2).join(", ")})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVerificador && selectedVerificador !== "sin_asignar" && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSelectedVerificadorId(selectedVerificador);
+                    setVerificadorProfileOpen(true);
+                  }}
+                  title="Ver perfil del verificador"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Observaciones */}
@@ -366,6 +385,15 @@ export function SolicitarEstudioDialog({
             Solicitar Estudio
           </Button>
         </div>
+
+        {/* Modal de perfil del verificador */}
+        {selectedVerificadorId && (
+          <VerificadorProfileModal
+            open={verificadorProfileOpen}
+            onOpenChange={setVerificadorProfileOpen}
+            verificadorId={selectedVerificadorId}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
