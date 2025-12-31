@@ -17,11 +17,18 @@ import {
   Award,
   Mail,
   Linkedin,
-  Twitter,
   Facebook,
-  Instagram,
+  Youtube,
   Check,
-  Zap
+  Zap,
+  Shield,
+  Clock,
+  Building2,
+  UserCheck,
+  Briefcase,
+  Heart,
+  Globe,
+  Phone
 } from "lucide-react";
 
 export default function Home() {
@@ -64,7 +71,7 @@ export default function Home() {
   const benefits = [
     {
       metric: "70%",
-      label: "Reducción en tiempo con IA"
+      label: "Reducción en tiempo de contratación"
     },
     {
       metric: "5x",
@@ -98,10 +105,55 @@ export default function Home() {
     }
   ];
 
+  const whyVVGI = [
+    {
+      icon: <Shield className="h-8 w-8" />,
+      title: "Seguridad Empresarial",
+      description: "Datos encriptados, cumplimiento normativo y protección de información sensible bajo estándares internacionales."
+    },
+    {
+      icon: <Clock className="h-8 w-8" />,
+      title: "Soporte Experto",
+      description: "Equipo especializado en reclutamiento disponible para asesorarte en cada paso del proceso."
+    },
+    {
+      icon: <Globe className="h-8 w-8" />,
+      title: "Cobertura LATAM",
+      description: "Plataforma diseñada para el mercado latinoamericano con entendimiento de regulaciones locales."
+    },
+    {
+      icon: <Building2 className="h-8 w-8" />,
+      title: "Flexibilidad Total",
+      description: "Adaptable a empresas de cualquier tamaño: desde startups hasta grandes corporativos."
+    }
+  ];
+
+  const testimonials = [
+    {
+      quote: "VVGI redujo nuestro tiempo de contratación de 45 a 15 días. La IA realmente hace la diferencia.",
+      author: "María González",
+      role: "Directora de RRHH",
+      company: "TechMex Solutions"
+    },
+    {
+      quote: "Como reclutador freelance, VVGI me permite trabajar con múltiples empresas sin perder mi historial profesional.",
+      author: "Carlos Mendoza",
+      role: "Reclutador Senior",
+      company: "Independiente"
+    },
+    {
+      quote: "El marketplace nos conectó con candidatos de alta calidad que no encontrábamos en otras plataformas.",
+      author: "Ana Martínez",
+      role: "CEO",
+      company: "InnovaGroup"
+    }
+  ];
+
   const pricingPlans = [
     {
       name: "Básico",
       price: "49",
+      currency: "USD",
       period: "mes",
       description: "Perfecto para empresas pequeñas que inician",
       popular: false,
@@ -117,6 +169,7 @@ export default function Home() {
     {
       name: "Profesional",
       price: "149",
+      currency: "USD",
       period: "mes",
       description: "Ideal para empresas en crecimiento",
       popular: true,
@@ -134,7 +187,8 @@ export default function Home() {
     },
     {
       name: "Enterprise",
-      price: "Custom",
+      price: "Personalizado",
+      currency: "",
       period: "",
       description: "Solución completa para grandes corporativos",
       popular: false,
@@ -159,22 +213,25 @@ export default function Home() {
         scrollDirection === "down" ? "-translate-y-full" : "translate-y-0"
       }`}>
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <img src={vvgiLogo} alt="VVGI Logo" className="h-12 w-12 object-contain" />
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">VVGI</h1>
-              <p className="text-xs text-muted-foreground">Powered by AI</p>
+              <p className="text-xs text-muted-foreground">Reclutamiento Inteligente</p>
             </div>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <a href="#features" className="text-sm font-medium hover:text-primary transition-colors">
-              Características
+            <a href="#soluciones" className="text-sm font-medium hover:text-primary transition-colors">
+              Soluciones
             </a>
-            <a href="#ai" className="text-sm font-medium hover:text-primary transition-colors">
-              Inteligencia Artificial
+            <a href="#porque-vvgi" className="text-sm font-medium hover:text-primary transition-colors">
+              ¿Por Qué VVGI?
             </a>
-            <a href="#pricing" className="text-sm font-medium hover:text-primary transition-colors">
+            <a href="#precios" className="text-sm font-medium hover:text-primary transition-colors">
               Precios
+            </a>
+            <a href="#contacto" className="text-sm font-medium hover:text-primary transition-colors">
+              Contacto
             </a>
           </nav>
           <div className="flex items-center gap-3">
@@ -182,7 +239,7 @@ export default function Home() {
               Iniciar Sesión
             </Button>
             <Button onClick={() => navigate("/auth")} className="shadow-lg shadow-primary/30">
-              Comenzar Gratis
+              Registrarse Gratis
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </div>
@@ -199,32 +256,33 @@ export default function Home() {
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <Badge variant="secondary" className="mb-4 shadow-lg">
               <Sparkles className="h-4 w-4 mr-2" />
-              Impulsado por Inteligencia Artificial
+              Plataforma de Reclutamiento con IA
             </Badge>
             
             <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold leading-tight">
-              La <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">Inteligencia Artificial</span> que Transforma el Reclutamiento
+              Conectamos <span className="bg-gradient-to-r from-primary via-primary/80 to-accent bg-clip-text text-transparent">Talento</span> con <span className="bg-gradient-to-r from-accent via-accent/80 to-primary bg-clip-text text-transparent">Oportunidades</span>
             </h2>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              VVGI conecta a empresas, reclutadores y candidatos con tecnología de IA de última generación. 
-              Optimiza cada paso del proceso, reduce costos y encuentra el talento perfecto en tiempo récord.
+              VVGI es la plataforma líder en Latinoamérica que conecta empresas, reclutadores y candidatos 
+              con inteligencia artificial de última generación. Optimiza tu proceso de contratación y encuentra 
+              el talento ideal en tiempo récord.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
               <Button size="lg" onClick={() => navigate("/auth")} className="text-lg px-8 shadow-xl shadow-primary/40 hover:shadow-2xl hover:shadow-primary/50 transition-all">
                 <Rocket className="h-5 w-5 mr-2" />
-                Comenzar Ahora
+                Comenzar Ahora — Es Gratis
               </Button>
               <Button size="lg" variant="outline" onClick={() => navigate("/marketplace")} className="text-lg px-8">
-                Explorar Marketplace
+                Explorar Vacantes
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-12">
               {benefits.map((benefit, index) => (
-                <div key={index} className="text-center">
+                <div key={index} className="text-center p-4 rounded-xl bg-card/50 backdrop-blur-sm border">
                   <div className="text-3xl md:text-4xl font-bold text-primary mb-2">{benefit.metric}</div>
                   <div className="text-sm text-muted-foreground">{benefit.label}</div>
                 </div>
@@ -234,8 +292,170 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Trusted By Section */}
+      <section className="py-12 border-y bg-muted/20">
+        <div className="container mx-auto px-4">
+          <p className="text-center text-muted-foreground mb-8 text-sm font-medium uppercase tracking-wider">
+            Confían en VVGI empresas de toda Latinoamérica
+          </p>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 opacity-60">
+            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
+              <Building2 className="h-6 w-6" />
+              TechMex
+            </div>
+            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
+              <Building2 className="h-6 w-6" />
+              InnovaGroup
+            </div>
+            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
+              <Building2 className="h-6 w-6" />
+              GlobalHR
+            </div>
+            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
+              <Building2 className="h-6 w-6" />
+              TalentCo
+            </div>
+            <div className="flex items-center gap-2 text-xl font-bold text-muted-foreground">
+              <Building2 className="h-6 w-6" />
+              RHPro
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Solutions Section */}
+      <section id="soluciones" className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">
+              <Users className="h-4 w-4 mr-2" />
+              Soluciones
+            </Badge>
+            <h3 className="text-3xl md:text-4xl font-bold mb-4">
+              Una Plataforma, Tres Beneficiarios
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              VVGI ofrece herramientas especializadas para cada actor del proceso de reclutamiento.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {/* For Companies */}
+            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-2xl group relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50" />
+              <CardContent className="pt-8 pb-6 space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <Building2 className="h-8 w-8" />
+                </div>
+                <h4 className="text-2xl font-bold">Para Empresas</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Gestiona tu proceso de reclutamiento de principio a fin con herramientas potenciadas por IA.
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Dashboard de KPIs en tiempo real
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Publicación en Marketplace
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Gestión de reclutadores
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Análisis predictivo de demanda
+                  </li>
+                </ul>
+                <Button className="w-full mt-4" onClick={() => navigate("/auth")}>
+                  Registrar mi Empresa
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* For Recruiters */}
+            <Card className="border-2 border-accent/50 hover:border-accent transition-all hover:shadow-2xl group relative overflow-hidden scale-105">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-accent/50" />
+              <div className="absolute top-4 right-4">
+                <Badge className="bg-accent text-accent-foreground">Popular</Badge>
+              </div>
+              <CardContent className="pt-8 pb-6 space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center text-accent group-hover:scale-110 transition-transform">
+                  <UserCheck className="h-8 w-8" />
+                </div>
+                <h4 className="text-2xl font-bold">Para Reclutadores</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Tu perfil profesional es tuyo para siempre. Construye tu reputación y trabaja con múltiples empresas.
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-accent" />
+                    Perfil 100% gratuito
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-accent" />
+                    Indicadores portables
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-accent" />
+                    Ranking profesional
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-accent" />
+                    Acceso a pool de candidatos
+                  </li>
+                </ul>
+                <Button className="w-full mt-4 bg-accent hover:bg-accent/90" onClick={() => navigate("/auth")}>
+                  Crear Mi Perfil Gratis
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* For Candidates */}
+            <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-2xl group relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-primary" />
+              <CardContent className="pt-8 pb-6 space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <Briefcase className="h-8 w-8" />
+                </div>
+                <h4 className="text-2xl font-bold">Para Candidatos</h4>
+                <p className="text-muted-foreground leading-relaxed">
+                  Encuentra tu próxima oportunidad laboral con recomendaciones personalizadas por IA.
+                </p>
+                <ul className="space-y-2">
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Perfil profesional gratuito
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Matching inteligente
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Seguimiento de postulaciones
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Feedback de entrevistas
+                  </li>
+                </ul>
+                <Button variant="outline" className="w-full mt-4" onClick={() => navigate("/marketplace")}>
+                  Explorar Vacantes
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
       {/* AI Features Section */}
-      <section id="ai" className="py-20 bg-muted/30">
+      <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">
@@ -274,8 +494,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-20">
+      {/* Features Grid Section */}
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">
@@ -286,7 +506,7 @@ export default function Home() {
               Todo lo que Necesitas en Una Plataforma
             </h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Desde reclutadores hasta empresas y candidatos, VVGI ofrece herramientas especializadas para cada rol.
+              Herramientas completas para gestionar todo el ciclo de reclutamiento.
             </p>
           </div>
 
@@ -299,6 +519,73 @@ export default function Home() {
                   </div>
                   <h4 className="text-xl font-semibold">{feature.title}</h4>
                   <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why VVGI Section */}
+      <section id="porque-vvgi" className="py-20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">
+              <Award className="h-4 w-4 mr-2" />
+              ¿Por Qué VVGI?
+            </Badge>
+            <h3 className="text-3xl md:text-4xl font-bold mb-4">
+              La Diferencia que Nos Define
+            </h3>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Más que una plataforma, somos tu socio estratégico en la búsqueda del mejor talento.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {whyVVGI.map((item, index) => (
+              <Card key={index} className="text-center border-2 hover:border-primary/30 transition-all hover:shadow-xl group">
+                <CardContent className="pt-8 pb-6 space-y-4">
+                  <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto group-hover:scale-110 transition-transform text-primary">
+                    {item.icon}
+                  </div>
+                  <h4 className="text-xl font-bold">{item.title}</h4>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.description}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <Badge variant="secondary" className="mb-4">
+              <Star className="h-4 w-4 mr-2" />
+              Testimonios
+            </Badge>
+            <h3 className="text-3xl md:text-4xl font-bold mb-4">
+              Lo que Dicen Nuestros Usuarios
+            </h3>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {testimonials.map((testimonial, index) => (
+              <Card key={index} className="border-2 hover:shadow-xl transition-all">
+                <CardContent className="pt-6 pb-6 space-y-4">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground italic leading-relaxed">"{testimonial.quote}"</p>
+                  <div className="pt-4 border-t">
+                    <p className="font-semibold">{testimonial.author}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                    <p className="text-sm text-primary">{testimonial.company}</p>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -390,7 +677,7 @@ export default function Home() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-muted/30">
+      <section id="precios" className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">
@@ -398,10 +685,10 @@ export default function Home() {
               Planes y Precios
             </Badge>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
-              Elige el Plan Perfecto para tu Negocio
+              Inversión que Se Paga Sola
             </h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Precios transparentes y flexibles que crecen con tu empresa. Sin sorpresas.
+              Precios transparentes y flexibles que crecen con tu empresa. Sin sorpresas ni costos ocultos.
             </p>
           </div>
 
@@ -425,13 +712,13 @@ export default function Home() {
                     <h4 className="text-2xl font-bold mb-2">{plan.name}</h4>
                     <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                     <div className="flex items-baseline gap-1">
-                      {plan.price !== "Custom" ? (
+                      {plan.price !== "Personalizado" ? (
                         <>
                           <span className="text-4xl font-bold text-primary">${plan.price}</span>
-                          <span className="text-muted-foreground">/ {plan.period}</span>
+                          <span className="text-muted-foreground">{plan.currency} / {plan.period}</span>
                         </>
                       ) : (
-                        <span className="text-4xl font-bold text-primary">Contactar</span>
+                        <span className="text-3xl font-bold text-primary">Contactar Ventas</span>
                       )}
                     </div>
                   </div>
@@ -442,7 +729,7 @@ export default function Home() {
                     size="lg"
                     onClick={() => navigate("/auth")}
                   >
-                    {plan.price !== "Custom" ? "Comenzar Ahora" : "Contactar Ventas"}
+                    {plan.price !== "Personalizado" ? "Comenzar Ahora" : "Agendar Demo"}
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
 
@@ -461,7 +748,9 @@ export default function Home() {
 
           <div className="text-center mt-12">
             <p className="text-sm text-muted-foreground">
-              Todos los planes incluyen acceso al Marketplace y actualizaciones gratuitas
+              Todos los planes incluyen acceso al Marketplace, actualizaciones gratuitas y soporte técnico.
+              <br />
+              ¿Necesitas un plan personalizado? <a href="mailto:admin@vvgi.com.mx" className="text-primary hover:underline">Contáctanos</a>
             </p>
           </div>
         </div>
@@ -475,10 +764,10 @@ export default function Home() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent_50%)]" />
             <CardContent className="pt-16 pb-16 text-center relative">
               <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">
-                ¿Listo para Revolucionar tu Reclutamiento?
+                ¿Listo para Transformar tu Reclutamiento?
               </h2>
               <p className="text-xl mb-10 opacity-95 max-w-2xl mx-auto leading-relaxed">
-                Únete a cientos de empresas que ya optimizan sus procesos con nuestra plataforma impulsada por IA
+                Únete a cientos de empresas en Latinoamérica que ya optimizan sus procesos con nuestra plataforma impulsada por IA
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
@@ -487,7 +776,7 @@ export default function Home() {
                   onClick={() => navigate("/auth")}
                   className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
                 >
-                  Comenzar Ahora
+                  Comenzar Ahora — Es Gratis
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
                 <Button 
@@ -496,7 +785,7 @@ export default function Home() {
                   onClick={() => navigate("/marketplace")}
                   className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
                 >
-                  Ver Demo
+                  Ver Demo del Marketplace
                 </Button>
               </div>
             </CardContent>
@@ -504,8 +793,45 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Contact Section */}
+      <section id="contacto" className="py-20 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge variant="secondary" className="mb-4">
+              <Mail className="h-4 w-4 mr-2" />
+              Contacto
+            </Badge>
+            <h3 className="text-3xl md:text-4xl font-bold mb-4">
+              ¿Tienes Preguntas? Estamos para Ayudarte
+            </h3>
+            <p className="text-lg text-muted-foreground mb-8">
+              Nuestro equipo está listo para asesorarte y resolver todas tus dudas.
+            </p>
+            
+            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <Card className="border-2 hover:border-primary/50 transition-all">
+                <CardContent className="pt-6 pb-6 text-center">
+                  <Mail className="h-8 w-8 text-primary mx-auto mb-4" />
+                  <h4 className="font-semibold mb-2">Email</h4>
+                  <a href="mailto:admin@vvgi.com.mx" className="text-primary hover:underline">
+                    admin@vvgi.com.mx
+                  </a>
+                </CardContent>
+              </Card>
+              <Card className="border-2 hover:border-primary/50 transition-all">
+                <CardContent className="pt-6 pb-6 text-center">
+                  <Phone className="h-8 w-8 text-primary mx-auto mb-4" />
+                  <h4 className="font-semibold mb-2">Teléfono</h4>
+                  <p className="text-muted-foreground">Próximamente</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t bg-muted/30 py-12">
+      <footer className="border-t bg-background py-12">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="space-y-4">
@@ -513,31 +839,31 @@ export default function Home() {
                 <img src={vvgiLogo} alt="VVGI Logo" className="h-10 w-10 object-contain" />
                 <div>
                   <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">VVGI</h3>
-                  <p className="text-xs text-muted-foreground">Powered by AI</p>
+                  <p className="text-xs text-muted-foreground">Reclutamiento Inteligente</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                Transformamos el reclutamiento con inteligencia artificial
+                Transformamos el reclutamiento en Latinoamérica con inteligencia artificial de última generación.
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Producto</h4>
+              <h4 className="font-semibold mb-4">Plataforma</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-primary transition-colors">Características</a></li>
-                <li><a href="#ai" className="hover:text-primary transition-colors">Inteligencia Artificial</a></li>
-                <li><a href="#benefits" className="hover:text-primary transition-colors">Beneficios</a></li>
+                <li><a href="#soluciones" className="hover:text-primary transition-colors">Soluciones</a></li>
+                <li><a href="#porque-vvgi" className="hover:text-primary transition-colors">¿Por Qué VVGI?</a></li>
+                <li><a href="#precios" className="hover:text-primary transition-colors">Precios</a></li>
                 <li><a href="/marketplace" className="hover:text-primary transition-colors">Marketplace</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Empresa</h4>
+              <h4 className="font-semibold mb-4">Recursos</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-primary transition-colors">Sobre Nosotros</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">Centro de Ayuda</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-primary transition-colors">Casos de Éxito</a></li>
-                <li><a href="#" className="hover:text-primary transition-colors">Contacto</a></li>
+                <li><a href="#" className="hover:text-primary transition-colors">API Docs</a></li>
               </ul>
             </div>
             
@@ -549,31 +875,55 @@ export default function Home() {
                   admin@vvgi.com.mx
                 </a>
                 <div className="flex gap-3 pt-2">
-                  <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Linkedin className="h-4 w-4 text-primary" />
+                  <a 
+                    href="https://www.linkedin.com/company/vvgi" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-10 w-10 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors group"
+                    title="LinkedIn"
+                  >
+                    <Linkedin className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
                   </a>
-                  <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Twitter className="h-4 w-4 text-primary" />
+                  <a 
+                    href="https://www.facebook.com/vvgioficial" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-10 w-10 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors group"
+                    title="Facebook"
+                  >
+                    <Facebook className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
                   </a>
-                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Facebook className="h-4 w-4 text-primary" />
-                  </a>
-                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors">
-                    <Instagram className="h-4 w-4 text-primary" />
+                  <a 
+                    href="https://www.youtube.com/@VVGIReclutamiento" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="h-10 w-10 rounded-lg bg-primary/10 hover:bg-primary/20 flex items-center justify-center transition-colors group"
+                    title="YouTube"
+                  >
+                    <Youtube className="h-5 w-5 text-primary group-hover:scale-110 transition-transform" />
                   </a>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              © 2025 VVGI. Todos los derechos reservados.
-            </p>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary transition-colors">Privacidad</a>
-              <a href="#" className="hover:text-primary transition-colors">Términos</a>
-              <a href="#" className="hover:text-primary transition-colors">Cookies</a>
+          <div className="border-t pt-8">
+            {/* Main Footer Message */}
+            <div className="text-center mb-6">
+              <p className="text-base text-muted-foreground">
+                Hecho en México con <Heart className="h-4 w-4 inline-block text-red-500 fill-red-500 mx-1" /> para toda Latinoamérica
+              </p>
+            </div>
+            
+            {/* Copyright and Links */}
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+              <p className="text-sm text-muted-foreground">
+                © 2025 VVGI. Todos los derechos reservados. Un proyecto de <span className="font-semibold text-foreground">Israel Manrique</span>
+              </p>
+              <div className="flex gap-6 text-sm text-muted-foreground">
+                <a href="#" className="hover:text-primary transition-colors">Aviso de Privacidad</a>
+                <a href="#" className="hover:text-primary transition-colors">Términos y Condiciones</a>
+              </div>
             </div>
           </div>
         </div>
