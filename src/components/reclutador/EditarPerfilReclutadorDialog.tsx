@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Linkedin, Twitter, Globe, Copy, CheckCircle2 } from "lucide-react";
+import { Loader2, Linkedin, Twitter, Globe, Copy, CheckCircle2, TrendingUp, Clock, Star, Target } from "lucide-react";
+import { useReclutadorStats } from "@/hooks/useReclutadorStats";
 
 interface EditarPerfilReclutadorDialogProps {
   open: boolean;
@@ -25,6 +26,10 @@ export function EditarPerfilReclutadorDialog({
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Hook para estadísticas de rendimiento
+  const { stats, loading: statsLoading } = useReclutadorStats(reclutadorId);
 
   // Datos de solo lectura
   const [nombreReclutador, setNombreReclutador] = useState("");
@@ -63,6 +68,9 @@ export function EditarPerfilReclutadorDialog({
       if (perfilError) throw perfilError;
 
       if (perfilData) {
+        // Guardar user_id para el hook de stats
+        setUserId(perfilData.user_id);
+        
         // Datos de solo lectura
         setNombreReclutador(perfilData.nombre_reclutador);
         setTipoReclutador(perfilData.tipo_reclutador);
@@ -228,6 +236,64 @@ export function EditarPerfilReclutadorDialog({
                   <p className="font-medium text-foreground">{fechaRegistro}</p>
                 </div>
               </div>
+            </div>
+
+            {/* Indicadores de Rendimiento - Solo Lectura */}
+            <div className="bg-muted/30 rounded-lg p-4 border border-border">
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">Mi Rendimiento</h3>
+                <span className="text-xs text-muted-foreground ml-auto">Visible para empresas</span>
+              </div>
+              
+              {statsLoading ? (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-background rounded-lg p-3 border border-border/50">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                      <span className="text-xs text-muted-foreground">Vacantes Cerradas</span>
+                    </div>
+                    <p className="text-xl font-bold">{stats?.vacantesCerradas || 0}</p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-3 border border-border/50">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Clock className="h-3.5 w-3.5 text-blue-500" />
+                      <span className="text-xs text-muted-foreground">Promedio Cierre</span>
+                    </div>
+                    <p className="text-xl font-bold">
+                      {stats?.promedioDiasCierre || 0}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">días</span>
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-3 border border-border/50">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Target className="h-3.5 w-3.5 text-orange-500" />
+                      <span className="text-xs text-muted-foreground">Conversión</span>
+                    </div>
+                    <p className="text-xl font-bold">
+                      {stats?.porcentajeExito || 0}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">%</span>
+                    </p>
+                  </div>
+                  
+                  <div className="bg-background rounded-lg p-3 border border-border/50">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Star className="h-3.5 w-3.5 text-yellow-500" />
+                      <span className="text-xs text-muted-foreground">Calificación</span>
+                    </div>
+                    <p className="text-xl font-bold">
+                      {stats?.calificacionPromedio || 0}
+                      <span className="text-xs font-normal text-muted-foreground ml-1">★</span>
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Semblanza Profesional */}
