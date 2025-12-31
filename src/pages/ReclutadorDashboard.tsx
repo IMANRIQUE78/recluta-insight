@@ -612,11 +612,8 @@ const ReclutadorDashboard = () => {
               </div>
             </div>
 
-            {/* Calendario de Entrevistas y Estudios Solicitados */}
-            <div className="grid gap-4 lg:grid-cols-2">
-              <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
-              <EstudiosSolicitadosCard reclutadorUserId={perfilReclutador?.user_id} />
-            </div>
+            {/* Calendario de Entrevistas - Ancho Completo */}
+            <EntrevistasCalendarioCard reclutadorUserId={perfilReclutador?.user_id} />
 
             {/* ══════════════════════════════════════════════════════════════════
                 ZONA 3: EMPRESAS COLABORADORAS - Información importante para vender vacantes
@@ -745,20 +742,25 @@ const ReclutadorDashboard = () => {
             </div>
           </TabsContent>
 
-          {/* TAB: MENSAJES */}
+          {/* TAB: CENTRO DE COMUNICACIONES */}
           <TabsContent value="mensajes" className="space-y-4">
             <div className="space-y-3">
               <div>
-                <h2 className="text-lg sm:text-xl font-bold">Centro de Comunicación</h2>
+                <h2 className="text-lg sm:text-xl font-bold">Centro de Comunicaciones</h2>
                 <p className="text-sm text-muted-foreground">
-                  Gestiona tus conversaciones con candidatos
+                  Gestiona tus conversaciones con candidatos y estudios socioeconómicos
                 </p>
               </div>
+              
+              {/* Estudios Socioeconómicos Solicitados */}
+              <EstudiosSolicitadosCard reclutadorUserId={perfilReclutador?.user_id} />
+              
+              {/* Mensajes con Candidatos */}
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-center py-12">
-                    <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Mensajes con Candidatos</h3>
+                  <div className="text-center py-8">
+                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                    <h3 className="text-base font-semibold mb-2">Mensajes con Candidatos</h3>
                     <p className="text-sm text-muted-foreground max-w-md mx-auto">
                       Accede al chat desde la pestaña "Gestión" al revisar cada postulación
                     </p>
