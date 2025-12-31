@@ -57,6 +57,7 @@ const Dashboard = () => {
   const [selectedReclutadorId, setSelectedReclutadorId] = useState<string>("");
   const [selectedAsociacionId, setSelectedAsociacionId] = useState<string | undefined>(undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [selectedInvitationId, setSelectedInvitationId] = useState<string | undefined>(undefined);
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -498,6 +499,9 @@ const Dashboard = () => {
               onItemClick={(item) => {
                 if (item.type === "cierre" && item.data) {
                   setSelectedVacante(item.data);
+                } else if (item.type === "invitacion" && item.data) {
+                  setSelectedInvitationId(item.id);
+                  setInvitarReclutadorOpen(true);
                 }
               }}
             />
@@ -513,8 +517,12 @@ const Dashboard = () => {
 
       <InvitarReclutadorDialog
         open={invitarReclutadorOpen}
-        onOpenChange={setInvitarReclutadorOpen}
+        onOpenChange={(open) => {
+          setInvitarReclutadorOpen(open);
+          if (!open) setSelectedInvitationId(undefined);
+        }}
         onSuccess={handleVacanteSuccess}
+        viewInvitationId={selectedInvitationId}
       />
 
       {selectedVacante && (
