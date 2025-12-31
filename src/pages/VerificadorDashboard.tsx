@@ -17,7 +17,8 @@ import {
   MapPin,
   Building,
   User,
-  LogOut
+  LogOut,
+  Settings
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import { format, differenceInDays, isAfter } from "date-fns";
 import { es } from "date-fns/locale";
 import SubirDatosEstudioModal from "@/components/verificador/SubirDatosEstudioModal";
 import EstudioDetalleModal from "@/components/verificador/EstudioDetalleModal";
+import { EditarPerfilVerificadorDialog } from "@/components/verificador/EditarPerfilVerificadorDialog";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const estatusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -58,6 +60,7 @@ export default function VerificadorDashboard() {
   const [selectedEstudio, setSelectedEstudio] = useState<any>(null);
   const [modalSubirDatos, setModalSubirDatos] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
+  const [modalPerfil, setModalPerfil] = useState(false);
 
   // Fetch verificador profile
   const { data: perfilVerificador } = useQuery({
@@ -228,7 +231,18 @@ export default function VerificadorDashboard() {
           </div>
           
           <div className="flex items-center gap-2">
-            <Avatar className="h-8 w-8">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setModalPerfil(true)}
+              title="Mi perfil"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Avatar 
+              className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+              onClick={() => setModalPerfil(true)}
+            >
               <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                 {perfilVerificador?.nombre_verificador?.charAt(0) || "V"}
               </AvatarFallback>
@@ -589,6 +603,15 @@ export default function VerificadorDashboard() {
         onOpenChange={setModalDetalle}
         estudio={selectedEstudio}
       />
+
+      {user?.id && (
+        <EditarPerfilVerificadorDialog
+          open={modalPerfil}
+          onOpenChange={setModalPerfil}
+          verificadorUserId={user.id}
+          onSuccess={() => {}}
+        />
+      )}
     </div>
   );
 }
