@@ -30,8 +30,12 @@ import {
   BarChart3,
   Briefcase,
   Filter,
-  ChevronDown
+  ChevronDown,
+  Scale,
+  Calculator,
+  Rocket
 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -234,6 +238,54 @@ const Dashboard = () => {
             <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 text-[10px]">
               <Crown className="h-2.5 w-2.5 mr-0.5" />
               PRO
+            </Badge>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => toast({
+              title: "🚀 Lo estamos construyendo...",
+              description: "El módulo de Legislación está en desarrollo. ¡Serás de los primeros en saber cuando esté listo!",
+              duration: 5000,
+            })}
+            className="gap-2"
+          >
+            <Scale className="h-4 w-4" />
+            Legislación
+            <Badge variant="outline" className="ml-1 bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
+              <Rocket className="h-2.5 w-2.5 mr-0.5" />
+              Próximamente
+            </Badge>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => toast({
+              title: "🚀 Lo estamos construyendo...",
+              description: "El módulo de Base de Datos de Personal está en desarrollo. ¡Serás de los primeros en saber cuando esté listo!",
+              duration: 5000,
+            })}
+            className="gap-2"
+          >
+            <Users className="h-4 w-4" />
+            Base de Datos Personal
+            <Badge variant="outline" className="ml-1 bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
+              <Rocket className="h-2.5 w-2.5 mr-0.5" />
+              Próximamente
+            </Badge>
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => toast({
+              title: "🚀 Lo estamos construyendo...",
+              description: "El módulo Contable y Nóminas está en desarrollo. ¡Serás de los primeros en saber cuando esté listo!",
+              duration: 5000,
+            })}
+            className="gap-2"
+          >
+            <Calculator className="h-4 w-4" />
+            Contable y Nóminas
+            <Badge variant="outline" className="ml-1 bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
+              <Rocket className="h-2.5 w-2.5 mr-0.5" />
+              Próximamente
             </Badge>
           </Button>
         </div>
