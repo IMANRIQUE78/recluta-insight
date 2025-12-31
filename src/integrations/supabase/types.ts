@@ -1889,17 +1889,6 @@ export type Database = {
           telefono_contacto: string
         }[]
       }
-      get_reclutador_ranking: {
-        Args: never
-        Returns: {
-          nombre_reclutador: string
-          posicion: number
-          promedio_dias_cierre: number
-          ranking_score: number
-          user_id: string
-          vacantes_cerradas: number
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
