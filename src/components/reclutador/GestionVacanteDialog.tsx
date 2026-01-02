@@ -12,8 +12,9 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Upload, Users, Calendar, Share2, Copy, Check, AlertTriangle, CheckCircle2, Coins } from "lucide-react";
+import { FileText, Upload, Users, Calendar, Share2, Copy, Check, AlertTriangle, CheckCircle2, Coins, Sparkles } from "lucide-react";
 import { PostulacionesVacanteTab } from "./PostulacionesVacanteTab";
+import { SourcingIATab } from "./SourcingIATab";
 import { consumirCreditosPublicacion, verificarCreditosDisponibles, COSTO_PUBLICACION } from "@/hooks/useCreditoPublicacion";
 
 interface GestionVacanteDialogProps {
@@ -287,14 +288,18 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
         </DialogHeader>
 
         <Tabs defaultValue="detalles" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="detalles">
               <Upload className="mr-2 h-4 w-4" />
-              Detalles y Publicación
+              Publicación
             </TabsTrigger>
             <TabsTrigger value="postulaciones" disabled={!publicacionData}>
               <Users className="mr-2 h-4 w-4" />
               Postulaciones ({postulacionesCount})
+            </TabsTrigger>
+            <TabsTrigger value="sourcing" disabled={!publicacionData}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Sourcing IA
             </TabsTrigger>
           </TabsList>
           
@@ -572,6 +577,17 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
               <PostulacionesVacanteTab 
                 publicacionId={publicacionData.id}
                 onPostulacionUpdated={handlePostulacionUpdated}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="sourcing" className="mt-4">
+            {publicacionData && (
+              <SourcingIATab 
+                vacanteId={vacante.id}
+                publicacionId={publicacionData.id}
+                tituloPuesto={vacante.titulo_puesto}
+                reclutadorId={reclutadorId}
               />
             )}
           </TabsContent>
