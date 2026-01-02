@@ -1497,6 +1497,98 @@ export type Database = {
           },
         ]
       }
+      sourcing_ia: {
+        Row: {
+          candidato_user_id: string
+          created_at: string
+          creditos_consumidos: number
+          ejecutor_user_id: string
+          empresa_ejecutora_id: string | null
+          estado: string
+          experiencia_relevante: Json | null
+          fecha_contacto: string | null
+          habilidades_coincidentes: Json | null
+          id: string
+          lote_sourcing: string
+          notas_contacto: string | null
+          publicacion_id: string
+          razon_match: string | null
+          reclutador_ejecutor_id: string | null
+          score_match: number
+          updated_at: string
+          vacante_id: string
+        }
+        Insert: {
+          candidato_user_id: string
+          created_at?: string
+          creditos_consumidos?: number
+          ejecutor_user_id: string
+          empresa_ejecutora_id?: string | null
+          estado?: string
+          experiencia_relevante?: Json | null
+          fecha_contacto?: string | null
+          habilidades_coincidentes?: Json | null
+          id?: string
+          lote_sourcing: string
+          notas_contacto?: string | null
+          publicacion_id: string
+          razon_match?: string | null
+          reclutador_ejecutor_id?: string | null
+          score_match?: number
+          updated_at?: string
+          vacante_id: string
+        }
+        Update: {
+          candidato_user_id?: string
+          created_at?: string
+          creditos_consumidos?: number
+          ejecutor_user_id?: string
+          empresa_ejecutora_id?: string | null
+          estado?: string
+          experiencia_relevante?: Json | null
+          fecha_contacto?: string | null
+          habilidades_coincidentes?: Json | null
+          id?: string
+          lote_sourcing?: string
+          notas_contacto?: string | null
+          publicacion_id?: string
+          razon_match?: string | null
+          reclutador_ejecutor_id?: string | null
+          score_match?: number
+          updated_at?: string
+          vacante_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sourcing_ia_empresa_ejecutora_id_fkey"
+            columns: ["empresa_ejecutora_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sourcing_ia_publicacion_id_fkey"
+            columns: ["publicacion_id"]
+            isOneToOne: false
+            referencedRelation: "publicaciones_marketplace"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sourcing_ia_reclutador_ejecutor_id_fkey"
+            columns: ["reclutador_ejecutor_id"]
+            isOneToOne: false
+            referencedRelation: "perfil_reclutador"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sourcing_ia_vacante_id_fkey"
+            columns: ["vacante_id"]
+            isOneToOne: false
+            referencedRelation: "vacantes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suscripcion_empresa: {
         Row: {
           acceso_analytics_avanzado: boolean | null

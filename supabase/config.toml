@@ -1,1 +1,4 @@
 project_id = "xlmtucojkefacqqgbvra"
+
+[functions.sourcing-ia]
+verify_jwt = true
