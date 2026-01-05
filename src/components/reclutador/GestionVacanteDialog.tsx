@@ -12,9 +12,10 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { FileText, Upload, Users, Calendar, Share2, Copy, Check, AlertTriangle, CheckCircle2, Coins, Sparkles } from "lucide-react";
+import { FileText, Upload, Users, Calendar, Share2, Copy, Check, AlertTriangle, CheckCircle2, Coins, Sparkles, FileSearch } from "lucide-react";
 import { PostulacionesVacanteTab } from "./PostulacionesVacanteTab";
 import { SourcingIATab } from "./SourcingIATab";
+import { SolicitarEstudioDialog } from "./SolicitarEstudioDialog";
 import { consumirCreditosPublicacion, verificarCreditosDisponibles, COSTO_PUBLICACION } from "@/hooks/useCreditoPublicacion";
 
 interface GestionVacanteDialogProps {
@@ -48,6 +49,7 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
   
   // Solicitud de cierre
   const [showCierreForm, setShowCierreForm] = useState(false);
+  const [solicitarEstudioOpen, setSolicitarEstudioOpen] = useState(false);
   const [motivoCierre, setMotivoCierre] = useState("");
 
   useEffect(() => {
@@ -557,6 +559,24 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
               <p className="text-xs text-muted-foreground">
                 Nota: Solo la empresa puede cerrar o cancelar la requisición. Como reclutador, puedes solicitar el cierre cuando hayas concluido el proceso.
               </p>
+
+              <Separator className="my-4" />
+
+              {/* Botón Solicitar Estudio Socioeconómico */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm">Estudios Socioeconómicos</h4>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setSolicitarEstudioOpen(true)}
+                  className="w-full"
+                >
+                  <FileSearch className="mr-2 h-4 w-4" />
+                  Solicitar Estudio Socioeconómico
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Solicita un estudio socioeconómico para candidatos de esta vacante.
+                </p>
+              </div>
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
@@ -592,6 +612,21 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Diálogo para solicitar estudio socioeconómico */}
+        {reclutadorId && (
+          <SolicitarEstudioDialog
+            open={solicitarEstudioOpen}
+            onOpenChange={setSolicitarEstudioOpen}
+            reclutadorId={reclutadorId}
+            onSuccess={() => {
+              toast({
+                title: "✅ Estudio solicitado",
+                description: "El estudio socioeconómico ha sido solicitado exitosamente",
+              });
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
