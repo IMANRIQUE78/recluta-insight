@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, FileSearch, ChevronDown, ChevronUp, Wallet } from "lucide-react";
+import { LogOut, User, Copy, CheckCircle2, Clock, Briefcase, Star, Building2, Zap, TrendingUp, UserCog, MessageSquare, ClipboardList, Users, Store, ChevronDown, ChevronUp, Wallet } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { VacantesGestionCard } from "@/components/reclutador/VacantesGestionCard";
@@ -24,7 +24,7 @@ import { EditarPerfilReclutadorDialog } from "@/components/reclutador/EditarPerf
 import { EmpresasVinculadasCard } from "@/components/reclutador/EmpresasVinculadasCard";
 import { PoolCandidatos } from "@/components/reclutador/PoolCandidatos";
 import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclutador";
-import { SolicitarEstudioDialog } from "@/components/reclutador/SolicitarEstudioDialog";
+
 import { EstudiosSolicitadosCard } from "@/components/reclutador/EstudiosSolicitadosCard";
 import { AttentionBadgesReclutador } from "@/components/reclutador/AttentionBadgesReclutador";
 import { ObjetivosPersonalesCard } from "@/components/reclutador/ObjetivosPersonalesCard";
@@ -42,7 +42,6 @@ const ReclutadorDashboard = () => {
   const [rankingPosition, setRankingPosition] = useState<number | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedKPI, setSelectedKPI] = useState<string>("");
-  const [solicitarEstudioOpen, setSolicitarEstudioOpen] = useState(false);
   const [perfilExpanded, setPerfilExpanded] = useState(false);
   
   const { stats, loading: statsLoading } = useReclutadorStats(perfilReclutador?.id);
@@ -383,24 +382,6 @@ const ReclutadorDashboard = () => {
                 </Button>
                 
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSolicitarEstudioOpen(true)}
-                  className="hidden sm:flex h-9 px-3 hover:bg-primary/10 hover:text-primary transition-colors"
-                >
-                  <FileSearch className="mr-1.5 h-4 w-4" />
-                  Solicitar Estudio
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setSolicitarEstudioOpen(true)}
-                  className="sm:hidden h-9 w-9 hover:bg-primary/10 hover:text-primary"
-                >
-                  <FileSearch className="h-4 w-4" />
-                </Button>
-                
-                <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={handleSignOut} 
@@ -776,13 +757,6 @@ const ReclutadorDashboard = () => {
         />
       )}
 
-      {perfilReclutador && (
-        <SolicitarEstudioDialog
-          open={solicitarEstudioOpen}
-          onOpenChange={setSolicitarEstudioOpen}
-          reclutadorId={perfilReclutador.user_id}
-        />
-      )}
     </div>
   );
 };
