@@ -37,7 +37,7 @@ export const AuthForm = () => {
     setLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}/verify-email`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim(),
@@ -50,9 +50,12 @@ export const AuthForm = () => {
       if (authError) throw authError;
       if (!authData.user) throw new Error("No se pudo crear el usuario");
 
-      // Registro exitoso - redirigir a onboarding para seleccionar tipo de perfil
-      toast.success("Cuenta creada exitosamente. Selecciona tu tipo de perfil para continuar.");
-      navigate("/onboarding");
+      // Store email for verification page
+      sessionStorage.setItem("pendingVerificationEmail", email.trim());
+      
+      // Show verification message and redirect to verify email page
+      toast.success("¡Cuenta creada! Revisa tu correo para verificar tu cuenta.");
+      navigate("/verify-email");
     } catch (error: any) {
       if (error.message.includes("User already registered")) {
         toast.error("Este correo ya está registrado. Intenta iniciar sesión.");
@@ -88,6 +91,11 @@ export const AuthForm = () => {
     if (error) {
       if (error.message.includes("Invalid login credentials")) {
         toast.error("Credenciales inválidas. Verifica tu correo y contraseña.");
+      } else if (error.message.includes("Email not confirmed")) {
+        sessionStorage.setItem("pendingVerificationEmail", email.trim());
+        toast.error("Por favor, verifica tu correo electrónico primero.");
+        navigate("/verify-email");
+        return;
       } else {
         toast.error(error.message);
       }
