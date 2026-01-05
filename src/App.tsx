@@ -7,6 +7,7 @@ import { useAuth } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
+import VerifyEmail from "./pages/VerifyEmail";
 import OnboardingFlow from "./pages/OnboardingFlow";
 import Dashboard from "./pages/Dashboard";
 import ReclutadorDashboard from "./pages/ReclutadorDashboard";
@@ -49,6 +50,7 @@ const App = () => (
           <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
           <Route path="/home" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/marketplace" element={<Marketplace />} />
           <Route path="/candidate-dashboard" element={
             <ProtectedRoute>
