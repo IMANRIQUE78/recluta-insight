@@ -72,19 +72,7 @@ const NOM035Dashboard = () => {
         return;
       }
 
-      // Verificar suscripción enterprise
-      const { data: suscripcion } = await supabase
-        .from("suscripcion_empresa")
-        .select("plan, activa")
-        .eq("empresa_id", userRole.empresa_id)
-        .eq("activa", true)
-        .maybeSingle();
-
-      if (!suscripcion || suscripcion.plan !== "enterprise") {
-        setHasAccess(false);
-        setLoading(false);
-        return;
-      }
+      // Acceso libre - la monetización se maneja por créditos en el registro de trabajadores
 
       // Obtener nombre de empresa
       const { data: empresa } = await supabase
