@@ -149,10 +149,10 @@ export const AuthForm = () => {
           <img 
             src={vvgiAbuelita} 
             alt="VVGI Abuelita" 
-            className="absolute z-0 w-[280px] sm:w-[320px] md:w-[400px] lg:w-[450px] h-auto object-contain -left-8 sm:-left-12 md:-left-20 lg:-left-28 bottom-0 opacity-90 pointer-events-none select-none"
+            className="absolute z-0 w-[200px] sm:w-[260px] md:w-[340px] lg:w-[400px] h-auto object-contain left-0 sm:-left-4 md:-left-8 lg:-left-12 opacity-95 pointer-events-none select-none"
             style={{ 
-              transform: 'translateY(10%)',
-              maxHeight: '90vh'
+              bottom: '-15%',
+              maxHeight: '85vh'
             }}
           />
           
