@@ -206,12 +206,7 @@ const NOM035Dashboard = () => {
                 <ArrowLeft className="h-5 w-5" />
               </Button>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">Módulo NOM-035</h1>
-                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                    Enterprise
-                  </Badge>
-                </div>
+                <h1 className="text-2xl font-bold">Módulo NOM-035</h1>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <Building2 className="h-4 w-4" />
                   {empresaNombre}
