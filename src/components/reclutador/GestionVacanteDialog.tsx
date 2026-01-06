@@ -596,6 +596,7 @@ export const GestionVacanteDialog = ({ open, onOpenChange, vacante, onSuccess }:
             {publicacionData && (
               <PostulacionesVacanteTab 
                 publicacionId={publicacionData.id}
+                tituloPuesto={vacante.titulo_puesto}
                 onPostulacionUpdated={handlePostulacionUpdated}
               />
             )}

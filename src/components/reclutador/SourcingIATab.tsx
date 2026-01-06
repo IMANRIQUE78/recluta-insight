@@ -33,6 +33,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
+import { WhatsAppButton, useWhatsAppMessage } from "@/components/ui/whatsapp-button";
 
 interface SourcingIATabProps {
   vacanteId: string;
@@ -82,6 +83,7 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
     COSTO_SOURCING,
     MAX_CANDIDATOS 
   } = useSourcingIA();
+  const { generarMensajeSourcingIA } = useWhatsAppMessage();
 
   const [simulacion, setSimulacion] = useState<any>(null);
   const [resultados, setResultados] = useState<SourcingResult[]>([]);
@@ -452,6 +454,16 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
 
                       {/* Acciones y chevron */}
                       <div className="flex items-center gap-2">
+                        <WhatsAppButton
+                          telefono={resultado.perfil_candidato?.telefono}
+                          mensaje={generarMensajeSourcingIA(
+                            resultado.perfil_candidato?.nombre_completo || "Candidato",
+                            tituloPuesto,
+                            resultado.score_match
+                          )}
+                          variant="outline"
+                          size="sm"
+                        />
                         <Button
                           size="sm"
                           variant="outline"

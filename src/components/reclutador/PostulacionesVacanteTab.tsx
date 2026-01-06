@@ -8,14 +8,17 @@ import { Separator } from "@/components/ui/separator";
 import { User, Calendar, Settings, MessageSquare } from "lucide-react";
 import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 import { GestionEstatusPostulacionDialog } from "./GestionEstatusPostulacionDialog";
+import { WhatsAppButton, useWhatsAppMessage } from "@/components/ui/whatsapp-button";
 
 interface PostulacionesVacanteTabProps {
   publicacionId: string;
+  tituloPuesto?: string;
   onPostulacionUpdated?: () => void;
 }
 
-export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }: PostulacionesVacanteTabProps) => {
+export const PostulacionesVacanteTab = ({ publicacionId, tituloPuesto, onPostulacionUpdated }: PostulacionesVacanteTabProps) => {
   const { toast } = useToast();
+  const { generarMensajePostulacion } = useWhatsAppMessage();
   const [postulaciones, setPostulaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPostulacion, setSelectedPostulacion] = useState<any>(null);
@@ -204,14 +207,26 @@ export const PostulacionesVacanteTab = ({ publicacionId, onPostulacionUpdated }:
                 </div>
               )}
 
-              <Button
-                size="sm"
-                className="w-full"
-                onClick={() => handleGestionarEstatus(postulacion)}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Gestionar Estatus
-              </Button>
+              <div className="flex gap-2">
+                <WhatsAppButton
+                  telefono={postulacion.candidato?.telefono}
+                  mensaje={generarMensajePostulacion(
+                    postulacion.candidato?.nombre_completo || "Candidato",
+                    tituloPuesto || "la vacante"
+                  )}
+                  variant="outline"
+                  size="sm"
+                />
+                <Button
+                  size="sm"
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => handleGestionarEstatus(postulacion)}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Gestionar Estatus
+                </Button>
+              </div>
             </div>
           </Card>
         ))}
