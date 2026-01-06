@@ -145,16 +145,16 @@ export const AuthForm = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 pt-32 sm:pt-40 overflow-hidden">
         <div className="relative flex flex-col items-center w-full max-w-md sm:max-w-lg md:max-w-xl">
-          {/* Imagen centrada en el borde superior del card */}
+          {/* Imagen centrada arriba del card - sin superposición */}
           <img 
             src={vvgiAbuelita} 
             alt="VVGI Abuelita" 
-            className="relative z-20 w-[180px] sm:w-[240px] md:w-[300px] h-auto object-contain mb-[-90px] sm:mb-[-120px] md:mb-[-150px] pointer-events-none select-none"
+            className="relative z-20 w-[180px] sm:w-[240px] md:w-[300px] h-auto object-contain mb-0 pointer-events-none select-none"
           />
           
           {/* Card de recuperación - horizontal (más ancho que alto) */}
           <Card className="relative z-10 w-full shadow-elegant border-primary/10 bg-background/98 backdrop-blur-sm">
-            <CardHeader className="space-y-2 pb-2 pt-20 sm:pt-28 md:pt-32">
+            <CardHeader className="space-y-2 pb-2 pt-6">
               <div className="flex justify-center">
                 <img 
                   src={vvgiLogo} 
