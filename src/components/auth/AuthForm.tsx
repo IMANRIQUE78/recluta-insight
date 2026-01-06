@@ -143,32 +143,32 @@ export const AuthForm = () => {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-end justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 pb-16 sm:pb-24 overflow-hidden">
-        <div className="relative flex flex-col items-center w-full max-w-xs sm:max-w-sm">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 pt-32 sm:pt-40 overflow-hidden">
+        <div className="relative flex flex-col items-center w-full max-w-md sm:max-w-lg md:max-w-xl">
           {/* Imagen centrada en el borde superior del card */}
           <img 
             src={vvgiAbuelita} 
             alt="VVGI Abuelita" 
-            className="relative z-20 w-[140px] sm:w-[180px] md:w-[220px] h-auto object-contain mb-[-70px] sm:mb-[-90px] md:mb-[-110px] pointer-events-none select-none"
+            className="relative z-20 w-[180px] sm:w-[240px] md:w-[300px] h-auto object-contain mb-[-90px] sm:mb-[-120px] md:mb-[-150px] pointer-events-none select-none"
           />
           
-          {/* Card de recuperación - más angosto y centrado */}
+          {/* Card de recuperación - horizontal (más ancho que alto) */}
           <Card className="relative z-10 w-full shadow-elegant border-primary/10 bg-background/98 backdrop-blur-sm">
-            <CardHeader className="space-y-4 pb-4 pt-16 sm:pt-20 md:pt-24">
+            <CardHeader className="space-y-2 pb-2 pt-20 sm:pt-28 md:pt-32">
               <div className="flex justify-center">
                 <img 
                   src={vvgiLogo} 
                   alt="VVGI Logo" 
-                  className="h-12 sm:h-14 w-auto"
+                  className="h-10 sm:h-12 w-auto"
                 />
               </div>
-              <CardDescription className="text-center text-sm sm:text-base text-foreground/80">
+              <CardDescription className="text-center text-sm text-foreground/80">
                 Recuperar Contraseña
               </CardDescription>
             </CardHeader>
-            <CardContent className="pb-6">
-              <form onSubmit={handleForgotPassword} className="space-y-4">
-                <div className="space-y-2">
+            <CardContent className="pb-4 px-6 sm:px-10 md:px-16">
+              <form onSubmit={handleForgotPassword} className="space-y-3">
+                <div className="space-y-1">
                   <Label htmlFor="forgot-email" className="text-sm">Correo Electrónico</Label>
                   <Input
                     id="forgot-email"
@@ -184,25 +184,27 @@ export const AuthForm = () => {
                     Te enviaremos un enlace para restablecer tu contraseña
                   </p>
                 </div>
-                <Button type="submit" className="w-full text-sm" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    "Enviar Enlace"
-                  )}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="ghost" 
-                  className="w-full text-sm" 
-                  onClick={() => setShowForgotPassword(false)}
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Volver
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button type="submit" className="flex-1 text-sm" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      "Enviar Enlace"
+                    )}
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    className="flex-1 text-sm" 
+                    onClick={() => setShowForgotPassword(false)}
+                  >
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Volver
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
