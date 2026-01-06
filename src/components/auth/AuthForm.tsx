@@ -143,37 +143,33 @@ export const AuthForm = () => {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 overflow-hidden">
-        <div className="relative flex items-center justify-center w-full max-w-4xl">
-          {/* Imagen de fondo - posicionada a la izquierda/atrás del card */}
+      <div className="min-h-screen flex items-end justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 pb-16 sm:pb-24 overflow-hidden">
+        <div className="relative flex flex-col items-center w-full max-w-xs sm:max-w-sm">
+          {/* Imagen centrada en el borde superior del card */}
           <img 
             src={vvgiAbuelita} 
             alt="VVGI Abuelita" 
-            className="absolute z-0 w-[200px] sm:w-[260px] md:w-[340px] lg:w-[400px] h-auto object-contain left-0 sm:-left-4 md:-left-8 lg:-left-12 opacity-95 pointer-events-none select-none"
-            style={{ 
-              bottom: '-15%',
-              maxHeight: '85vh'
-            }}
+            className="relative z-20 w-[140px] sm:w-[180px] md:w-[220px] h-auto object-contain mb-[-70px] sm:mb-[-90px] md:mb-[-110px] pointer-events-none select-none"
           />
           
-          {/* Card de recuperación - en primer plano */}
-          <Card className="relative z-10 w-full max-w-md shadow-elegant border-primary/10 bg-background/95 backdrop-blur-sm ml-auto mr-0 sm:mr-4 md:mr-0">
-            <CardHeader className="space-y-4 pb-6">
+          {/* Card de recuperación - más angosto y centrado */}
+          <Card className="relative z-10 w-full shadow-elegant border-primary/10 bg-background/98 backdrop-blur-sm">
+            <CardHeader className="space-y-4 pb-4 pt-16 sm:pt-20 md:pt-24">
               <div className="flex justify-center">
                 <img 
                   src={vvgiLogo} 
                   alt="VVGI Logo" 
-                  className="h-16 w-auto"
+                  className="h-12 sm:h-14 w-auto"
                 />
               </div>
-              <CardDescription className="text-center text-base text-foreground/80">
+              <CardDescription className="text-center text-sm sm:text-base text-foreground/80">
                 Recuperar Contraseña
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-6">
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="forgot-email">Correo Electrónico</Label>
+                  <Label htmlFor="forgot-email" className="text-sm">Correo Electrónico</Label>
                   <Input
                     id="forgot-email"
                     type="email"
@@ -182,29 +178,30 @@ export const AuthForm = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     maxLength={255}
+                    className="text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
                     Te enviaremos un enlace para restablecer tu contraseña
                   </p>
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" className="w-full text-sm" disabled={loading}>
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Enviando...
                     </>
                   ) : (
-                    "Enviar Enlace de Recuperación"
+                    "Enviar Enlace"
                   )}
                 </Button>
                 <Button 
                   type="button" 
                   variant="ghost" 
-                  className="w-full" 
+                  className="w-full text-sm" 
                   onClick={() => setShowForgotPassword(false)}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Volver a Iniciar Sesión
+                  Volver
                 </Button>
               </form>
             </CardContent>
