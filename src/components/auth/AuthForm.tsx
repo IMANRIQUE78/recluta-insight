@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
@@ -16,10 +16,15 @@ const authSchema = z.object({
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").max(72, "La contraseña no puede exceder 72 caracteres"),
 });
 
+const emailSchema = z.object({
+  email: z.string().trim().email("Correo electrónico inválido").max(255, "El correo no puede exceder 255 caracteres"),
+});
+
 export const AuthForm = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -105,6 +110,95 @@ export const AuthForm = () => {
     navigate("/");
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      emailSchema.parse({ email: email.trim() });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+        return;
+      }
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      toast.success("Si el correo existe, recibirás un enlace para restablecer tu contraseña.");
+      setShowForgotPassword(false);
+    } catch (error: any) {
+      toast.error(error.message || "Error al enviar el correo de recuperación");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (showForgotPassword) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 gap-8">
+        <Card className="w-full max-w-md shadow-elegant border-primary/10">
+          <CardHeader className="space-y-4 pb-6">
+            <div className="flex justify-center">
+              <img 
+                src={vvgiLogo} 
+                alt="VVGI Logo" 
+                className="h-16 w-auto"
+              />
+            </div>
+            <CardDescription className="text-center text-base text-foreground/80">
+              Recuperar Contraseña
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Correo Electrónico</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  placeholder="tu@empresa.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  maxLength={255}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Te enviaremos un enlace para restablecer tu contraseña
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  "Enviar Enlace de Recuperación"
+                )}
+              </Button>
+              <Button 
+                type="button" 
+                variant="ghost" 
+                className="w-full" 
+                onClick={() => setShowForgotPassword(false)}
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Volver a Iniciar Sesión
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 gap-8">
       <Card className="w-full max-w-md shadow-elegant border-primary/10">
@@ -152,6 +246,15 @@ export const AuthForm = () => {
                     required
                     maxLength={72}
                   />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-sm text-primary hover:underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? (
