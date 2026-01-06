@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import vvgiLogo from "@/assets/vvgi-logo.png";
+import vvgiAbuelita from "@/assets/vvgi-abuelita.png";
 
 const authSchema = z.object({
   email: z.string().trim().email("Correo electrónico inválido").max(255, "El correo no puede exceder 255 caracteres"),
@@ -142,59 +143,73 @@ export const AuthForm = () => {
 
   if (showForgotPassword) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 gap-8">
-        <Card className="w-full max-w-md shadow-elegant border-primary/10">
-          <CardHeader className="space-y-4 pb-6">
-            <div className="flex justify-center">
-              <img 
-                src={vvgiLogo} 
-                alt="VVGI Logo" 
-                className="h-16 w-auto"
-              />
-            </div>
-            <CardDescription className="text-center text-base text-foreground/80">
-              Recuperar Contraseña
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="forgot-email">Correo Electrónico</Label>
-                <Input
-                  id="forgot-email"
-                  type="email"
-                  placeholder="tu@empresa.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  maxLength={255}
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-secondary/5 p-4 overflow-hidden">
+        <div className="relative flex items-center justify-center w-full max-w-4xl">
+          {/* Imagen de fondo - posicionada a la izquierda/atrás del card */}
+          <img 
+            src={vvgiAbuelita} 
+            alt="VVGI Abuelita" 
+            className="absolute z-0 w-[280px] sm:w-[320px] md:w-[400px] lg:w-[450px] h-auto object-contain -left-8 sm:-left-12 md:-left-20 lg:-left-28 bottom-0 opacity-90 pointer-events-none select-none"
+            style={{ 
+              transform: 'translateY(10%)',
+              maxHeight: '90vh'
+            }}
+          />
+          
+          {/* Card de recuperación - en primer plano */}
+          <Card className="relative z-10 w-full max-w-md shadow-elegant border-primary/10 bg-background/95 backdrop-blur-sm ml-auto mr-0 sm:mr-4 md:mr-0">
+            <CardHeader className="space-y-4 pb-6">
+              <div className="flex justify-center">
+                <img 
+                  src={vvgiLogo} 
+                  alt="VVGI Logo" 
+                  className="h-16 w-auto"
                 />
-                <p className="text-xs text-muted-foreground">
-                  Te enviaremos un enlace para restablecer tu contraseña
-                </p>
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  "Enviar Enlace de Recuperación"
-                )}
-              </Button>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="w-full" 
-                onClick={() => setShowForgotPassword(false)}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Volver a Iniciar Sesión
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+              <CardDescription className="text-center text-base text-foreground/80">
+                Recuperar Contraseña
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="forgot-email">Correo Electrónico</Label>
+                  <Input
+                    id="forgot-email"
+                    type="email"
+                    placeholder="tu@empresa.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    maxLength={255}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Te enviaremos un enlace para restablecer tu contraseña
+                  </p>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    "Enviar Enlace de Recuperación"
+                  )}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  className="w-full" 
+                  onClick={() => setShowForgotPassword(false)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Volver a Iniciar Sesión
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
