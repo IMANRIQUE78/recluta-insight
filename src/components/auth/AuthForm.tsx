@@ -38,13 +38,12 @@ export const AuthForm = () => {
 
     try {
       const trimmedEmail = email.trim();
-      const redirectUrl = `${window.location.origin}/verify-email`;
       
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: trimmedEmail,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
 
@@ -53,55 +52,7 @@ export const AuthForm = () => {
 
       // Store email for verification page
       sessionStorage.setItem("pendingVerificationEmail", trimmedEmail);
-
-      // Send verification email via custom SMTP
-      const verificationLink = `${window.location.origin}/verify-email?token_hash=${authData.session?.access_token || ''}&type=signup&email=${encodeURIComponent(trimmedEmail)}`;
       
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-verification-email', {
-          body: {
-            to: trimmedEmail,
-            subject: 'Verifica tu cuenta en VVGI',
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h1 style="color: #1a1a2e; margin-bottom: 10px;">VVGI</h1>
-                  <p style="color: #666;">Plataforma de Reclutamiento</p>
-                </div>
-                <h2 style="color: #333;">¡Bienvenido a VVGI!</h2>
-                <p style="color: #555; line-height: 1.6;">
-                  Gracias por registrarte. Para completar tu registro y acceder a tu cuenta, 
-                  por favor verifica tu correo electrónico haciendo clic en el siguiente botón:
-                </p>
-                <div style="text-align: center; margin: 30px 0;">
-                  <a href="${verificationLink}" 
-                     style="background-color: #1a1a2e; color: white; padding: 14px 28px; 
-                            text-decoration: none; border-radius: 8px; font-weight: bold;
-                            display: inline-block;">
-                    Verificar mi correo
-                  </a>
-                </div>
-                <p style="color: #888; font-size: 12px; margin-top: 30px;">
-                  Si no solicitaste esta verificación, puedes ignorar este correo.
-                </p>
-                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="color: #aaa; font-size: 11px; text-align: center;">
-                  VVGI - La mejor experiencia de reclutamiento en Latinoamérica
-                </p>
-              </div>
-            `,
-            text: `Bienvenido a VVGI. Verifica tu cuenta visitando: ${verificationLink}`,
-          },
-        });
-
-        if (emailError) {
-          console.error('Error sending verification email:', emailError);
-        }
-      } catch (emailErr) {
-        console.error('Error invoking email function:', emailErr);
-      }
-      
-      // Show verification message and redirect to verify email page
       toast.success("¡Cuenta creada! Revisa tu correo para verificar tu cuenta.");
       navigate("/verify-email");
     } catch (error: any) {
