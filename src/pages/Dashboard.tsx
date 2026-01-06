@@ -236,10 +236,6 @@ const Dashboard = () => {
           >
             <Brain className="h-4 w-4" />
             NOM-035
-            <Badge variant="outline" className="ml-1 bg-primary/10 text-primary border-primary/20 text-[10px]">
-              <Crown className="h-2.5 w-2.5 mr-0.5" />
-              PRO
-            </Badge>
           </Button>
           <Button 
             variant="outline"
