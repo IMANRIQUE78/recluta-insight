@@ -628,7 +628,10 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
               <div className="space-y-1">
                 <p className="text-sm font-medium">Publicación en Marketplace</p>
                 <p className="text-sm text-muted-foreground">
-                  Una vez creada la vacante, podrás publicarla en el marketplace desde el detalle de la vacante usando el botón "Publicar en Marketplace". Esto permite mayor control sobre qué información se comparte públicamente.
+                  Una vez creada la requisición, un usuario con perfil de <span className="font-medium">Reclutador</span> asignado deberá analizarla, depurar la información y publicarla en el Marketplace VVGI cuando esté lista.
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  <span className="font-medium text-amber-600 dark:text-amber-400">Nota:</span> Las vacantes marcadas como confidenciales deducen el doble de créditos para garantizar la protección y confidencialidad del proceso de reclutamiento.
                 </p>
               </div>
             </div>
