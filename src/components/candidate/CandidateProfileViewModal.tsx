@@ -46,6 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { WhatsAppButton, useWhatsAppMessage } from "@/components/ui/whatsapp-button";
 
 interface CandidateProfileViewModalProps {
   open: boolean;
@@ -119,6 +120,7 @@ export const CandidateProfileViewModal = ({
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [creditosDisponibles, setCreditosDisponibles] = useState(0);
   const [reclutadorUserId, setReclutadorUserId] = useState<string | null>(null);
+  const { generarMensajeGenerico } = useWhatsAppMessage();
 
   const { 
     desbloquearIdentidad, 
@@ -401,6 +403,20 @@ export const CandidateProfileViewModal = ({
                     </div>
                   </div>
                 </div>
+                
+                {/* Botón de WhatsApp - Solo visible cuando se tiene acceso completo */}
+                {canSeeIdentity && profile.telefono && (
+                  <div className="pt-2">
+                    <WhatsAppButton
+                      telefono={profile.telefono}
+                      mensaje={generarMensajeGenerico(profile.nombre_completo)}
+                      variant="outline"
+                      size="default"
+                      showText={true}
+                      className="w-full"
+                    />
+                  </div>
+                )}
               </div>
 
               <Separator />
