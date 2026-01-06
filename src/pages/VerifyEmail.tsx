@@ -21,21 +21,21 @@ const VerifyEmail = () => {
       setEmail(storedEmail);
     }
 
-    // Check for token in URL (from email link)
-    const token = searchParams.get("token");
+    // Check for token_hash in URL (from Supabase email link)
+    const tokenHash = searchParams.get("token_hash");
     const type = searchParams.get("type");
     
-    if (token && type === "signup") {
-      verifyToken(token);
+    if (tokenHash && (type === "signup" || type === "email")) {
+      verifyToken(tokenHash, type);
     }
   }, [searchParams]);
 
-  const verifyToken = async (token: string) => {
+  const verifyToken = async (tokenHash: string, type: string) => {
     setVerifying(true);
     try {
       const { error } = await supabase.auth.verifyOtp({
-        token_hash: token,
-        type: "signup",
+        token_hash: tokenHash,
+        type: type as "signup" | "email",
       });
 
       if (error) throw error;
@@ -44,9 +44,9 @@ const VerifyEmail = () => {
       sessionStorage.removeItem("pendingVerificationEmail");
       toast.success("¡Correo verificado exitosamente!");
       
-      // Redirect to onboarding after 2 seconds
+      // Redirect to auth page (login tab) after 2 seconds
       setTimeout(() => {
-        navigate("/onboarding");
+        navigate("/auth");
       }, 2000);
     } catch (err: any) {
       setError(err.message);
@@ -104,7 +104,7 @@ const VerifyEmail = () => {
               <CheckCircle className="h-16 w-16 mx-auto text-green-500" />
               <CardTitle className="text-xl text-green-600">¡Correo verificado!</CardTitle>
               <CardDescription>
-                Redirigiendo al onboarding...
+                Redirigiendo a inicio de sesión...
               </CardDescription>
             </>
           ) : error ? (
