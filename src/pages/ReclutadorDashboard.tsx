@@ -27,8 +27,6 @@ import { MarketplaceReclutador } from "@/components/reclutador/MarketplaceReclut
 import { EstudiosSolicitadosCard } from "@/components/reclutador/EstudiosSolicitadosCard";
 import { AttentionBadgesReclutador } from "@/components/reclutador/AttentionBadgesReclutador";
 import { ObjetivosPersonalesCard } from "@/components/reclutador/ObjetivosPersonalesCard";
-import { ProfileSwitcher } from "@/components/profile/ProfileSwitcher";
-import { ProfileIndicator } from "@/components/profile/ProfileIndicator";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const ReclutadorDashboard = () => {
@@ -336,7 +334,6 @@ const ReclutadorDashboard = () => {
                         Ranking Global
                       </span>
                     </div>
-                    <ProfileIndicator />
                   </div>
                 )}
               </div>
@@ -344,9 +341,6 @@ const ReclutadorDashboard = () => {
             
             {/* ZONA DERECHA: Acciones Principales */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Profile Switcher */}
-              <ProfileSwitcher variant="compact" />
-              
               {/* Acción Principal - Mi Perfil */}
               <Button
                 onClick={() => setEditarPerfilOpen(true)}
