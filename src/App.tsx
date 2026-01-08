@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/useAuth";
+import { ActiveProfileProvider } from "./contexts/ActiveProfileContext";
 import Index from "./pages/Index";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
@@ -44,62 +45,64 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route path="/candidate-dashboard" element={
-            <ProtectedRoute>
-              <CandidateDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <OnboardingFlow />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/reclutador-dashboard" element={
-            <ProtectedRoute>
-              <ReclutadorDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/nom035" element={
-            <ProtectedRoute>
-              <NOM035Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/verificador-dashboard" element={
-            <ProtectedRoute>
-              <VerificadorDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/wallet-empresa" element={
-            <ProtectedRoute>
-              <WalletEmpresa />
-            </ProtectedRoute>
-          } />
-          <Route path="/wallet-reclutador" element={
-            <ProtectedRoute>
-              <WalletReclutador />
-            </ProtectedRoute>
-          } />
-          {/* Ruta pública para cuestionarios NOM-035 */}
-          <Route path="/cuestionario/:token" element={<CuestionarioPublico />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <ActiveProfileProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/candidate-dashboard" element={
+              <ProtectedRoute>
+                <CandidateDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <OnboardingFlow />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/reclutador-dashboard" element={
+              <ProtectedRoute>
+                <ReclutadorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/nom035" element={
+              <ProtectedRoute>
+                <NOM035Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/verificador-dashboard" element={
+              <ProtectedRoute>
+                <VerificadorDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/wallet-empresa" element={
+              <ProtectedRoute>
+                <WalletEmpresa />
+              </ProtectedRoute>
+            } />
+            <Route path="/wallet-reclutador" element={
+              <ProtectedRoute>
+                <WalletReclutador />
+              </ProtectedRoute>
+            } />
+            {/* Ruta pública para cuestionarios NOM-035 */}
+            <Route path="/cuestionario/:token" element={<CuestionarioPublico />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </ActiveProfileProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
