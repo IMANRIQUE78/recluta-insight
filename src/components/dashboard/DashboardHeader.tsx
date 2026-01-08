@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { UserProfileModal } from "./UserProfileModal";
+import { ProfileSwitcher } from "@/components/profile/ProfileSwitcher";
+import { ProfileIndicator } from "@/components/profile/ProfileIndicator";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 interface DashboardHeaderProps {
@@ -94,6 +96,7 @@ export const DashboardHeader = ({}: DashboardHeaderProps) => {
                         {perfil.codigo_empresa}
                       </span>
                     )}
+                    <ProfileIndicator />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {perfil?.nombre_usuario && perfil?.nombre_empresa
@@ -104,6 +107,8 @@ export const DashboardHeader = ({}: DashboardHeaderProps) => {
               </div>
               
               <div className="flex items-center gap-2">
+                <ProfileSwitcher variant="compact" />
+                
                 <Button 
                   variant="outline" 
                   onClick={() => navigate("/marketplace")}

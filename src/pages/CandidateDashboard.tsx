@@ -13,6 +13,8 @@ import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
 import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
 import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
+import { ProfileSwitcher } from "@/components/profile/ProfileSwitcher";
+import { ProfileIndicator } from "@/components/profile/ProfileIndicator";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 export default function CandidateDashboard() {
@@ -94,11 +96,13 @@ export default function CandidateDashboard() {
                   {codigoCandidato && (
                     <span className="font-mono text-xs bg-primary/10 px-2 py-0.5 rounded text-primary">{codigoCandidato}</span>
                   )}
+                  <ProfileIndicator />
                 </div>
               )}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <ProfileSwitcher variant="compact" />
             <Button variant="outline" onClick={() => setProfilePreviewOpen(true)}>
               <Eye className="h-4 w-4 mr-2" />
               Ver Perfil

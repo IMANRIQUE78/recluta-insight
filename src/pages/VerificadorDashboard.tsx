@@ -39,6 +39,8 @@ import { es } from "date-fns/locale";
 import SubirDatosEstudioModal from "@/components/verificador/SubirDatosEstudioModal";
 import EstudioDetalleModal from "@/components/verificador/EstudioDetalleModal";
 import { EditarPerfilVerificadorDialog } from "@/components/verificador/EditarPerfilVerificadorDialog";
+import { ProfileSwitcher } from "@/components/profile/ProfileSwitcher";
+import { ProfileIndicator } from "@/components/profile/ProfileIndicator";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const estatusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -196,14 +198,18 @@ export default function VerificadorDashboard() {
           <div className="flex items-center gap-3">
             <img src={vvgiLogo} alt="VVGI" className="h-8 object-contain" />
             <div className="hidden sm:block">
-              <h1 className="font-semibold text-foreground">
-                Oficina de {perfilVerificador?.nombre_verificador || "Verificador"}
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="font-semibold text-foreground">
+                  Oficina de {perfilVerificador?.nombre_verificador || "Verificador"}
+                </h1>
+                <ProfileIndicator />
+              </div>
               <p className="text-xs text-muted-foreground">Técnico Verificador</p>
             </div>
           </div>
           
           <div className="flex items-center gap-2">
+            <ProfileSwitcher variant="compact" />
             <Button 
               variant="ghost" 
               size="icon" 
