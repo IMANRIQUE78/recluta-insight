@@ -964,6 +964,8 @@ export type Database = {
           certificaciones: Json | null
           codigo_candidato: string | null
           created_at: string
+          cv_filename: string | null
+          cv_url: string | null
           disponibilidad: string | null
           educacion: Json | null
           email: string
@@ -994,6 +996,8 @@ export type Database = {
           certificaciones?: Json | null
           codigo_candidato?: string | null
           created_at?: string
+          cv_filename?: string | null
+          cv_url?: string | null
           disponibilidad?: string | null
           educacion?: Json | null
           email: string
@@ -1024,6 +1028,8 @@ export type Database = {
           certificaciones?: Json | null
           codigo_candidato?: string | null
           created_at?: string
+          cv_filename?: string | null
+          cv_url?: string | null
           disponibilidad?: string | null
           educacion?: Json | null
           email?: string

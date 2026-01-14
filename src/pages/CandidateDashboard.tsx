@@ -13,6 +13,7 @@ import { MisPostulaciones } from "@/components/candidate/MisPostulaciones";
 import { MarketplacePublico } from "@/components/candidate/MarketplacePublico";
 import { ProximasEntrevistasCandidato } from "@/components/candidate/ProximasEntrevistasCandidato";
 import { MisFeedbacks } from "@/components/candidate/MisFeedbacks";
+import { UploadCVButton } from "@/components/candidate/UploadCVButton";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 export default function CandidateDashboard() {
@@ -99,6 +100,9 @@ export default function CandidateDashboard() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {hasProfile && codigoCandidato && (
+              <UploadCVButton codigoCandidato={codigoCandidato} />
+            )}
             <Button variant="outline" onClick={() => setProfilePreviewOpen(true)}>
               <Eye className="h-4 w-4 mr-2" />
               Ver Perfil
