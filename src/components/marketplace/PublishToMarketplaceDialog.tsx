@@ -31,7 +31,9 @@ export const PublishToMarketplaceDialog = ({
   const [creditosInfo, setCreditosInfo] = useState<{
     suficientes: boolean;
     creditosEmpresa: number;
+    creditosHeredados: number;
     nombreEmpresa: string | null;
+    origenDisponible: "heredado" | "empresa" | null;
   } | null>(null);
   
   const [selectedFields, setSelectedFields] = useState({
@@ -196,12 +198,19 @@ export const PublishToMarketplaceDialog = ({
                     Costo de publicación: <strong>{COSTO_PUBLICACION} créditos</strong>
                   </span>
                   <span className="text-sm">
-                    Disponibles: {creditosInfo?.creditosEmpresa || 0} créditos
+                    {creditosInfo?.origenDisponible === "heredado" ? (
+                      <>Tus créditos asignados: {creditosInfo?.creditosHeredados || 0}</>
+                    ) : (
+                      <>Créditos empresa: {creditosInfo?.creditosEmpresa || 0}</>
+                    )}
                   </span>
                 </div>
                 {creditosInfo?.nombreEmpresa && (
                   <span className="text-xs text-muted-foreground">
-                    Se descontarán de la wallet de: {creditosInfo.nombreEmpresa}
+                    {creditosInfo?.origenDisponible === "heredado" 
+                      ? `Créditos asignados por: ${creditosInfo.nombreEmpresa}`
+                      : `Se descontarán de la wallet de: ${creditosInfo.nombreEmpresa}`
+                    }
                   </span>
                 )}
               </AlertDescription>
@@ -211,7 +220,10 @@ export const PublishToMarketplaceDialog = ({
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  La empresa no tiene créditos suficientes. Se necesitan {COSTO_PUBLICACION} créditos para publicar.
+                  No hay créditos suficientes. Se necesitan {COSTO_PUBLICACION} créditos para publicar.
+                  {creditosInfo?.creditosHeredados === 0 && creditosInfo?.creditosEmpresa === 0 && (
+                    <span className="block mt-1 text-xs">La empresa no te ha asignado créditos y su wallet está vacía.</span>
+                  )}
                 </AlertDescription>
               </Alert>
             )}

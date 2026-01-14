@@ -141,20 +141,37 @@ export async function consumirCreditosPublicacion(
 }
 
 /**
- * Verifica si la empresa tiene suficientes créditos para publicar.
- * Los créditos se deducen de la wallet de la empresa, no del reclutador.
+ * Verifica si hay suficientes créditos para publicar.
+ * Primero verifica los créditos heredados del reclutador desde esa empresa,
+ * luego verifica la wallet de la empresa directamente.
  */
 export async function verificarCreditosDisponibles(
   reclutadorId: string,
   empresaId: string | null
-): Promise<{ suficientes: boolean; creditosEmpresa: number; nombreEmpresa: string | null }> {
+): Promise<{ 
+  suficientes: boolean; 
+  creditosEmpresa: number; 
+  creditosHeredados: number;
+  nombreEmpresa: string | null;
+  origenDisponible: "heredado" | "empresa" | null;
+}> {
   try {
     // VALIDACIÓN: Debe haber empresa_id
     if (!empresaId) {
-      return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
+      return { suficientes: false, creditosEmpresa: 0, creditosHeredados: 0, nombreEmpresa: null, origenDisponible: null };
     }
 
-    // Obtener wallet de la empresa
+    // 1. Primero verificar créditos heredados del reclutador desde esa empresa
+    const { data: creditoHeredado } = await supabase
+      .from("creditos_heredados_reclutador")
+      .select("creditos_disponibles")
+      .eq("reclutador_id", reclutadorId)
+      .eq("empresa_id", empresaId)
+      .maybeSingle();
+
+    const creditosHeredados = creditoHeredado?.creditos_disponibles || 0;
+
+    // 2. Obtener wallet de la empresa
     const { data: walletEmpresa, error: walletError } = await supabase
       .from("wallet_empresa")
       .select("creditos_disponibles, empresas(nombre_empresa)")
@@ -162,19 +179,45 @@ export async function verificarCreditosDisponibles(
       .single();
 
     if (walletError || !walletEmpresa) {
-      return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
+      // Si no hay wallet de empresa pero hay créditos heredados, aún se puede publicar
+      if (creditosHeredados >= COSTO_PUBLICACION) {
+        return {
+          suficientes: true,
+          creditosEmpresa: 0,
+          creditosHeredados,
+          nombreEmpresa: null,
+          origenDisponible: "heredado"
+        };
+      }
+      return { suficientes: false, creditosEmpresa: 0, creditosHeredados: 0, nombreEmpresa: null, origenDisponible: null };
     }
 
     const nombreEmpresa = (walletEmpresa.empresas as any)?.nombre_empresa || null;
+    const creditosEmpresa = walletEmpresa.creditos_disponibles;
+
+    // Determinar si hay suficientes créditos y de dónde
+    // Prioridad: créditos heredados primero, luego wallet de empresa
+    let suficientes = false;
+    let origenDisponible: "heredado" | "empresa" | null = null;
+
+    if (creditosHeredados >= COSTO_PUBLICACION) {
+      suficientes = true;
+      origenDisponible = "heredado";
+    } else if (creditosEmpresa >= COSTO_PUBLICACION) {
+      suficientes = true;
+      origenDisponible = "empresa";
+    }
 
     return {
-      suficientes: walletEmpresa.creditos_disponibles >= COSTO_PUBLICACION,
-      creditosEmpresa: walletEmpresa.creditos_disponibles,
-      nombreEmpresa
+      suficientes,
+      creditosEmpresa,
+      creditosHeredados,
+      nombreEmpresa,
+      origenDisponible
     };
   } catch (error) {
     console.error("Error verificando créditos:", error);
-    return { suficientes: false, creditosEmpresa: 0, nombreEmpresa: null };
+    return { suficientes: false, creditosEmpresa: 0, creditosHeredados: 0, nombreEmpresa: null, origenDisponible: null };
   }
 }
 
