@@ -2078,8 +2078,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_reclutador_asignado_de_postulacion: {
+        Args: { p_postulacion_id: string }
+        Returns: boolean
+      }
       mark_questionnaire_token_used: {
         Args: { p_token_id: string }
+        Returns: boolean
+      }
+      puede_gestionar_postulacion: {
+        Args: { p_postulacion_id: string }
+        Returns: boolean
+      }
+      puede_gestionar_postulacion_por_publicacion: {
+        Args: { p_publicacion_id: string }
         Returns: boolean
       }
       recalcular_estadisticas_reclutador: {
