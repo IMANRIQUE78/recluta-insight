@@ -30,7 +30,15 @@ interface Candidato {
   modalidad_preferida: string | null;
   nivel_educacion: string | null;
   experiencia_laboral: any;
+  resumen_profesional: string | null;
 }
+
+const truncateToWords = (text: string | null, wordCount: number): string => {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= wordCount) return text;
+  return words.slice(0, wordCount).join(" ") + "...";
+};
 
 export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const { toast } = useToast();
@@ -376,7 +384,11 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
                                 <Briefcase className="h-3 w-3" />
                                 {candidato.puesto_actual}
-                                {candidato.empresa_actual && ` @ ${candidato.empresa_actual}`}
+                              </p>
+                            )}
+                            {candidato.resumen_profesional && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                                {truncateToWords(candidato.resumen_profesional, 40)}
                               </p>
                             )}
                           </div>
