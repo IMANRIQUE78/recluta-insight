@@ -48,20 +48,61 @@ const tiposEducacion = ["Licenciatura", "Maestría", "Doctorado", "Curso", "Dipl
 
 const calcularDuracion = (inicio: string, fin: string): string => {
   if (!inicio) return "";
-  if (fin.toLowerCase() === "actual" || !fin) return "Actual";
   
-  const mesInicio = parseInt(inicio.substring(0, 2));
-  const anioInicio = parseInt(inicio.substring(2));
-  const mesFin = parseInt(fin.substring(0, 2));
-  const anioFin = parseInt(fin.substring(2));
+  // Normalizar: aceptar MM/AAAA o MMAAAA
+  const parseDate = (dateStr: string): { mes: number; anio: number } | null => {
+    if (!dateStr) return null;
+    
+    // Si contiene "/" asumimos MM/AAAA
+    if (dateStr.includes("/")) {
+      const parts = dateStr.split("/");
+      if (parts.length === 2) {
+        const mes = parseInt(parts[0], 10);
+        const anio = parseInt(parts[1], 10);
+        if (!isNaN(mes) && !isNaN(anio) && mes >= 1 && mes <= 12 && anio >= 1900) {
+          return { mes, anio };
+        }
+      }
+    }
+    // Fallback: MMAAAA (sin separador)
+    if (dateStr.length >= 6) {
+      const mes = parseInt(dateStr.substring(0, 2), 10);
+      const anio = parseInt(dateStr.substring(2), 10);
+      if (!isNaN(mes) && !isNaN(anio) && mes >= 1 && mes <= 12 && anio >= 1900) {
+        return { mes, anio };
+      }
+    }
+    return null;
+  };
   
-  const meses = (anioFin - anioInicio) * 12 + (mesFin - mesInicio);
+  const inicioDate = parseDate(inicio);
+  if (!inicioDate) return "";
+  
+  // Si es "Actual" o vacío, calcular hasta hoy
+  const finLower = fin?.toLowerCase().trim() || "";
+  const esActual = finLower === "actual" || finLower === "" || finLower === "-";
+  
+  let finDate: { mes: number; anio: number };
+  if (esActual) {
+    const now = new Date();
+    finDate = { mes: now.getMonth() + 1, anio: now.getFullYear() };
+  } else {
+    const parsed = parseDate(fin);
+    if (!parsed) return "";
+    finDate = parsed;
+  }
+  
+  const meses = (finDate.anio - inicioDate.anio) * 12 + (finDate.mes - inicioDate.mes);
+  
+  if (meses < 0) return "";
+  if (meses === 0) return "< 1 mes";
+  
   const anios = Math.floor(meses / 12);
   const mesesRestantes = meses % 12;
   
   if (anios === 0) return `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
   if (mesesRestantes === 0) return `${anios} ${anios === 1 ? 'año' : 'años'}`;
-  return `${anios} ${anios === 1 ? 'año' : 'años'} ${mesesRestantes} ${mesesRestantes === 1 ? 'mes' : 'meses'}`;
+  return `${anios}a ${mesesRestantes}m`;
 };
 
 const calcularPorcentajeLlenado = (data: any): number => {
@@ -533,8 +574,8 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                       className="mt-1"
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
                       <Label className="text-xs">Inicio</Label>
                       <Input
                         value={exp.fecha_inicio}
@@ -544,7 +585,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                         className="h-8 text-sm mt-1"
                       />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <Label className="text-xs">Fin</Label>
                       <Input
                         value={exp.fecha_fin}
@@ -554,12 +595,14 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                         className="h-8 text-sm mt-1"
                       />
                     </div>
-                    <div>
-                      <Label className="text-xs">Duración</Label>
-                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center mt-1">
-                        {calcularDuracion(exp.fecha_inicio, exp.fecha_fin) || "-"}
-                      </div>
-                    </div>
+                    {calcularDuracion(exp.fecha_inicio, exp.fecha_fin) && (
+                      <Badge 
+                        variant="secondary" 
+                        className="h-8 px-3 text-xs font-medium bg-primary/10 text-primary border-primary/20 whitespace-nowrap"
+                      >
+                        {calcularDuracion(exp.fecha_inicio, exp.fecha_fin)}
+                      </Badge>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <Label className="text-sm">Descripción y logros</Label>
@@ -655,8 +698,8 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                       className="mt-1"
                     />
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
                       <Label className="text-xs">Inicio</Label>
                       <Input
                         value={edu.fecha_inicio}
@@ -666,7 +709,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                         className="h-8 text-sm mt-1"
                       />
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <Label className="text-xs">Fin</Label>
                       <Input
                         value={edu.fecha_fin}
@@ -676,12 +719,14 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                         className="h-8 text-sm mt-1"
                       />
                     </div>
-                    <div>
-                      <Label className="text-xs">Duración</Label>
-                      <div className="bg-muted p-1.5 rounded text-xs h-8 flex items-center mt-1">
-                        {calcularDuracion(edu.fecha_inicio, edu.fecha_fin) || "-"}
-                      </div>
-                    </div>
+                    {calcularDuracion(edu.fecha_inicio, edu.fecha_fin) && (
+                      <Badge 
+                        variant="secondary" 
+                        className="h-8 px-3 text-xs font-medium bg-primary/10 text-primary border-primary/20 whitespace-nowrap"
+                      >
+                        {calcularDuracion(edu.fecha_inicio, edu.fecha_fin)}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
