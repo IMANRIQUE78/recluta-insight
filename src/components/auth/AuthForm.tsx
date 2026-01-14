@@ -49,7 +49,7 @@ export const AuthForm = () => {
         email: trimmedEmail,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: `${window.location.origin}/verify-email`,
         },
       });
 
