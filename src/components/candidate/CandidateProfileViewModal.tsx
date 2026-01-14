@@ -29,7 +29,10 @@ import {
   CheckCircle,
   Clock,
   Unlock,
-  Coins
+  Coins,
+  FileText,
+  Download,
+  Eye
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -79,6 +82,8 @@ interface CandidateProfile {
   disponibilidad: string | null;
   created_at: string;
   codigo_candidato?: string;
+  cv_url: string | null;
+  cv_filename: string | null;
 }
 
 interface EstudioSocioeconomico {
@@ -415,6 +420,31 @@ export const CandidateProfileViewModal = ({
                       showText={true}
                       className="w-full"
                     />
+                  </div>
+                )}
+
+                {/* Botón de CV - Solo visible cuando se tiene acceso completo */}
+                {canSeeIdentity && profile.cv_url && (
+                  <div className="pt-2 flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => window.open(profile.cv_url!, '_blank')}
+                    >
+                      <Eye className="h-4 w-4 mr-2" />
+                      Ver CV
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = profile.cv_url!;
+                        link.download = profile.cv_filename || 'cv-candidato';
+                        link.click();
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
               </div>
