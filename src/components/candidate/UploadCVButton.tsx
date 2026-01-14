@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { FileUp, FileCheck, Loader2, Trash2 } from "lucide-react";
+import { FileUp, FileCheck, Loader2, Trash2, Eye, Pencil, Download, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -26,16 +26,20 @@ const ALLOWED_TYPES = [
 
 export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVButtonProps) {
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [hasCV, setHasCV] = useState(false);
   const [cvFilename, setCvFilename] = useState<string | null>(null);
+  const [cvPath, setCvPath] = useState<string | null>(null);
+  const [cvUrl, setCvUrl] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Verificar si ya tiene CV al montar
-  useState(() => {
+  useEffect(() => {
     checkExistingCV();
-  });
+  }, []);
 
   async function checkExistingCV() {
     const { data: { session } } = await supabase.auth.getSession();
@@ -50,10 +54,30 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
     if (data?.cv_url) {
       setHasCV(true);
       setCvFilename(data.cv_filename);
+      setCvPath(data.cv_url);
+      
+      // Generar URL firmada para visualización
+      const { data: signedUrlData } = await supabase.storage
+        .from("candidate-cvs")
+        .createSignedUrl(data.cv_url, 3600); // 1 hora
+      
+      if (signedUrlData?.signedUrl) {
+        setCvUrl(signedUrlData.signedUrl);
+      }
     }
   }
 
   function handleButtonClick() {
+    if (hasCV) {
+      // Si ya tiene CV, abrir modal de visualización
+      setShowViewDialog(true);
+    } else {
+      // Si no tiene CV, abrir selector de archivo
+      fileInputRef.current?.click();
+    }
+  }
+
+  function handleEditClick() {
     fileInputRef.current?.click();
   }
 
@@ -135,11 +159,6 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
         throw uploadError;
       }
 
-      // Obtener la URL del archivo
-      const { data: urlData } = supabase.storage
-        .from("candidate-cvs")
-        .getPublicUrl(filePath);
-
       // Actualizar perfil con la URL del CV
       const { error: updateError } = await supabase
         .from("perfil_candidato")
@@ -153,14 +172,24 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
         throw updateError;
       }
 
+      // Generar URL firmada para visualización
+      const { data: signedUrlData } = await supabase.storage
+        .from("candidate-cvs")
+        .createSignedUrl(filePath, 3600);
+
       setHasCV(true);
       setCvFilename(file.name);
+      setCvPath(filePath);
+      if (signedUrlData?.signedUrl) {
+        setCvUrl(signedUrlData.signedUrl);
+      }
 
       toast({
         title: "CV subido exitosamente",
         description: `Tu CV "${file.name}" ha sido guardado`,
       });
 
+      setShowViewDialog(false);
       onUploadSuccess?.();
     } catch (error: any) {
       console.error("Error al subir CV:", error);
@@ -174,10 +203,87 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
     }
   }
 
-  async function handleConfirmReplace() {
+  async function handleDeleteCV() {
+    setDeleting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const userId = session.user.id;
+
+      // Eliminar archivo del storage
+      if (cvPath) {
+        await supabase.storage.from("candidate-cvs").remove([cvPath]);
+      }
+
+      // Limpiar referencia en la base de datos
+      const { error: updateError } = await supabase
+        .from("perfil_candidato")
+        .update({
+          cv_url: null,
+          cv_filename: null,
+        })
+        .eq("user_id", userId);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setHasCV(false);
+      setCvFilename(null);
+      setCvPath(null);
+      setCvUrl(null);
+      setShowDeleteDialog(false);
+      setShowViewDialog(false);
+
+      toast({
+        title: "CV eliminado",
+        description: "Tu CV ha sido eliminado correctamente",
+      });
+    } catch (error: any) {
+      console.error("Error al eliminar CV:", error);
+      toast({
+        title: "Error al eliminar CV",
+        description: error.message || "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  async function handleDownloadCV() {
+    if (!cvPath) return;
+
+    const { data, error } = await supabase.storage
+      .from("candidate-cvs")
+      .download(cvPath);
+
+    if (error) {
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo descargar el archivo",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Crear enlace de descarga
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = cvFilename || "CV.pdf";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function handleConfirmReplace() {
     setShowConfirmDialog(false);
     if (pendingFile) {
-      await uploadFile(pendingFile);
+      uploadFile(pendingFile);
       setPendingFile(null);
     }
   }
@@ -186,6 +292,8 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
     setShowConfirmDialog(false);
     setPendingFile(null);
   }
+
+  const isPDF = cvFilename?.toLowerCase().endsWith(".pdf");
 
   return (
     <>
@@ -223,6 +331,80 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
         )}
       </Button>
 
+      {/* Modal de visualización del CV */}
+      <Dialog open={showViewDialog} onOpenChange={setShowViewDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-primary" />
+              Mi CV
+            </DialogTitle>
+            <DialogDescription>
+              {cvFilename && (
+                <span className="font-medium text-foreground">{cvFilename}</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Visor del documento */}
+          <div className="flex-1 min-h-[400px] bg-muted rounded-lg overflow-hidden">
+            {isPDF && cvUrl ? (
+              <iframe
+                src={cvUrl}
+                className="w-full h-full min-h-[400px]"
+                title="Vista previa del CV"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full min-h-[400px] text-center p-6">
+                <FileCheck className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
+                  Vista previa no disponible para archivos Word
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Descarga el archivo para visualizarlo
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Acciones */}
+          <DialogFooter className="flex-row justify-between sm:justify-between gap-2 pt-4">
+            <Button
+              variant="destructive"
+              onClick={() => setShowDeleteDialog(true)}
+              disabled={deleting}
+              className="gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              Eliminar
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleDownloadCV}
+                className="gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Descargar
+              </Button>
+              <Button
+                onClick={handleEditClick}
+                disabled={uploading}
+                className="gap-2"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Pencil className="h-4 w-4" />
+                )}
+                Actualizar
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de confirmación para reemplazar */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
@@ -238,6 +420,37 @@ export function UploadCVButton({ codigoCandidato, onUploadSuccess }: UploadCVBut
             </Button>
             <Button onClick={handleConfirmReplace}>
               Reemplazar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo de confirmación para eliminar */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar CV</DialogTitle>
+            <DialogDescription>
+              ¿Estás seguro de que deseas eliminar tu CV? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteCV}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Eliminando...
+                </>
+              ) : (
+                "Eliminar"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
