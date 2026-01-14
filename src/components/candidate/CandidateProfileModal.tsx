@@ -482,10 +482,10 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="puesto_actual">Puesto Actual</Label>
+                <Label htmlFor="puesto_actual">Puesto Buscado</Label>
                 <Input
                   id="puesto_actual"
-                  placeholder="Ej: Desarrollador Senior, Gerente de Ventas"
+                  placeholder="Administrador, Auxiliar Contable, Auxiliar Administrativo"
                   value={formData.puesto_actual}
                   onChange={(e) => setFormData({ ...formData, puesto_actual: e.target.value })}
                   className="mt-1"
