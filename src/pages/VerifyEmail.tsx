@@ -68,9 +68,9 @@ const VerifyEmail = () => {
       sessionStorage.removeItem("pendingVerificationEmail");
       toast.success("¡Correo verificado exitosamente! Ahora puedes iniciar sesión.");
       
-      // Redirect to auth page (login tab) after 2 seconds
+      // Redirect to auth page login tab after 2 seconds
       setTimeout(() => {
-        navigate("/auth");
+        navigate("/auth?tab=signin");
       }, 2000);
     } catch (err: any) {
       setError(err.message || "Error al verificar el correo");
