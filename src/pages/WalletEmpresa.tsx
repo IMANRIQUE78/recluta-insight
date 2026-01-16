@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
@@ -30,7 +28,6 @@ import {
   UserCheck,
   Gift,
   AlertCircle,
-  CheckCircle2,
   UserPlus
 } from "lucide-react";
 import { format, subDays } from "date-fns";
@@ -38,6 +35,7 @@ import { es } from "date-fns/locale";
 import { toast } from "sonner";
 import { AsignarCreditosReclutadorDialog } from "@/components/wallet/AsignarCreditosReclutadorDialog";
 import { useWalletPdf } from "@/hooks/useWalletPdf";
+import { CreditPackageSelector } from "@/components/wallet/CreditPackageSelector";
 
 interface WalletData {
   id: string;
@@ -89,9 +87,6 @@ const WalletEmpresa = () => {
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [periodoFiltro, setPeriodoFiltro] = useState<string>("30");
   
-  // Compra de créditos
-  const [cantidadCompra, setCantidadCompra] = useState<number>(100);
-  const [comprando, setComprando] = useState(false);
   
   // Dialog asignar créditos
   const [asignarDialogOpen, setAsignarDialogOpen] = useState(false);
@@ -225,53 +220,8 @@ const WalletEmpresa = () => {
     }
   };
 
-  const handleComprarCreditos = async () => {
-    if (!wallet || !empresaId || cantidadCompra <= 0) return;
 
-    setComprando(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Registrar el movimiento
-      const { error: movError } = await supabase.rpc("registrar_movimiento_creditos", {
-        p_origen_pago: "empresa",
-        p_wallet_empresa_id: wallet.id,
-        p_wallet_reclutador_id: null,
-        p_empresa_id: empresaId,
-        p_reclutador_user_id: user.id,
-        p_tipo_accion: "compra_creditos",
-        p_creditos_cantidad: cantidadCompra,
-        p_descripcion: `Compra de ${cantidadCompra} créditos`,
-        p_metodo: "manual"
-      });
-
-      if (movError) throw movError;
-
-      // Actualizar wallet
-      const { error: walletError } = await supabase
-        .from("wallet_empresa")
-        .update({
-          creditos_disponibles: wallet.creditos_disponibles + cantidadCompra,
-          creditos_totales_comprados: wallet.creditos_totales_comprados + cantidadCompra
-        })
-        .eq("id", wallet.id);
-
-      if (walletError) throw walletError;
-
-      toast.success(`Se compraron ${cantidadCompra} créditos exitosamente`);
-      loadWallet();
-      loadMovimientos();
-      setCantidadCompra(100);
-    } catch (error) {
-      console.error("Error comprando créditos:", error);
-      toast.error("Error al comprar créditos");
-    } finally {
-      setComprando(false);
-    }
-  };
-
-  const filteredMovimientos = movimientos.filter(m => 
+  const filteredMovimientos = movimientos.filter(m =>
     m.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     tipoAccionConfig[m.tipo_accion]?.label.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -403,62 +353,8 @@ const WalletEmpresa = () => {
             </CardContent>
           </Card>
 
-          {/* Compra de Créditos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                Comprar Créditos
-              </CardTitle>
-              <CardDescription>Agrega créditos a tu cuenta</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Cantidad de créditos</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={cantidadCompra}
-                  onChange={(e) => setCantidadCompra(parseInt(e.target.value) || 0)}
-                  className="text-lg font-medium"
-                />
-              </div>
-              
-              <div className="grid grid-cols-3 gap-2">
-                {[100, 500, 1000].map((cantidad) => (
-                  <Button
-                    key={cantidad}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCantidadCompra(cantidad)}
-                    className={cantidadCompra === cantidad ? "border-primary bg-primary/10" : ""}
-                  >
-                    {cantidad}
-                  </Button>
-                ))}
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Precio estimado:</span>
-                <span className="font-bold">${(cantidadCompra * 10).toLocaleString()} MXN</span>
-              </div>
-
-              <Button 
-                className="w-full gap-2" 
-                onClick={handleComprarCreditos}
-                disabled={comprando || cantidadCompra <= 0}
-              >
-                {comprando ? (
-                  <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                Confirmar Compra
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Compra de Créditos con Stripe */}
+          <CreditPackageSelector walletType="empresa" />
         </div>
 
         {/* Estadísticas del Periodo */}

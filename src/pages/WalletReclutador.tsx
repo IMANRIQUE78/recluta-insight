@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { ArrowLeft, Wallet, CreditCard, Building2, TrendingUp, TrendingDown, Search, Filter, RefreshCw, ArrowLeftRight, Download, FileText } from "lucide-react";
 import { useWalletPdf } from "@/hooks/useWalletPdf";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { DevolverCreditosDialog } from "@/components/wallet/DevolverCreditosDialog";
+import { CreditPackageSelector } from "@/components/wallet/CreditPackageSelector";
 
 interface CreditoHeredado {
   id: string;
@@ -39,6 +39,7 @@ interface Movimiento {
 
 export default function WalletReclutador() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   
   const [walletData, setWalletData] = useState<{
@@ -57,9 +58,6 @@ export default function WalletReclutador() {
   const [tipoFiltro, setTipoFiltro] = useState<string>("todos");
   const [busqueda, setBusqueda] = useState("");
   
-  // Compra de créditos
-  const [cantidadCompra, setCantidadCompra] = useState(10);
-  const [comprando, setComprando] = useState(false);
   
   // Dialog devolver créditos
   const [devolverDialogOpen, setDevolverDialogOpen] = useState(false);
@@ -169,54 +167,8 @@ export default function WalletReclutador() {
     }
   };
 
-  const handleComprarCreditos = async () => {
-    if (!user || !reclutadorId || !walletData) return;
-    
-    setComprando(true);
-    try {
-      // Actualizar wallet
-      const nuevosCreditos = walletData.creditos_propios + cantidadCompra;
-      const nuevoTotal = walletData.creditos_totales_comprados + cantidadCompra;
 
-      const { error: updateError } = await supabase
-        .from("wallet_reclutador")
-        .update({
-          creditos_propios: nuevosCreditos,
-          creditos_totales_comprados: nuevoTotal
-        })
-        .eq("id", walletData.id);
-
-      if (updateError) throw updateError;
-
-      // Registrar movimiento
-      const { error: movError } = await supabase
-        .from("movimientos_creditos")
-        .insert({
-          origen_pago: "reclutador" as any,
-          wallet_reclutador_id: walletData.id,
-          reclutador_user_id: user.id,
-          tipo_accion: "compra" as any,
-          metodo: "manual" as any,
-          creditos_cantidad: cantidadCompra,
-          creditos_antes: walletData.creditos_propios,
-          creditos_despues: nuevosCreditos,
-          descripcion: `Compra de ${cantidadCompra} créditos propios`
-        });
-
-      if (movError) throw movError;
-
-      toast.success(`Compra de ${cantidadCompra} créditos realizada`);
-      fetchData();
-      setCantidadCompra(10);
-
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error("Error al procesar la compra");
-    } finally {
-      setComprando(false);
-    }
-  };
-
+  // Check for canceled payment
   const getTipoAccionBadge = (tipo: string) => {
     const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
       compra: { label: "Compra", variant: "default" },
@@ -373,63 +325,8 @@ export default function WalletReclutador() {
         )}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Comprar Créditos */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Comprar Créditos
-              </CardTitle>
-              <CardDescription>
-                Los créditos comprados son de uso libre
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Cantidad de créditos</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={cantidadCompra}
-                  onChange={(e) => setCantidadCompra(parseInt(e.target.value) || 1)}
-                />
-              </div>
-              
-              <div className="p-3 rounded-lg bg-muted/50">
-                <div className="flex justify-between text-sm">
-                  <span>Créditos</span>
-                  <span>{cantidadCompra}</span>
-                </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span>Precio unitario</span>
-                  <span>$50 MXN</span>
-                </div>
-                <Separator className="my-2" />
-                <div className="flex justify-between font-bold">
-                  <span>Total</span>
-                  <span>${(cantidadCompra * 50).toLocaleString()} MXN</span>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full" 
-                onClick={handleComprarCreditos}
-                disabled={comprando || cantidadCompra < 1}
-              >
-                {comprando ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Procesando...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Comprar Créditos
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
+          {/* Comprar Créditos con Stripe */}
+          <CreditPackageSelector walletType="reclutador" />
 
           {/* Estadísticas */}
           <Card className="lg:col-span-2">
