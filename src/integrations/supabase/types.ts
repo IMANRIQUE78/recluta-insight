@@ -1219,6 +1219,146 @@ export type Database = {
         }
         Relationships: []
       }
+      personal_empresa: {
+        Row: {
+          alcaldia_municipio: string | null
+          area: string | null
+          codigo_empleado: string
+          colonia: string | null
+          colonia_encrypted: string | null
+          created_at: string
+          cuenta_bancaria: string | null
+          cuenta_bancaria_encrypted: string | null
+          curp: string | null
+          curp_encrypted: string | null
+          domicilio: string | null
+          domicilio_encrypted: string | null
+          email_corporativo: string | null
+          email_personal: string | null
+          email_personal_encrypted: string | null
+          empresa_id: string
+          enfermedades_alergias: string | null
+          escolaridad: string | null
+          estado_civil: string | null
+          estatus: string
+          fecha_ingreso: string | null
+          fecha_nacimiento: string | null
+          fecha_salida: string | null
+          finiquito: number | null
+          genero: string | null
+          id: string
+          jefe_directo: string | null
+          nombre_completo: string
+          nss: string | null
+          nss_encrypted: string | null
+          observaciones: string | null
+          puesto: string | null
+          reclutador_asignado: string | null
+          rfc: string | null
+          rfc_encrypted: string | null
+          sueldo_asignado: number | null
+          telefono_emergencia: string | null
+          telefono_emergencia_encrypted: string | null
+          telefono_movil: string | null
+          telefono_movil_encrypted: string | null
+          updated_at: string
+        }
+        Insert: {
+          alcaldia_municipio?: string | null
+          area?: string | null
+          codigo_empleado: string
+          colonia?: string | null
+          colonia_encrypted?: string | null
+          created_at?: string
+          cuenta_bancaria?: string | null
+          cuenta_bancaria_encrypted?: string | null
+          curp?: string | null
+          curp_encrypted?: string | null
+          domicilio?: string | null
+          domicilio_encrypted?: string | null
+          email_corporativo?: string | null
+          email_personal?: string | null
+          email_personal_encrypted?: string | null
+          empresa_id: string
+          enfermedades_alergias?: string | null
+          escolaridad?: string | null
+          estado_civil?: string | null
+          estatus?: string
+          fecha_ingreso?: string | null
+          fecha_nacimiento?: string | null
+          fecha_salida?: string | null
+          finiquito?: number | null
+          genero?: string | null
+          id?: string
+          jefe_directo?: string | null
+          nombre_completo: string
+          nss?: string | null
+          nss_encrypted?: string | null
+          observaciones?: string | null
+          puesto?: string | null
+          reclutador_asignado?: string | null
+          rfc?: string | null
+          rfc_encrypted?: string | null
+          sueldo_asignado?: number | null
+          telefono_emergencia?: string | null
+          telefono_emergencia_encrypted?: string | null
+          telefono_movil?: string | null
+          telefono_movil_encrypted?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alcaldia_municipio?: string | null
+          area?: string | null
+          codigo_empleado?: string
+          colonia?: string | null
+          colonia_encrypted?: string | null
+          created_at?: string
+          cuenta_bancaria?: string | null
+          cuenta_bancaria_encrypted?: string | null
+          curp?: string | null
+          curp_encrypted?: string | null
+          domicilio?: string | null
+          domicilio_encrypted?: string | null
+          email_corporativo?: string | null
+          email_personal?: string | null
+          email_personal_encrypted?: string | null
+          empresa_id?: string
+          enfermedades_alergias?: string | null
+          escolaridad?: string | null
+          estado_civil?: string | null
+          estatus?: string
+          fecha_ingreso?: string | null
+          fecha_nacimiento?: string | null
+          fecha_salida?: string | null
+          finiquito?: number | null
+          genero?: string | null
+          id?: string
+          jefe_directo?: string | null
+          nombre_completo?: string
+          nss?: string | null
+          nss_encrypted?: string | null
+          observaciones?: string | null
+          puesto?: string | null
+          reclutador_asignado?: string | null
+          rfc?: string | null
+          rfc_encrypted?: string | null
+          sueldo_asignado?: number | null
+          telefono_emergencia?: string | null
+          telefono_emergencia_encrypted?: string | null
+          telefono_movil?: string | null
+          telefono_movil_encrypted?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_empresa_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       politica_prevencion_nom035: {
         Row: {
           contenido_politica: string
