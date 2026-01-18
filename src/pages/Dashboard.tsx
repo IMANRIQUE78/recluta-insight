@@ -255,19 +255,11 @@ const Dashboard = () => {
           </Button>
           <Button 
             variant="outline"
-            onClick={() => toast({
-              title: "🚀 Lo estamos construyendo...",
-              description: "El módulo de Base de Datos de Personal está en desarrollo. ¡Serás de los primeros en saber cuando esté listo!",
-              duration: 5000,
-            })}
+            onClick={() => navigate("/personal-empresa")}
             className="gap-2"
           >
             <Users className="h-4 w-4" />
             Base de Datos Personal
-            <Badge variant="outline" className="ml-1 bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
-              <Rocket className="h-2.5 w-2.5 mr-0.5" />
-              Próximamente
-            </Badge>
           </Button>
           <Button 
             variant="outline"
