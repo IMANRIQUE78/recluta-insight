@@ -121,7 +121,10 @@ export const SelectorCuestionario = ({
 
       if (respError) throw respError;
 
-      toast.success("Evaluación Guía I guardada exitosamente");
+      toast.success("¡Evaluación guardada con éxito!", {
+        description: `Gracias por completar la Guía I para ${selectedTrabajador.nombre_completo}. Los resultados han sido registrados correctamente.`,
+        duration: 5000,
+      });
       setAplicandoCuestionario(false);
       setSelectedTrabajador(null);
       setSelectedGuia(null);
@@ -192,7 +195,10 @@ export const SelectorCuestionario = ({
 
       if (resError) throw resError;
 
-      toast.success("Evaluación Guía III guardada exitosamente");
+      toast.success("¡Evaluación guardada con éxito!", {
+        description: `Gracias por completar la Guía III para ${selectedTrabajador.nombre_completo}. Los resultados y el nivel de riesgo han sido registrados.`,
+        duration: 5000,
+      });
       setAplicandoCuestionario(false);
       setSelectedTrabajador(null);
       setSelectedGuia(null);
