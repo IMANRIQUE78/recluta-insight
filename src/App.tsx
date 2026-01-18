@@ -20,6 +20,7 @@ import CuestionarioPublico from "./pages/CuestionarioPublico";
 import WalletEmpresa from "./pages/WalletEmpresa";
 import WalletReclutador from "./pages/WalletReclutador";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PersonalEmpresaDashboard from "./pages/PersonalEmpresaDashboard";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -78,6 +79,11 @@ const App = () => (
             <Route path="/nom035" element={
               <ProtectedRoute>
                 <NOM035Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/personal-empresa" element={
+              <ProtectedRoute>
+                <PersonalEmpresaDashboard />
               </ProtectedRoute>
             } />
             <Route path="/verificador-dashboard" element={
