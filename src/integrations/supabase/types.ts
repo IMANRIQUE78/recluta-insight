@@ -62,101 +62,6 @@ export type Database = {
           },
         ]
       }
-      asignacion_creditos: {
-        Row: {
-          activa: boolean
-          created_at: string
-          creditos_asignados: number
-          creditos_consumidos: number
-          fecha_asignacion: string
-          fecha_expiracion: string | null
-          id: string
-          notas: string | null
-          updated_at: string
-          wallet_empresa_id: string
-          wallet_reclutador_id: string
-        }
-        Insert: {
-          activa?: boolean
-          created_at?: string
-          creditos_asignados: number
-          creditos_consumidos?: number
-          fecha_asignacion?: string
-          fecha_expiracion?: string | null
-          id?: string
-          notas?: string | null
-          updated_at?: string
-          wallet_empresa_id: string
-          wallet_reclutador_id: string
-        }
-        Update: {
-          activa?: boolean
-          created_at?: string
-          creditos_asignados?: number
-          creditos_consumidos?: number
-          fecha_asignacion?: string
-          fecha_expiracion?: string | null
-          id?: string
-          notas?: string | null
-          updated_at?: string
-          wallet_empresa_id?: string
-          wallet_reclutador_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "asignacion_creditos_wallet_empresa_id_fkey"
-            columns: ["wallet_empresa_id"]
-            isOneToOne: false
-            referencedRelation: "wallet_empresa"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "asignacion_creditos_wallet_reclutador_id_fkey"
-            columns: ["wallet_reclutador_id"]
-            isOneToOne: false
-            referencedRelation: "wallet_reclutador"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      auditoria_acceso_empresas: {
-        Row: {
-          accion: string
-          empresa_id: string
-          id: string
-          ip_address: unknown
-          timestamp: string
-          user_agent: string | null
-          user_id: string
-        }
-        Insert: {
-          accion: string
-          empresa_id: string
-          id?: string
-          ip_address?: unknown
-          timestamp?: string
-          user_agent?: string | null
-          user_id: string
-        }
-        Update: {
-          accion?: string
-          empresa_id?: string
-          id?: string
-          ip_address?: unknown
-          timestamp?: string
-          user_agent?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "auditoria_acceso_empresas_empresa_id_fkey"
-            columns: ["empresa_id"]
-            isOneToOne: false
-            referencedRelation: "empresas"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       auditoria_vacantes: {
         Row: {
           created_at: string
@@ -429,39 +334,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      estadisticas_reclutador: {
-        Row: {
-          created_at: string
-          id: string
-          promedio_dias_cierre: number
-          ranking_score: number | null
-          ultima_actualizacion: string
-          updated_at: string
-          user_id: string
-          vacantes_cerradas: number
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          promedio_dias_cierre?: number
-          ranking_score?: number | null
-          ultima_actualizacion?: string
-          updated_at?: string
-          user_id: string
-          vacantes_cerradas?: number
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          promedio_dias_cierre?: number
-          ranking_score?: number | null
-          ultima_actualizacion?: string
-          updated_at?: string
-          user_id?: string
-          vacantes_cerradas?: number
-        }
-        Relationships: []
       }
       estadisticas_verificador: {
         Row: {
@@ -2233,10 +2105,6 @@ export type Database = {
       puede_gestionar_postulacion_por_publicacion: {
         Args: { p_publicacion_id: string }
         Returns: boolean
-      }
-      recalcular_estadisticas_reclutador: {
-        Args: { p_user_id: string }
-        Returns: undefined
       }
       registrar_movimiento_creditos: {
         Args: {
