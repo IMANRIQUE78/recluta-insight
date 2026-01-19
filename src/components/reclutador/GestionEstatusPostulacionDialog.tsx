@@ -298,9 +298,7 @@ export const GestionEstatusPostulacionDialog = ({
             })
             .eq("id", publicacion.vacante_id);
 
-          await supabase.rpc("recalcular_estadisticas_reclutador", {
-            p_user_id: user.id,
-          });
+          // Las estadísticas se calculan dinámicamente en useReclutadorStats
         }
       }
 
