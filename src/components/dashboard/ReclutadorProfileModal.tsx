@@ -132,15 +132,38 @@ export const ReclutadorProfileModal = ({ open, onOpenChange, reclutadorId, asoci
         console.log("No se proporcionó asociacionId, saltando estadísticas de colaboración");
       }
 
-      // Cargar estadísticas globales
-      if (perfilData?.user_id) {
-        const { data: statsData } = await supabase
-          .from("estadisticas_reclutador")
-          .select("*")
-          .eq("user_id", perfilData.user_id)
-          .maybeSingle();
+      // Cargar estadísticas globales dinámicamente desde vacantes
+      if (perfilData?.id) {
+        const { data: vacantesData } = await supabase
+          .from("vacantes")
+          .select("id, estatus, fecha_cierre, fecha_solicitud")
+          .eq("reclutador_asignado_id", perfilData.id);
 
-        setEstadisticas(statsData);
+        if (vacantesData) {
+          const cerradas = vacantesData.filter(v => v.estatus === "cerrada");
+          let promedioDias = 0;
+          let rankingScore = 0;
+
+          if (cerradas.length > 0) {
+            const totalDias = cerradas.reduce((sum, v) => {
+              if (v.fecha_cierre && v.fecha_solicitud) {
+                const dias = Math.floor(
+                  (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
+                );
+                return sum + Math.max(dias, 1);
+              }
+              return sum;
+            }, 0);
+            promedioDias = Math.round(totalDias / cerradas.length);
+            rankingScore = promedioDias > 0 ? Math.round((cerradas.length / promedioDias) * 100 * 100) / 100 : cerradas.length * 10000;
+          }
+
+          setEstadisticas({
+            vacantes_cerradas: cerradas.length,
+            promedio_dias_cierre: promedioDias,
+            ranking_score: rankingScore
+          });
+        }
       }
     } catch (error: any) {
       toast({

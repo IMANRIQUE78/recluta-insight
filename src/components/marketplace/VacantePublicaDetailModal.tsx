@@ -80,25 +80,38 @@ export const VacantePublicaDetailModal = ({
           setPaisReclutador(perfilData.pais || "México");
         }
 
-        // Cargar estadísticas del reclutador
-        const { data: estadisticasData } = await supabase
-          .from("estadisticas_reclutador")
-          .select("vacantes_cerradas, ranking_score")
+        // Cargar estadísticas dinámicas del reclutador desde vacantes
+        const { data: perfilReclutador } = await supabase
+          .from("perfil_reclutador")
+          .select("id")
           .eq("user_id", publicacion.user_id)
           .maybeSingle();
 
-        if (estadisticasData) {
-          setVacantesCerradas(estadisticasData.vacantes_cerradas || 0);
-          setRankingScore(estadisticasData.ranking_score);
+        if (perfilReclutador) {
+          const { data: vacantesData } = await supabase
+            .from("vacantes")
+            .select("id, estatus, fecha_cierre, fecha_solicitud")
+            .eq("reclutador_asignado_id", perfilReclutador.id);
 
-          // Calcular posición en el ranking
-          if (estadisticasData.ranking_score !== null) {
-            const { count } = await supabase
-              .from("estadisticas_reclutador")
-              .select("*", { count: 'exact', head: true })
-              .gt("ranking_score", estadisticasData.ranking_score);
-            
-            setPosicionRanking((count || 0) + 1);
+          if (vacantesData) {
+            const cerradas = vacantesData.filter(v => v.estatus === "cerrada");
+            setVacantesCerradas(cerradas.length);
+
+            // Calcular promedio de días para ranking score
+            if (cerradas.length > 0) {
+              const totalDias = cerradas.reduce((sum, v) => {
+                if (v.fecha_cierre && v.fecha_solicitud) {
+                  const dias = Math.floor(
+                    (new Date(v.fecha_cierre).getTime() - new Date(v.fecha_solicitud).getTime()) / (1000 * 60 * 60 * 24)
+                  );
+                  return sum + Math.max(dias, 1);
+                }
+                return sum;
+              }, 0);
+              const promedioDias = totalDias / cerradas.length;
+              const score = promedioDias > 0 ? (cerradas.length / promedioDias) * 100 : cerradas.length * 10000;
+              setRankingScore(Math.round(score * 100) / 100);
+            }
           }
         }
       };

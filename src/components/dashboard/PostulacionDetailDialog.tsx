@@ -147,13 +147,7 @@ export const PostulacionDetailDialog = ({
             })
             .eq("id", publicacion.vacante_id);
 
-          // Recalcular estadísticas
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            await supabase.rpc("recalcular_estadisticas_reclutador", {
-              p_user_id: user.id
-            });
-          }
+          // Las estadísticas se calculan dinámicamente en useReclutadorStats
         }
       } catch (error) {
         console.error("Error cerrando vacante:", error);
