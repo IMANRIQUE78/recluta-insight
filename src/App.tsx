@@ -21,6 +21,7 @@ import WalletEmpresa from "./pages/WalletEmpresa";
 import WalletReclutador from "./pages/WalletReclutador";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PersonalEmpresaDashboard from "./pages/PersonalEmpresaDashboard";
+import CostosReclutamientoDashboard from "./pages/CostosReclutamientoDashboard";
 import NotFound from "./pages/NotFound";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -84,6 +85,11 @@ const App = () => (
             <Route path="/personal-empresa" element={
               <ProtectedRoute>
                 <PersonalEmpresaDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/costos-reclutamiento" element={
+              <ProtectedRoute>
+                <CostosReclutamientoDashboard />
               </ProtectedRoute>
             } />
             <Route path="/verificador-dashboard" element={

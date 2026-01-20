@@ -171,6 +171,53 @@ export type Database = {
         }
         Relationships: []
       }
+      conceptos_costeo_reclutamiento: {
+        Row: {
+          activo: boolean
+          concepto: string
+          costo: number
+          created_at: string
+          descripcion: string | null
+          empresa_id: string
+          id: string
+          periodicidad: string
+          unidad_medida: string
+          updated_at: string
+        }
+        Insert: {
+          activo?: boolean
+          concepto: string
+          costo?: number
+          created_at?: string
+          descripcion?: string | null
+          empresa_id: string
+          id?: string
+          periodicidad?: string
+          unidad_medida?: string
+          updated_at?: string
+        }
+        Update: {
+          activo?: boolean
+          concepto?: string
+          costo?: number
+          created_at?: string
+          descripcion?: string | null
+          empresa_id?: string
+          id?: string
+          periodicidad?: string
+          unidad_medida?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conceptos_costeo_reclutamiento_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creditos_heredados_reclutador: {
         Row: {
           created_at: string
