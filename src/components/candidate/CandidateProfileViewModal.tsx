@@ -125,6 +125,8 @@ export const CandidateProfileViewModal = ({
   const [showUnlockDialog, setShowUnlockDialog] = useState(false);
   const [creditosDisponibles, setCreditosDisponibles] = useState(0);
   const [reclutadorUserId, setReclutadorUserId] = useState<string | null>(null);
+  const [cvSignedUrl, setCvSignedUrl] = useState<string | null>(null);
+  const [showCvModal, setShowCvModal] = useState(false);
   const { generarMensajeGenerico } = useWhatsAppMessage();
 
   const { 
@@ -189,6 +191,7 @@ export const CandidateProfileViewModal = ({
 
   const loadProfile = async () => {
     setLoading(true);
+    setCvSignedUrl(null);
     try {
       const { data, error } = await supabase
         .from("perfil_candidato")
@@ -198,6 +201,17 @@ export const CandidateProfileViewModal = ({
 
       if (error) throw error;
       setProfile(data);
+
+      // Generar URL firmada para el CV si existe
+      if (data?.cv_url) {
+        const { data: signedUrlData } = await supabase.storage
+          .from("candidate-cvs")
+          .createSignedUrl(data.cv_url, 3600); // 1 hora
+        
+        if (signedUrlData?.signedUrl) {
+          setCvSignedUrl(signedUrlData.signedUrl);
+        }
+      }
     } catch (error: any) {
       console.error("Error loading profile:", error);
     } finally {
@@ -424,23 +438,37 @@ export const CandidateProfileViewModal = ({
                 )}
 
                 {/* Botón de CV - Solo visible cuando se tiene acceso completo */}
-                {canSeeIdentity && profile.cv_url && (
+                {canSeeIdentity && profile.cv_url && cvSignedUrl && (
                   <div className="pt-2 flex gap-2">
                     <Button
                       variant="outline"
                       className="flex-1"
-                      onClick={() => window.open(profile.cv_url!, '_blank')}
+                      onClick={() => setShowCvModal(true)}
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Ver CV
                     </Button>
                     <Button
                       variant="outline"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = profile.cv_url!;
-                        link.download = profile.cv_filename || 'cv-candidato';
-                        link.click();
+                      onClick={async () => {
+                        try {
+                          const { data, error } = await supabase.storage
+                            .from("candidate-cvs")
+                            .download(profile.cv_url!);
+                          
+                          if (error) throw error;
+                          
+                          const url = URL.createObjectURL(data);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = profile.cv_filename || 'cv-candidato.pdf';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        } catch (error) {
+                          console.error("Error downloading CV:", error);
+                        }
                       }}
                     >
                       <Download className="h-4 w-4" />
@@ -796,6 +824,63 @@ export const CandidateProfileViewModal = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de visualización de CV */}
+      <Dialog open={showCvModal} onOpenChange={setShowCvModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              CV - {profile?.nombre_completo}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-[500px] bg-muted rounded-lg overflow-hidden">
+            {profile?.cv_filename?.toLowerCase().endsWith('.pdf') && cvSignedUrl ? (
+              <iframe
+                src={cvSignedUrl}
+                className="w-full h-full min-h-[500px]"
+                title="Vista previa del CV"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full min-h-[500px] text-center p-6">
+                <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-2">
+                  Vista previa no disponible para archivos Word
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Descarga el archivo para visualizarlo
+                </p>
+                <Button
+                  onClick={async () => {
+                    if (!profile?.cv_url) return;
+                    try {
+                      const { data, error } = await supabase.storage
+                        .from("candidate-cvs")
+                        .download(profile.cv_url);
+                      
+                      if (error) throw error;
+                      
+                      const url = URL.createObjectURL(data);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = profile.cv_filename || 'cv-candidato';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error("Error downloading CV:", error);
+                    }
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar CV
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
