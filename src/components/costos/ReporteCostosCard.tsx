@@ -2,16 +2,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MetricasVacantes, ReporteCostos } from "@/hooks/useCostosReclutamiento";
+import { 
+  MetricasVacantes, 
+  ReporteCostos,
+  getUnidadMedidaLabel 
+} from "@/hooks/useCostosReclutamiento";
 import {
   DollarSign,
   TrendingUp,
+  TrendingDown,
   Target,
   Briefcase,
   CheckCircle2,
   Clock,
   XCircle,
   PieChart,
+  Users,
+  Calculator,
 } from "lucide-react";
 
 interface ReporteCostosCardProps {
@@ -29,11 +36,19 @@ export const ReporteCostosCard = ({ reporte, metricas }: ReporteCostosCardProps)
     }).format(value);
   };
 
+  const formatNumber = (value: number, decimals: number = 2) => {
+    return new Intl.NumberFormat("es-MX", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value);
+  };
+
   // Determinar nivel de eficiencia
+  // A mayor eficiencia = más contrataciones por cada $1,000 invertidos
   const getEficienciaLevel = (value: number) => {
-    if (value >= 10) return { label: "Excelente", color: "bg-green-500", textColor: "text-green-600" };
-    if (value >= 5) return { label: "Buena", color: "bg-blue-500", textColor: "text-blue-600" };
-    if (value >= 2) return { label: "Regular", color: "bg-yellow-500", textColor: "text-yellow-600" };
+    if (value >= 0.5) return { label: "Excelente", color: "bg-green-500", textColor: "text-green-600" };
+    if (value >= 0.2) return { label: "Buena", color: "bg-blue-500", textColor: "text-blue-600" };
+    if (value >= 0.1) return { label: "Regular", color: "bg-yellow-500", textColor: "text-yellow-600" };
     return { label: "Baja", color: "bg-red-500", textColor: "text-red-600" };
   };
 
@@ -72,16 +87,39 @@ export const ReporteCostosCard = ({ reporte, metricas }: ReporteCostosCardProps)
 
           <Separator />
 
+          {/* Costo por contratación */}
+          <div className="p-3 rounded-lg bg-green-50 dark:bg-green-950/30 space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Target className="h-4 w-4" />
+                Costo por Contratación
+              </p>
+              {metricas.cerradas > 1 && (
+                <TrendingDown className="h-4 w-4 text-green-600" />
+              )}
+            </div>
+            <div className="flex items-baseline gap-2">
+              <p className="text-xl font-bold text-green-600">
+                {formatCurrency(reporte.costoPorContratacion)}
+              </p>
+              <span className="text-xs text-muted-foreground">/contratación</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Costo total ÷ {metricas.cerradas} vacantes cerradas
+            </p>
+          </div>
+
+          {/* Costo por vacante efectiva */}
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Costo por Vacante Efectiva</p>
             <div className="flex items-baseline gap-2">
-              <p className="text-xl font-semibold">
+              <p className="text-lg font-semibold">
                 {formatCurrency(reporte.costoPorVacanteEfectiva)}
               </p>
               <span className="text-xs text-muted-foreground">/vacante ponderada</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              Basado en valor ponderado: cerradas×1 + abiertas×0.5 + canceladas×0.25
+              Costo total ÷ Valor ponderado ({formatNumber(metricas.valorPonderado)})
             </p>
           </div>
 
@@ -96,8 +134,13 @@ export const ReporteCostosCard = ({ reporte, metricas }: ReporteCostosCardProps)
             {reporte.conceptosDesglose.slice(0, 5).map((item, idx) => (
               <div key={idx} className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="truncate max-w-[60%]">{item.concepto}</span>
-                  <span className="font-medium">{item.porcentaje.toFixed(1)}%</span>
+                  <div className="flex items-center gap-2 truncate max-w-[55%]">
+                    <span className="truncate">{item.concepto}</span>
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      {getUnidadMedidaLabel(item.unidadMedida)}
+                    </Badge>
+                  </div>
+                  <span className="font-medium">{formatNumber(item.porcentaje, 1)}%</span>
                 </div>
                 <Progress value={item.porcentaje} className="h-2" />
               </div>
@@ -134,12 +177,38 @@ export const ReporteCostosCard = ({ reporte, metricas }: ReporteCostosCardProps)
               </Badge>
             </div>
             <p className="text-3xl font-bold">
-              {reporte.eficienciaOperativa.toFixed(2)}
-              <span className="text-sm font-normal text-muted-foreground ml-1">puntos</span>
+              {formatNumber(reporte.eficienciaOperativa, 3)}
+              <span className="text-sm font-normal text-muted-foreground ml-1">
+                contrataciones/$1,000
+              </span>
             </p>
+            <Progress 
+              value={Math.min(reporte.eficienciaOperativa * 100, 100)} 
+              className="h-2"
+            />
             <p className="text-xs text-muted-foreground">
-              (Valor Ponderado / Costo Mensual) × 10,000
+              (Vacantes cerradas × 1,000) ÷ Costo mensual total
             </p>
+          </div>
+
+          <Separator />
+
+          {/* Métricas de recursos */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 rounded-lg border">
+              <div className="flex items-center gap-2 mb-1">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Candidatos</span>
+              </div>
+              <p className="text-lg font-bold">{metricas.totalCandidatos}</p>
+            </div>
+            <div className="p-3 rounded-lg border">
+              <div className="flex items-center gap-2 mb-1">
+                <Calculator className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Reclutadores</span>
+              </div>
+              <p className="text-lg font-bold">{metricas.totalReclutadores}</p>
+            </div>
           </div>
 
           <Separator />
@@ -178,20 +247,14 @@ export const ReporteCostosCard = ({ reporte, metricas }: ReporteCostosCardProps)
                 <span className="text-sm font-medium">Valor Ponderado Total</span>
               </div>
               <p className="text-xl font-bold text-primary">
-                {metricas.valorPonderado.toFixed(2)}
+                {formatNumber(metricas.valorPonderado)}
               </p>
             </div>
           </div>
 
-          <Separator />
-
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p className="font-medium">📊 Metodología de Valuación:</p>
-            <ul className="list-disc list-inside space-y-0.5 ml-2">
-              <li>Vacantes cerradas representan trabajo completado (100%)</li>
-              <li>Vacantes abiertas son trabajo en progreso (50%)</li>
-              <li>Vacantes canceladas consumieron recursos parciales (25%)</li>
-            </ul>
+          <div className="text-xs text-muted-foreground space-y-1 p-3 bg-muted/30 rounded-lg">
+            <p className="font-medium">📊 Máxima de Costeo:</p>
+            <p>A mayor número de vacantes cerradas, menor costo por contratación.</p>
           </div>
         </CardContent>
       </Card>
