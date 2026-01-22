@@ -211,7 +211,7 @@ export const useCostosReclutamiento = (empresaId: string | null) => {
       valorPonderado,
       totalVacantes: vacantes?.length || 0,
       totalCandidatos,
-      totalReclutadores: (reclutadoresCount || 0) + 1, // +1 por el admin
+      totalReclutadores: reclutadoresCount || 0,
     });
   }, [empresaId]);
 
