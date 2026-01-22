@@ -1143,6 +1143,7 @@ export type Database = {
           alcaldia_municipio: string | null
           area: string | null
           codigo_empleado: string
+          codigo_postal: string | null
           colonia: string | null
           colonia_encrypted: string | null
           created_at: string
@@ -1157,6 +1158,7 @@ export type Database = {
           email_personal_encrypted: string | null
           empresa_id: string
           enfermedades_alergias: string | null
+          es_supervisor: boolean
           escolaridad: string | null
           estado_civil: string | null
           estatus: string
@@ -1186,6 +1188,7 @@ export type Database = {
           alcaldia_municipio?: string | null
           area?: string | null
           codigo_empleado: string
+          codigo_postal?: string | null
           colonia?: string | null
           colonia_encrypted?: string | null
           created_at?: string
@@ -1200,6 +1203,7 @@ export type Database = {
           email_personal_encrypted?: string | null
           empresa_id: string
           enfermedades_alergias?: string | null
+          es_supervisor?: boolean
           escolaridad?: string | null
           estado_civil?: string | null
           estatus?: string
@@ -1229,6 +1233,7 @@ export type Database = {
           alcaldia_municipio?: string | null
           area?: string | null
           codigo_empleado?: string
+          codigo_postal?: string | null
           colonia?: string | null
           colonia_encrypted?: string | null
           created_at?: string
@@ -1243,6 +1248,7 @@ export type Database = {
           email_personal_encrypted?: string | null
           empresa_id?: string
           enfermedades_alergias?: string | null
+          es_supervisor?: boolean
           escolaridad?: string | null
           estado_civil?: string | null
           estatus?: string
