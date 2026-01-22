@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,9 +19,10 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { User, Briefcase, MapPin, Phone, Mail, CreditCard, GraduationCap, HeartPulse, DollarSign } from "lucide-react";
+import { User, Briefcase, MapPin, Phone, Mail, CreditCard, GraduationCap, HeartPulse, DollarSign, Crown } from "lucide-react";
 
 interface RegistrarPersonalDialogProps {
   open: boolean;
@@ -56,6 +57,11 @@ const GENERO_OPTIONS = [
   "Prefiero no decir"
 ];
 
+interface Supervisor {
+  id: string;
+  nombre_completo: string;
+}
+
 export const RegistrarPersonalDialog = ({
   open,
   onOpenChange,
@@ -63,6 +69,7 @@ export const RegistrarPersonalDialog = ({
   onSuccess,
 }: RegistrarPersonalDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [formData, setFormData] = useState({
     nombre_completo: "",
     genero: "",
@@ -74,6 +81,7 @@ export const RegistrarPersonalDialog = ({
     domicilio: "",
     colonia: "",
     alcaldia_municipio: "",
+    codigo_postal: "",
     telefono_movil: "",
     telefono_emergencia: "",
     estado_civil: "",
@@ -88,7 +96,32 @@ export const RegistrarPersonalDialog = ({
     reclutador_asignado: "",
     sueldo_asignado: "",
     observaciones: "",
+    es_supervisor: false,
   });
+
+  // Cargar supervisores al abrir el dialog
+  useEffect(() => {
+    if (open && empresaId) {
+      loadSupervisores();
+    }
+  }, [open, empresaId]);
+
+  const loadSupervisores = async () => {
+    try {
+      const { data, error } = await (supabase
+        .from("personal_empresa" as any)
+        .select("id, nombre_completo")
+        .eq("empresa_id", empresaId)
+        .eq("es_supervisor", true)
+        .eq("estatus", "activo")
+        .order("nombre_completo", { ascending: true }) as any);
+
+      if (error) throw error;
+      setSupervisores(data || []);
+    } catch (error) {
+      console.error("Error loading supervisores:", error);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -115,6 +148,7 @@ export const RegistrarPersonalDialog = ({
           domicilio: formData.domicilio || null,
           colonia: formData.colonia || null,
           alcaldia_municipio: formData.alcaldia_municipio || null,
+          codigo_postal: formData.codigo_postal || null,
           telefono_movil: formData.telefono_movil || null,
           telefono_emergencia: formData.telefono_emergencia || null,
           estado_civil: formData.estado_civil || null,
@@ -130,6 +164,7 @@ export const RegistrarPersonalDialog = ({
           sueldo_asignado: formData.sueldo_asignado ? parseFloat(formData.sueldo_asignado) : null,
           observaciones: formData.observaciones || null,
           estatus: "activo",
+          es_supervisor: formData.es_supervisor,
         }) as any);
 
       if (error) throw error;
@@ -150,6 +185,7 @@ export const RegistrarPersonalDialog = ({
         domicilio: "",
         colonia: "",
         alcaldia_municipio: "",
+        codigo_postal: "",
         telefono_movil: "",
         telefono_emergencia: "",
         estado_civil: "",
@@ -164,6 +200,7 @@ export const RegistrarPersonalDialog = ({
         reclutador_asignado: "",
         sueldo_asignado: "",
         observaciones: "",
+        es_supervisor: false,
       });
     } catch (error: any) {
       console.error("Error registering employee:", error);
@@ -272,12 +309,30 @@ export const RegistrarPersonalDialog = ({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="jefe_directo">Jefe Directo</Label>
-                  <Input
-                    id="jefe_directo"
-                    value={formData.jefe_directo}
-                    onChange={(e) => setFormData({ ...formData, jefe_directo: e.target.value })}
-                    placeholder="Nombre del jefe directo"
-                  />
+                  <Select 
+                    value={formData.jefe_directo} 
+                    onValueChange={(v) => setFormData({ ...formData, jefe_directo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar supervisor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supervisores.length === 0 ? (
+                        <SelectItem value="sin_supervisor" disabled>
+                          No hay supervisores registrados
+                        </SelectItem>
+                      ) : (
+                        supervisores.map((sup) => (
+                          <SelectItem key={sup.id} value={sup.nombre_completo}>
+                            <div className="flex items-center gap-2">
+                              <Crown className="h-3 w-3 text-amber-500" />
+                              {sup.nombre_completo}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
@@ -307,6 +362,24 @@ export const RegistrarPersonalDialog = ({
                     onChange={(e) => setFormData({ ...formData, sueldo_asignado: e.target.value })}
                     placeholder="$0.00"
                   />
+                </div>
+              </div>
+
+              {/* Checkbox de Supervisor */}
+              <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                <Checkbox
+                  id="es_supervisor"
+                  checked={formData.es_supervisor}
+                  onCheckedChange={(checked) => setFormData({ ...formData, es_supervisor: checked === true })}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="es_supervisor" className="flex items-center gap-2 cursor-pointer">
+                    <Crown className="h-4 w-4 text-amber-500" />
+                    Este trabajador es supervisor
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Los supervisores aparecerán en la lista de "Jefe Directo" al registrar otros trabajadores
+                  </p>
                 </div>
               </div>
             </div>
@@ -345,6 +418,16 @@ export const RegistrarPersonalDialog = ({
                     value={formData.alcaldia_municipio}
                     onChange={(e) => setFormData({ ...formData, alcaldia_municipio: e.target.value })}
                     placeholder="Alcaldía o Municipio"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="codigo_postal">Código Postal</Label>
+                  <Input
+                    id="codigo_postal"
+                    value={formData.codigo_postal}
+                    onChange={(e) => setFormData({ ...formData, codigo_postal: e.target.value.replace(/\D/g, '').slice(0, 5) })}
+                    placeholder="00000"
+                    maxLength={5}
                   />
                 </div>
               </div>

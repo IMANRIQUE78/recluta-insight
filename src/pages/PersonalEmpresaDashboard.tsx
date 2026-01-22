@@ -19,6 +19,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Users, 
   Plus, 
@@ -33,7 +40,9 @@ import {
   UserCheck,
   UserX,
   RefreshCw,
-  Shield
+  Shield,
+  Crown,
+  Filter
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -58,6 +67,7 @@ interface PersonalEmpleado {
   domicilio: string | null;
   colonia: string | null;
   alcaldia_municipio: string | null;
+  codigo_postal: string | null;
   telefono_movil: string | null;
   telefono_emergencia: string | null;
   email_personal: string | null;
@@ -73,6 +83,7 @@ interface PersonalEmpleado {
   sueldo_asignado: number | null;
   finiquito: number | null;
   observaciones: string | null;
+  es_supervisor: boolean;
   created_at: string;
 }
 
@@ -87,6 +98,11 @@ const PersonalEmpresaDashboard = () => {
   const [verOpen, setVerOpen] = useState(false);
   const [selectedEmpleado, setSelectedEmpleado] = useState<PersonalEmpleado | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Filtros
+  const [filterEstatus, setFilterEstatus] = useState<string>("todos");
+  const [filterArea, setFilterArea] = useState<string>("todas");
+  const [filterSupervisor, setFilterSupervisor] = useState<string>("todos");
 
   useEffect(() => {
     loadEmpresaAndPersonal();
@@ -188,18 +204,31 @@ const PersonalEmpresaDashboard = () => {
     }
   };
 
-  const filteredPersonal = personal.filter(emp => 
-    emp.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.codigo_empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.puesto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    emp.area?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPersonal = personal.filter(emp => {
+    const matchesSearch = 
+      emp.nombre_completo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.codigo_empleado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.puesto?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      emp.area?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesEstatus = filterEstatus === "todos" || emp.estatus === filterEstatus;
+    const matchesArea = filterArea === "todas" || emp.area === filterArea;
+    const matchesSupervisor = filterSupervisor === "todos" || 
+      (filterSupervisor === "supervisores" && emp.es_supervisor) ||
+      (filterSupervisor === "no_supervisores" && !emp.es_supervisor);
+    
+    return matchesSearch && matchesEstatus && matchesArea && matchesSupervisor;
+  });
+
+  // Obtener áreas únicas para el filtro
+  const areasUnicas = [...new Set(personal.map(p => p.area).filter(Boolean) as string[])].sort();
 
   const stats = {
     total: personal.length,
     activos: personal.filter(p => p.estatus === 'activo').length,
     inactivos: personal.filter(p => p.estatus === 'inactivo').length,
     reingresos: personal.filter(p => p.estatus === 'reingreso').length,
+    supervisores: personal.filter(p => p.es_supervisor).length,
   };
 
   return (
@@ -271,17 +300,60 @@ const PersonalEmpresaDashboard = () => {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <CardTitle>Directorio de Empleados</CardTitle>
+                <CardTitle>Directorio de Trabajadores</CardTitle>
                 <CardDescription>Gestiona la información de tu personal</CardDescription>
               </div>
-              <div className="relative w-full sm:w-72">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre, código, puesto..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Filtro por Estatus */}
+                <Select value={filterEstatus} onValueChange={setFilterEstatus}>
+                  <SelectTrigger className="w-[140px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Estatus" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="activo">Activos</SelectItem>
+                    <SelectItem value="inactivo">Inactivos</SelectItem>
+                    <SelectItem value="reingreso">Reingresos</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Filtro por Área */}
+                <Select value={filterArea} onValueChange={setFilterArea}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Área" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas las áreas</SelectItem>
+                    {areasUnicas.map((area) => (
+                      <SelectItem key={area} value={area}>{area}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Filtro por Supervisor */}
+                <Select value={filterSupervisor} onValueChange={setFilterSupervisor}>
+                  <SelectTrigger className="w-[150px]">
+                    <Crown className="h-4 w-4 mr-2 text-amber-500" />
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    <SelectItem value="supervisores">Solo Supervisores</SelectItem>
+                    <SelectItem value="no_supervisores">No Supervisores</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Buscador */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre, código, puesto..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -303,6 +375,7 @@ const PersonalEmpresaDashboard = () => {
                       <TableHead>Nombre</TableHead>
                       <TableHead>Puesto</TableHead>
                       <TableHead>Área</TableHead>
+                      <TableHead>Supervisor</TableHead>
                       <TableHead>Estatus</TableHead>
                       <TableHead>Edad</TableHead>
                       <TableHead>Antigüedad</TableHead>
@@ -313,9 +386,28 @@ const PersonalEmpresaDashboard = () => {
                     {filteredPersonal.map((empleado) => (
                       <TableRow key={empleado.id}>
                         <TableCell className="font-mono text-xs">{empleado.codigo_empleado}</TableCell>
-                        <TableCell className="font-medium">{empleado.nombre_completo}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {empleado.nombre_completo}
+                            {empleado.es_supervisor && (
+                              <span title="Supervisor">
+                                <Crown className="h-4 w-4 text-amber-500" />
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>{empleado.puesto || "-"}</TableCell>
                         <TableCell>{empleado.area || "-"}</TableCell>
+                        <TableCell>
+                          {empleado.es_supervisor ? (
+                            <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">
+                              <Crown className="h-3 w-3 mr-1" />
+                              Sí
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>{getEstatusBadge(empleado.estatus)}</TableCell>
                         <TableCell>{calcularEdad(empleado.fecha_nacimiento)}</TableCell>
                         <TableCell>{calcularAntiguedad(empleado.fecha_ingreso, empleado.fecha_salida)}</TableCell>
