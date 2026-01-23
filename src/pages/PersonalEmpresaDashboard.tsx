@@ -84,6 +84,7 @@ interface PersonalEmpleado {
   finiquito: number | null;
   observaciones: string | null;
   es_supervisor: boolean;
+  empresa_id: string;
   created_at: string;
 }
 
@@ -133,15 +134,15 @@ const PersonalEmpresaDashboard = () => {
 
       setEmpresaId(userRole.empresa_id);
 
-      // Cargar personal - using type assertion since table was just created
-      const { data: personalData, error } = await (supabase
-        .from("personal_empresa" as any)
+      // Cargar personal
+      const { data: personalData, error } = await supabase
+        .from("personal_empresa")
         .select("*")
         .eq("empresa_id", userRole.empresa_id)
-        .order("nombre_completo", { ascending: true }) as any);
+        .order("nombre_completo", { ascending: true });
 
       if (error) throw error;
-      setPersonal(personalData || []);
+      setPersonal((personalData as PersonalEmpleado[]) || []);
     } catch (error: any) {
       console.error("Error loading personal:", error);
       toast.error("Error al cargar el personal");
@@ -177,10 +178,10 @@ const PersonalEmpresaDashboard = () => {
     if (!confirm(`¿Estás seguro de eliminar a ${empleado.nombre_completo}?`)) return;
     
     try {
-      const { error } = await (supabase
-        .from("personal_empresa" as any)
+      const { error } = await supabase
+        .from("personal_empresa")
         .delete()
-        .eq("id", empleado.id) as any);
+        .eq("id", empleado.id);
 
       if (error) throw error;
       toast.success("Empleado eliminado correctamente");
