@@ -21,8 +21,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Edit, User, Briefcase, MapPin, Phone, CreditCard, GraduationCap, AlertCircle } from "lucide-react";
+import { Edit, User, Briefcase, MapPin, Phone, CreditCard, GraduationCap, AlertCircle, Crown } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface PersonalEmpleado {
   id: string;
@@ -39,6 +40,7 @@ interface PersonalEmpleado {
   domicilio: string | null;
   colonia: string | null;
   alcaldia_municipio: string | null;
+  codigo_postal: string | null;
   telefono_movil: string | null;
   telefono_emergencia: string | null;
   email_personal: string | null;
@@ -54,6 +56,13 @@ interface PersonalEmpleado {
   sueldo_asignado: number | null;
   finiquito: number | null;
   observaciones: string | null;
+  es_supervisor: boolean;
+  empresa_id: string;
+}
+
+interface Supervisor {
+  id: string;
+  nombre_completo: string;
 }
 
 interface EditarPersonalDialogProps {
@@ -102,6 +111,7 @@ export const EditarPersonalDialog = ({
   onSuccess,
 }: EditarPersonalDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [supervisores, setSupervisores] = useState<Supervisor[]>([]);
   const [formData, setFormData] = useState({
     estatus: empleado.estatus,
     nombre_completo: empleado.nombre_completo,
@@ -115,6 +125,7 @@ export const EditarPersonalDialog = ({
     domicilio: empleado.domicilio || "",
     colonia: empleado.colonia || "",
     alcaldia_municipio: empleado.alcaldia_municipio || "",
+    codigo_postal: empleado.codigo_postal || "",
     telefono_movil: empleado.telefono_movil || "",
     telefono_emergencia: empleado.telefono_emergencia || "",
     estado_civil: empleado.estado_civil || "",
@@ -130,10 +141,41 @@ export const EditarPersonalDialog = ({
     sueldo_asignado: empleado.sueldo_asignado?.toString() || "",
     finiquito: empleado.finiquito?.toString() || "",
     observaciones: empleado.observaciones || "",
+    es_supervisor: empleado.es_supervisor,
   });
 
   const [showFechaSalida, setShowFechaSalida] = useState(empleado.estatus === "inactivo");
   const [showFiniquito, setShowFiniquito] = useState(!!empleado.fecha_salida);
+
+  // Cargar supervisores al abrir el dialog
+  useEffect(() => {
+    if (open && empleado.empresa_id) {
+      loadSupervisores();
+    }
+  }, [open, empleado.empresa_id]);
+
+  const loadSupervisores = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("personal_empresa")
+        .select("id, nombre_completo")
+        .eq("empresa_id", empleado.empresa_id)
+        .eq("es_supervisor", true)
+        .eq("estatus", "activo")
+        .neq("id", empleado.id) // Exclude self from supervisor list
+        .order("nombre_completo", { ascending: true });
+
+      if (error) {
+        console.error("Error loading supervisores:", error);
+        throw error;
+      }
+      
+      setSupervisores(data || []);
+    } catch (error) {
+      console.error("Error loading supervisores:", error);
+      setSupervisores([]);
+    }
+  };
 
   useEffect(() => {
     setFormData({
@@ -149,6 +191,7 @@ export const EditarPersonalDialog = ({
       domicilio: empleado.domicilio || "",
       colonia: empleado.colonia || "",
       alcaldia_municipio: empleado.alcaldia_municipio || "",
+      codigo_postal: empleado.codigo_postal || "",
       telefono_movil: empleado.telefono_movil || "",
       telefono_emergencia: empleado.telefono_emergencia || "",
       estado_civil: empleado.estado_civil || "",
@@ -164,6 +207,7 @@ export const EditarPersonalDialog = ({
       sueldo_asignado: empleado.sueldo_asignado?.toString() || "",
       finiquito: empleado.finiquito?.toString() || "",
       observaciones: empleado.observaciones || "",
+      es_supervisor: empleado.es_supervisor,
     });
     setShowFechaSalida(empleado.estatus === "inactivo");
     setShowFiniquito(!!empleado.fecha_salida);
@@ -200,39 +244,42 @@ export const EditarPersonalDialog = ({
 
     setLoading(true);
     try {
-      // Using type assertion since table was just created and types haven't regenerated yet
-      const { error } = await (supabase
-        .from("personal_empresa" as any)
-        .update({
-          estatus: formData.estatus,
-          nombre_completo: formData.nombre_completo.trim(),
-          genero: formData.genero || null,
-          puesto: formData.puesto || null,
-          area: formData.area || null,
-          jefe_directo: formData.jefe_directo || null,
-          fecha_nacimiento: formData.fecha_nacimiento || null,
-          fecha_ingreso: formData.fecha_ingreso || null,
-          fecha_salida: formData.fecha_salida || null,
-          domicilio: formData.domicilio || null,
-          colonia: formData.colonia || null,
-          alcaldia_municipio: formData.alcaldia_municipio || null,
-          telefono_movil: formData.telefono_movil || null,
-          telefono_emergencia: formData.telefono_emergencia || null,
-          estado_civil: formData.estado_civil || null,
-          email_personal: formData.email_personal || null,
-          email_corporativo: formData.email_corporativo || null,
-          nss: formData.nss || null,
-          cuenta_bancaria: formData.cuenta_bancaria || null,
-          curp: formData.curp?.toUpperCase() || null,
-          rfc: formData.rfc?.toUpperCase() || null,
-          escolaridad: formData.escolaridad || null,
-          enfermedades_alergias: formData.enfermedades_alergias || null,
-          reclutador_asignado: formData.reclutador_asignado || null,
-          sueldo_asignado: formData.sueldo_asignado ? parseFloat(formData.sueldo_asignado) : null,
-          finiquito: formData.finiquito ? parseFloat(formData.finiquito) : null,
-          observaciones: formData.observaciones || null,
-        })
-        .eq("id", empleado.id) as any);
+      const updateData = {
+        estatus: formData.estatus,
+        nombre_completo: formData.nombre_completo.trim(),
+        genero: formData.genero || null,
+        puesto: formData.puesto || null,
+        area: formData.area || null,
+        jefe_directo: formData.jefe_directo || null,
+        fecha_nacimiento: formData.fecha_nacimiento || null,
+        fecha_ingreso: formData.fecha_ingreso || null,
+        fecha_salida: formData.fecha_salida || null,
+        domicilio: formData.domicilio || null,
+        colonia: formData.colonia || null,
+        alcaldia_municipio: formData.alcaldia_municipio || null,
+        codigo_postal: formData.codigo_postal || null,
+        telefono_movil: formData.telefono_movil || null,
+        telefono_emergencia: formData.telefono_emergencia || null,
+        estado_civil: formData.estado_civil || null,
+        email_personal: formData.email_personal || null,
+        email_corporativo: formData.email_corporativo || null,
+        nss: formData.nss || null,
+        cuenta_bancaria: formData.cuenta_bancaria || null,
+        curp: formData.curp?.toUpperCase() || null,
+        rfc: formData.rfc?.toUpperCase() || null,
+        escolaridad: formData.escolaridad || null,
+        enfermedades_alergias: formData.enfermedades_alergias || null,
+        reclutador_asignado: formData.reclutador_asignado || null,
+        sueldo_asignado: formData.sueldo_asignado ? parseFloat(formData.sueldo_asignado) : null,
+        finiquito: formData.finiquito ? parseFloat(formData.finiquito) : null,
+        observaciones: formData.observaciones || null,
+        es_supervisor: formData.es_supervisor,
+      };
+      
+      const { error } = await supabase
+        .from("personal_empresa")
+        .update(updateData)
+        .eq("id", empleado.id);
 
       if (error) throw error;
 
@@ -357,11 +404,30 @@ export const EditarPersonalDialog = ({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="jefe_directo">Jefe Directo</Label>
-                  <Input
-                    id="jefe_directo"
-                    value={formData.jefe_directo}
-                    onChange={(e) => setFormData({ ...formData, jefe_directo: e.target.value })}
-                  />
+                  <Select 
+                    value={formData.jefe_directo} 
+                    onValueChange={(v) => setFormData({ ...formData, jefe_directo: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar supervisor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {supervisores.length === 0 ? (
+                        <SelectItem value="sin_supervisor" disabled>
+                          No hay supervisores registrados
+                        </SelectItem>
+                      ) : (
+                        supervisores.map((sup) => (
+                          <SelectItem key={sup.id} value={sup.nombre_completo}>
+                            <div className="flex items-center gap-2">
+                              <Crown className="h-3 w-3 text-amber-500" />
+                              {sup.nombre_completo}
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fecha_ingreso">Fecha de Ingreso</Label>
@@ -418,6 +484,24 @@ export const EditarPersonalDialog = ({
                   </div>
                 )}
               </div>
+
+              {/* Checkbox de Supervisor */}
+              <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
+                <Checkbox
+                  id="es_supervisor"
+                  checked={formData.es_supervisor}
+                  onCheckedChange={(checked) => setFormData({ ...formData, es_supervisor: checked === true })}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="es_supervisor" className="flex items-center gap-2 cursor-pointer">
+                    <Crown className="h-4 w-4 text-amber-500" />
+                    Este trabajador es supervisor
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Los supervisores aparecerán en la lista de "Jefe Directo" al registrar otros trabajadores
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Separator />
@@ -451,6 +535,16 @@ export const EditarPersonalDialog = ({
                     id="alcaldia_municipio"
                     value={formData.alcaldia_municipio}
                     onChange={(e) => setFormData({ ...formData, alcaldia_municipio: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="codigo_postal">Código Postal</Label>
+                  <Input
+                    id="codigo_postal"
+                    value={formData.codigo_postal}
+                    onChange={(e) => setFormData({ ...formData, codigo_postal: e.target.value.replace(/\D/g, '').slice(0, 5) })}
+                    placeholder="00000"
+                    maxLength={5}
                   />
                 </div>
               </div>
