@@ -86,6 +86,10 @@ interface PersonalEmpleado {
   es_supervisor: boolean;
   empresa_id: string;
   created_at: string;
+  // Campos NOM-035
+  centro_trabajo: string | null;
+  tipo_jornada: string | null;
+  modalidad_contratacion: string | null;
 }
 
 const PersonalEmpresaDashboard = () => {

@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,15 +18,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Loader2, Clock, AlertCircle, Gift, Coins } from "lucide-react";
-import { differenceInMonths, differenceInYears, format, parseISO } from "date-fns";
+import { Loader2, Clock, AlertCircle, Gift, Coins, UserCheck, Building2, Briefcase, MapPin } from "lucide-react";
+import { differenceInMonths, differenceInYears, parseISO } from "date-fns";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 interface RegistroTrabajadorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   empresaId: string;
   onSuccess: () => void;
+}
+
+interface PersonalEmpresa {
+  id: string;
+  nombre_completo: string;
+  email_personal: string | null;
+  email_corporativo: string | null;
+  telefono_movil: string | null;
+  puesto: string | null;
+  area: string | null;
+  centro_trabajo: string | null;
+  fecha_ingreso: string | null;
+  tipo_jornada: string | null;
+  modalidad_contratacion: string | null;
 }
 
 const FREE_WORKER_LIMIT = 5;
@@ -40,45 +54,68 @@ export const RegistroTrabajadorDialog = ({
   onSuccess,
 }: RegistroTrabajadorDialogProps) => {
   const [loading, setLoading] = useState(false);
+  const [loadingPersonal, setLoadingPersonal] = useState(false);
   const [workerCount, setWorkerCount] = useState(0);
   const [walletCredits, setWalletCredits] = useState(0);
   const [walletId, setWalletId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    nombre_completo: "",
-    email: "",
-    telefono: "",
-    puesto: "",
-    area: "",
-    centro_trabajo: "",
-    fecha_ingreso: "",
-    tipo_jornada: "completa",
-    modalidad_contratacion: "indefinido",
-  });
+  const [personalList, setPersonalList] = useState<PersonalEmpresa[]>([]);
+  const [selectedPersonalId, setSelectedPersonalId] = useState<string>("");
+  const [registeredPersonalIds, setRegisteredPersonalIds] = useState<Set<string>>(new Set());
 
-  // Cargar conteo de trabajadores y créditos de wallet
+  // Cargar lista de personal y datos de wallet
   useEffect(() => {
     const loadData = async () => {
       if (!empresaId || !open) return;
+      
+      setLoadingPersonal(true);
 
-      // Contar trabajadores actuales
-      const { count } = await supabase
-        .from("trabajadores_nom035")
-        .select("*", { count: "exact", head: true })
-        .eq("empresa_id", empresaId)
-        .eq("activo", true);
+      try {
+        // Cargar personal activo de la empresa
+        const { data: personal, error: personalError } = await supabase
+          .from("personal_empresa")
+          .select("id, nombre_completo, email_personal, email_corporativo, telefono_movil, puesto, area, centro_trabajo, fecha_ingreso, tipo_jornada, modalidad_contratacion")
+          .eq("empresa_id", empresaId)
+          .eq("estatus", "activo")
+          .order("nombre_completo", { ascending: true });
 
-      setWorkerCount(count || 0);
+        if (personalError) throw personalError;
+        setPersonalList(personal || []);
 
-      // Obtener wallet de empresa
-      const { data: wallet } = await supabase
-        .from("wallet_empresa")
-        .select("id, creditos_disponibles")
-        .eq("empresa_id", empresaId)
-        .maybeSingle();
+        // Cargar IDs de personal ya registrados en NOM-035
+        const { data: registered } = await supabase
+          .from("trabajadores_nom035")
+          .select("personal_id")
+          .eq("empresa_id", empresaId)
+          .eq("activo", true)
+          .not("personal_id", "is", null);
 
-      if (wallet) {
-        setWalletId(wallet.id);
-        setWalletCredits(wallet.creditos_disponibles);
+        setRegisteredPersonalIds(new Set(registered?.map(r => r.personal_id).filter(Boolean) as string[]));
+
+        // Contar trabajadores actuales NOM-035
+        const { count } = await supabase
+          .from("trabajadores_nom035")
+          .select("*", { count: "exact", head: true })
+          .eq("empresa_id", empresaId)
+          .eq("activo", true);
+
+        setWorkerCount(count || 0);
+
+        // Obtener wallet de empresa
+        const { data: wallet } = await supabase
+          .from("wallet_empresa")
+          .select("id, creditos_disponibles")
+          .eq("empresa_id", empresaId)
+          .maybeSingle();
+
+        if (wallet) {
+          setWalletId(wallet.id);
+          setWalletCredits(wallet.creditos_disponibles);
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+        toast.error("Error al cargar datos");
+      } finally {
+        setLoadingPersonal(false);
       }
     };
 
@@ -89,12 +126,22 @@ export const RegistroTrabajadorDialog = ({
   const hasEnoughCredits = walletCredits >= CREDIT_COST_PER_WORKER;
   const freeWorkersRemaining = Math.max(0, FREE_WORKER_LIMIT - workerCount);
 
+  // Obtener el personal seleccionado
+  const selectedPersonal = useMemo(() => {
+    return personalList.find(p => p.id === selectedPersonalId);
+  }, [personalList, selectedPersonalId]);
+
+  // Filtrar personal que no está registrado
+  const availablePersonal = useMemo(() => {
+    return personalList.filter(p => !registeredPersonalIds.has(p.id));
+  }, [personalList, registeredPersonalIds]);
+
   // Calcular antigüedad automáticamente
   const antiguedadCalculada = useMemo(() => {
-    if (!formData.fecha_ingreso) return null;
+    if (!selectedPersonal?.fecha_ingreso) return null;
     
     try {
-      const fechaIngreso = parseISO(formData.fecha_ingreso);
+      const fechaIngreso = parseISO(selectedPersonal.fecha_ingreso);
       const hoy = new Date();
       
       if (fechaIngreso > hoy) return null;
@@ -114,51 +161,53 @@ export const RegistroTrabajadorDialog = ({
     } catch {
       return null;
     }
-  }, [formData.fecha_ingreso]);
+  }, [selectedPersonal]);
+
+  const formatJornada = (tipo: string | null) => {
+    if (!tipo) return "No especificada";
+    const tipos: Record<string, string> = {
+      completa: "Jornada Completa",
+      parcial: "Jornada Parcial",
+      nocturna: "Jornada Nocturna",
+      mixta: "Jornada Mixta"
+    };
+    return tipos[tipo] || tipo;
+  };
+
+  const formatContratacion = (modalidad: string | null) => {
+    if (!modalidad) return "No especificada";
+    const modalidades: Record<string, string> = {
+      indefinido: "Contrato Indefinido",
+      temporal: "Contrato Temporal",
+      obra_determinada: "Obra Determinada",
+      capacitacion: "Capacitación Inicial"
+    };
+    return modalidades[modalidad] || modalidad;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.nombre_completo.trim()) {
-      toast.error("El nombre es requerido");
-      return;
-    }
-    if (!formData.email.trim()) {
-      toast.error("El correo electrónico es requerido");
-      return;
-    }
-    if (!formData.telefono.trim()) {
-      toast.error("El teléfono es requerido");
-      return;
-    }
-    if (!formData.puesto.trim()) {
-      toast.error("El puesto es requerido");
-      return;
-    }
-    if (!formData.area.trim()) {
-      toast.error("El área es requerida");
-      return;
-    }
-    if (!formData.centro_trabajo.trim()) {
-      toast.error("El centro de trabajo es requerido");
-      return;
-    }
-    if (!formData.fecha_ingreso) {
-      toast.error("La fecha de ingreso es requerida");
+    if (!selectedPersonal) {
+      toast.error("Selecciona un trabajador");
       return;
     }
 
-    // Validación de email básica
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      toast.error("El formato del correo electrónico no es válido");
+    // Validar campos requeridos
+    if (!selectedPersonal.puesto) {
+      toast.error("El trabajador no tiene puesto asignado en la base de personal");
       return;
     }
-
-    // Validación de teléfono (10 dígitos)
-    const telefonoLimpio = formData.telefono.replace(/\D/g, '');
-    if (telefonoLimpio.length < 10) {
-      toast.error("El teléfono debe tener al menos 10 dígitos");
+    if (!selectedPersonal.area) {
+      toast.error("El trabajador no tiene área asignada en la base de personal");
+      return;
+    }
+    if (!selectedPersonal.centro_trabajo) {
+      toast.error("El trabajador no tiene centro de trabajo asignado. Edítalo en la base de personal.");
+      return;
+    }
+    if (!selectedPersonal.fecha_ingreso) {
+      toast.error("El trabajador no tiene fecha de ingreso en la base de personal");
       return;
     }
 
@@ -175,7 +224,6 @@ export const RegistroTrabajadorDialog = ({
 
       // Si requiere créditos, descontar de la wallet
       if (requiresCredits && walletId) {
-        // Actualizar wallet
         const { error: walletError } = await supabase
           .from("wallet_empresa")
           .update({ 
@@ -199,18 +247,17 @@ export const RegistroTrabajadorDialog = ({
             creditos_cantidad: -CREDIT_COST_PER_WORKER,
             creditos_antes: walletCredits,
             creditos_despues: walletCredits - CREDIT_COST_PER_WORKER,
-            descripcion: `Registro de trabajador NOM-035: ${formData.nombre_completo.trim()}`,
+            descripcion: `Registro de trabajador NOM-035: ${selectedPersonal.nombre_completo}`,
             metadata: {
               modulo: "nom035",
               accion: "registro_trabajador",
-              trabajador_nombre: formData.nombre_completo.trim(),
-              trabajador_email: formData.email.trim().toLowerCase()
+              trabajador_nombre: selectedPersonal.nombre_completo,
+              personal_id: selectedPersonal.id
             }
           });
 
         if (movimientoError) {
           console.error("Error registrando movimiento:", movimientoError);
-          // Revertir cambio en wallet
           await supabase
             .from("wallet_empresa")
             .update({ creditos_disponibles: walletCredits })
@@ -219,42 +266,36 @@ export const RegistroTrabajadorDialog = ({
         }
       }
 
-      // Registrar trabajador
+      // Registrar trabajador en NOM-035 referenciando personal_empresa
+      const email = selectedPersonal.email_corporativo || selectedPersonal.email_personal || "";
+      const telefono = selectedPersonal.telefono_movil?.replace(/\D/g, '') || "";
+
       const { error } = await supabase
         .from("trabajadores_nom035")
         .insert({
           empresa_id: empresaId,
+          personal_id: selectedPersonal.id,
           codigo_trabajador: "",
-          nombre_completo: formData.nombre_completo.trim(),
-          email: formData.email.trim().toLowerCase(),
-          telefono: telefonoLimpio,
-          puesto: formData.puesto.trim(),
-          area: formData.area.trim(),
-          centro_trabajo: formData.centro_trabajo.trim(),
-          fecha_ingreso: formData.fecha_ingreso,
+          nombre_completo: selectedPersonal.nombre_completo,
+          email: email.toLowerCase(),
+          telefono: telefono,
+          puesto: selectedPersonal.puesto,
+          area: selectedPersonal.area,
+          centro_trabajo: selectedPersonal.centro_trabajo,
+          fecha_ingreso: selectedPersonal.fecha_ingreso,
           antiguedad_meses: antiguedadCalculada?.totalMeses || 0,
-          tipo_jornada: formData.tipo_jornada,
-          modalidad_contratacion: formData.modalidad_contratacion,
+          tipo_jornada: selectedPersonal.tipo_jornada || "completa",
+          modalidad_contratacion: selectedPersonal.modalidad_contratacion || "indefinido",
         });
 
       if (error) throw error;
 
       const successMessage = requiresCredits 
-        ? `Trabajador registrado exitosamente. Se descontaron ${CREDIT_COST_PER_WORKER} créditos.`
-        : "Trabajador registrado exitosamente";
+        ? `${selectedPersonal.nombre_completo} registrado. Se descontaron ${CREDIT_COST_PER_WORKER} créditos.`
+        : `${selectedPersonal.nombre_completo} registrado exitosamente`;
       
       toast.success(successMessage);
-      setFormData({
-        nombre_completo: "",
-        email: "",
-        telefono: "",
-        puesto: "",
-        area: "",
-        centro_trabajo: "",
-        fecha_ingreso: "",
-        tipo_jornada: "completa",
-        modalidad_contratacion: "indefinido",
-      });
+      setSelectedPersonalId("");
       onSuccess();
     } catch (error: any) {
       console.error("Error registering trabajador:", error);
@@ -268,10 +309,9 @@ export const RegistroTrabajadorDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar Nuevo Trabajador</DialogTitle>
+          <DialogTitle>Registrar Trabajador para NOM-035</DialogTitle>
           <DialogDescription>
-            Ingresa los datos del trabajador para su registro en el sistema NOM-035. 
-            El trabajador deberá aceptar el aviso de privacidad antes de iniciar cualquier evaluación.
+            Selecciona un trabajador de la base de personal para habilitarlo en las evaluaciones NOM-035.
           </DialogDescription>
         </DialogHeader>
 
@@ -282,7 +322,6 @@ export const RegistroTrabajadorDialog = ({
               <Gift className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-700">
                 <strong>¡Registros gratuitos!</strong> Te quedan {freeWorkersRemaining} registro{freeWorkersRemaining !== 1 ? 's' : ''} sin costo.
-                Después del 5° trabajador, cada registro costará {CREDIT_COST_PER_WORKER} créditos.
               </AlertDescription>
             </Alert>
           ) : (
@@ -299,140 +338,121 @@ export const RegistroTrabajadorDialog = ({
                   </>
                 ) : (
                   <>
-                    <strong>Créditos insuficientes.</strong> Necesitas {CREDIT_COST_PER_WORKER} créditos para registrar más trabajadores.
-                    Tienes {walletCredits} créditos. <a href="/wallet-empresa" className="underline font-medium">Comprar créditos</a>
+                    <strong>Créditos insuficientes.</strong> Necesitas {CREDIT_COST_PER_WORKER} créditos.
+                    <a href="/wallet-empresa" className="underline font-medium ml-1">Comprar créditos</a>
                   </>
                 )}
               </AlertDescription>
             </Alert>
           )}
+
+          {/* Selector de trabajador */}
           <div className="space-y-2">
-            <Label htmlFor="nombre">Nombre Completo *</Label>
-            <Input
-              id="nombre"
-              placeholder="Ej: Juan Pérez García"
-              value={formData.nombre_completo}
-              onChange={(e) => setFormData(prev => ({ ...prev, nombre_completo: e.target.value }))}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico *</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="trabajador@email.com"
-                value={formData.email}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="telefono">WhatsApp / Teléfono *</Label>
-              <Input
-                id="telefono"
-                type="tel"
-                placeholder="55 1234 5678"
-                value={formData.telefono}
-                onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="puesto">Puesto *</Label>
-              <Input
-                id="puesto"
-                placeholder="Ej: Analista de Sistemas"
-                value={formData.puesto}
-                onChange={(e) => setFormData(prev => ({ ...prev, puesto: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="area">Área *</Label>
-              <Input
-                id="area"
-                placeholder="Ej: Tecnología"
-                value={formData.area}
-                onChange={(e) => setFormData(prev => ({ ...prev, area: e.target.value }))}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="centro_trabajo">Centro de Trabajo *</Label>
-            <Input
-              id="centro_trabajo"
-              placeholder="Ej: Oficinas Corporativas CDMX"
-              value={formData.centro_trabajo}
-              onChange={(e) => setFormData(prev => ({ ...prev, centro_trabajo: e.target.value }))}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fecha_ingreso">Fecha de Ingreso *</Label>
-            <div className="flex gap-4 items-end">
-              <div className="flex-1">
-                <Input
-                  id="fecha_ingreso"
-                  type="date"
-                  max={format(new Date(), 'yyyy-MM-dd')}
-                  value={formData.fecha_ingreso}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fecha_ingreso: e.target.value }))}
-                />
+            <Label>Seleccionar Trabajador *</Label>
+            {loadingPersonal ? (
+              <div className="flex items-center gap-2 py-3 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Cargando personal...
               </div>
-              {antiguedadCalculada && (
-                <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md text-sm">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{antiguedadCalculada.texto}</span>
+            ) : availablePersonal.length === 0 ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No hay trabajadores disponibles. {personalList.length > 0 
+                    ? "Todos ya están registrados en NOM-035." 
+                    : "Primero registra trabajadores en la base de personal."}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Select value={selectedPersonalId} onValueChange={setSelectedPersonalId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un trabajador" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePersonal.map((persona) => (
+                    <SelectItem key={persona.id} value={persona.id}>
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="h-4 w-4 text-primary" />
+                        <span>{persona.nombre_completo}</span>
+                        {persona.puesto && (
+                          <span className="text-muted-foreground text-xs">— {persona.puesto}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+
+          {/* Vista previa de datos */}
+          {selectedPersonal && (
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <UserCheck className="h-4 w-4 text-primary" />
+                Datos del trabajador seleccionado
+              </h4>
+              
+              <div className="grid gap-2 text-sm">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Puesto:</span>
+                  <span className="font-medium">{selectedPersonal.puesto || <Badge variant="destructive">Sin asignar</Badge>}</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Área:</span>
+                  <span className="font-medium">{selectedPersonal.area || <Badge variant="destructive">Sin asignar</Badge>}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-muted-foreground">Centro de trabajo:</span>
+                  <span className="font-medium">{selectedPersonal.centro_trabajo || <Badge variant="destructive">Sin asignar</Badge>}</span>
+                </div>
+                {antiguedadCalculada && (
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-muted-foreground">Antigüedad:</span>
+                    <span className="font-medium">{antiguedadCalculada.texto}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Jornada:</span>
+                  <Badge variant="outline">{formatJornada(selectedPersonal.tipo_jornada)}</Badge>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">Contratación:</span>
+                  <Badge variant="outline">{formatContratacion(selectedPersonal.modalidad_contratacion)}</Badge>
+                </div>
+              </div>
+
+              {(!selectedPersonal.puesto || !selectedPersonal.area || !selectedPersonal.centro_trabajo || !selectedPersonal.fecha_ingreso) && (
+                <Alert variant="destructive" className="mt-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Faltan datos requeridos. Edita el trabajador en la base de personal antes de registrarlo.
+                  </AlertDescription>
+                </Alert>
               )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="jornada">Tipo de Jornada</Label>
-              <Select
-                value={formData.tipo_jornada}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, tipo_jornada: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="completa">Jornada Completa</SelectItem>
-                  <SelectItem value="parcial">Jornada Parcial</SelectItem>
-                  <SelectItem value="nocturna">Jornada Nocturna</SelectItem>
-                  <SelectItem value="mixta">Jornada Mixta</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contratacion">Modalidad de Contratación</Label>
-              <Select
-                value={formData.modalidad_contratacion}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, modalidad_contratacion: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="indefinido">Contrato Indefinido</SelectItem>
-                  <SelectItem value="temporal">Contrato Temporal</SelectItem>
-                  <SelectItem value="obra_determinada">Obra Determinada</SelectItem>
-                  <SelectItem value="capacitacion">Capacitación Inicial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading || (requiresCredits && !hasEnoughCredits)}>
+            <Button 
+              type="submit" 
+              disabled={
+                loading || 
+                !selectedPersonal || 
+                (requiresCredits && !hasEnoughCredits) ||
+                !selectedPersonal?.puesto ||
+                !selectedPersonal?.area ||
+                !selectedPersonal?.centro_trabajo ||
+                !selectedPersonal?.fecha_ingreso
+              }
+            >
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               {requiresCredits ? `Registrar (${CREDIT_COST_PER_WORKER} créditos)` : "Registrar Trabajador"}
             </Button>
