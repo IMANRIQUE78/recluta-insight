@@ -224,12 +224,48 @@ const PersonalEmpresaDashboard = () => {
   // Obtener áreas únicas para el filtro
   const areasUnicas = [...new Set(personal.map(p => p.area).filter(Boolean) as string[])].sort();
 
+  const personalActivo = personal.filter(p => p.estatus === 'activo');
+
+  // Calcular promedio de edad
+  const calcularPromedioEdad = (): number => {
+    const activosConFecha = personalActivo.filter(p => p.fecha_nacimiento);
+    if (activosConFecha.length === 0) return 0;
+    const totalEdades = activosConFecha.reduce((sum, p) => {
+      return sum + differenceInYears(new Date(), parseISO(p.fecha_nacimiento!));
+    }, 0);
+    return Math.round(totalEdades / activosConFecha.length);
+  };
+
+  // Calcular permanencia promedio en años
+  const calcularPermanenciaPromedio = (): number => {
+    const activosConIngreso = personalActivo.filter(p => p.fecha_ingreso);
+    if (activosConIngreso.length === 0) return 0;
+    const totalMeses = activosConIngreso.reduce((sum, p) => {
+      return sum + differenceInMonths(new Date(), parseISO(p.fecha_ingreso!));
+    }, 0);
+    return Math.round((totalMeses / activosConIngreso.length / 12) * 10) / 10;
+  };
+
+  // Calcular porcentaje por género
+  const calcularPorcentajeGenero = (): { hombres: number; mujeres: number } => {
+    if (personalActivo.length === 0) return { hombres: 0, mujeres: 0 };
+    const hombres = personalActivo.filter(p => p.genero?.toLowerCase() === 'masculino').length;
+    const mujeres = personalActivo.filter(p => p.genero?.toLowerCase() === 'femenino').length;
+    return {
+      hombres: Math.round((hombres / personalActivo.length) * 100),
+      mujeres: Math.round((mujeres / personalActivo.length) * 100),
+    };
+  };
+
   const stats = {
     total: personal.length,
-    activos: personal.filter(p => p.estatus === 'activo').length,
+    activos: personalActivo.length,
     inactivos: personal.filter(p => p.estatus === 'inactivo').length,
     reingresos: personal.filter(p => p.estatus === 'reingreso').length,
     supervisores: personal.filter(p => p.es_supervisor).length,
+    promedioEdad: calcularPromedioEdad(),
+    permanenciaPromedio: calcularPermanenciaPromedio(),
+    genero: calcularPorcentajeGenero(),
   };
 
   return (
@@ -263,7 +299,7 @@ const PersonalEmpresaDashboard = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Total de Personal</CardDescription>
@@ -292,6 +328,42 @@ const PersonalEmpresaDashboard = () => {
                 <RefreshCw className="h-3 w-3 text-blue-500" /> Reingresos
               </CardDescription>
               <CardTitle className="text-3xl text-blue-600">{stats.reingresos}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
+        {/* Stats Cards Row 2 */}
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-6">
+          <Card className="border-purple-500/20">
+            <CardHeader className="pb-2">
+              <CardDescription>Promedio de Edad</CardDescription>
+              <CardTitle className="text-3xl text-purple-600">
+                {stats.promedioEdad} <span className="text-lg font-normal text-muted-foreground">años</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-amber-500/20">
+            <CardHeader className="pb-2">
+              <CardDescription>Permanencia Promedio</CardDescription>
+              <CardTitle className="text-3xl text-amber-600">
+                {stats.permanenciaPromedio} <span className="text-lg font-normal text-muted-foreground">años</span>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-sky-500/20">
+            <CardHeader className="pb-2">
+              <CardDescription>Hombres (Activos)</CardDescription>
+              <CardTitle className="text-3xl text-sky-600">
+                {stats.genero.hombres}%
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-pink-500/20">
+            <CardHeader className="pb-2">
+              <CardDescription>Mujeres (Activos)</CardDescription>
+              <CardTitle className="text-3xl text-pink-600">
+                {stats.genero.mujeres}%
+              </CardTitle>
             </CardHeader>
           </Card>
         </div>
