@@ -1142,6 +1142,7 @@ export type Database = {
         Row: {
           alcaldia_municipio: string | null
           area: string | null
+          centro_trabajo: string | null
           codigo_empleado: string
           codigo_postal: string | null
           colonia: string | null
@@ -1169,6 +1170,7 @@ export type Database = {
           genero: string | null
           id: string
           jefe_directo: string | null
+          modalidad_contratacion: string | null
           nombre_completo: string
           nss: string | null
           nss_encrypted: string | null
@@ -1182,11 +1184,13 @@ export type Database = {
           telefono_emergencia_encrypted: string | null
           telefono_movil: string | null
           telefono_movil_encrypted: string | null
+          tipo_jornada: string | null
           updated_at: string
         }
         Insert: {
           alcaldia_municipio?: string | null
           area?: string | null
+          centro_trabajo?: string | null
           codigo_empleado: string
           codigo_postal?: string | null
           colonia?: string | null
@@ -1214,6 +1218,7 @@ export type Database = {
           genero?: string | null
           id?: string
           jefe_directo?: string | null
+          modalidad_contratacion?: string | null
           nombre_completo: string
           nss?: string | null
           nss_encrypted?: string | null
@@ -1227,11 +1232,13 @@ export type Database = {
           telefono_emergencia_encrypted?: string | null
           telefono_movil?: string | null
           telefono_movil_encrypted?: string | null
+          tipo_jornada?: string | null
           updated_at?: string
         }
         Update: {
           alcaldia_municipio?: string | null
           area?: string | null
+          centro_trabajo?: string | null
           codigo_empleado?: string
           codigo_postal?: string | null
           colonia?: string | null
@@ -1259,6 +1266,7 @@ export type Database = {
           genero?: string | null
           id?: string
           jefe_directo?: string | null
+          modalidad_contratacion?: string | null
           nombre_completo?: string
           nss?: string | null
           nss_encrypted?: string | null
@@ -1272,6 +1280,7 @@ export type Database = {
           telefono_emergencia_encrypted?: string | null
           telefono_movil?: string | null
           telefono_movil_encrypted?: string | null
+          tipo_jornada?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1837,6 +1846,7 @@ export type Database = {
           id: string
           modalidad_contratacion: string
           nombre_completo: string
+          personal_id: string | null
           puesto: string
           telefono: string | null
           telefono_encrypted: string | null
@@ -1859,6 +1869,7 @@ export type Database = {
           id?: string
           modalidad_contratacion?: string
           nombre_completo: string
+          personal_id?: string | null
           puesto: string
           telefono?: string | null
           telefono_encrypted?: string | null
@@ -1881,6 +1892,7 @@ export type Database = {
           id?: string
           modalidad_contratacion?: string
           nombre_completo?: string
+          personal_id?: string | null
           puesto?: string
           telefono?: string | null
           telefono_encrypted?: string | null
@@ -1893,6 +1905,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trabajadores_nom035_personal_id_fkey"
+            columns: ["personal_id"]
+            isOneToOne: false
+            referencedRelation: "personal_empresa"
             referencedColumns: ["id"]
           },
         ]
