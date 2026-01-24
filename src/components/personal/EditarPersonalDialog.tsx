@@ -58,6 +58,10 @@ interface PersonalEmpleado {
   observaciones: string | null;
   es_supervisor: boolean;
   empresa_id: string;
+  // Campos NOM-035
+  centro_trabajo: string | null;
+  tipo_jornada: string | null;
+  modalidad_contratacion: string | null;
 }
 
 interface Supervisor {
@@ -142,6 +146,10 @@ export const EditarPersonalDialog = ({
     finiquito: empleado.finiquito?.toString() || "",
     observaciones: empleado.observaciones || "",
     es_supervisor: empleado.es_supervisor,
+    // Campos NOM-035
+    centro_trabajo: empleado.centro_trabajo || "",
+    tipo_jornada: empleado.tipo_jornada || "completa",
+    modalidad_contratacion: empleado.modalidad_contratacion || "indefinido",
   });
 
   const [showFechaSalida, setShowFechaSalida] = useState(empleado.estatus === "inactivo");
@@ -208,6 +216,9 @@ export const EditarPersonalDialog = ({
       finiquito: empleado.finiquito?.toString() || "",
       observaciones: empleado.observaciones || "",
       es_supervisor: empleado.es_supervisor,
+      centro_trabajo: empleado.centro_trabajo || "",
+      tipo_jornada: empleado.tipo_jornada || "completa",
+      modalidad_contratacion: empleado.modalidad_contratacion || "indefinido",
     });
     setShowFechaSalida(empleado.estatus === "inactivo");
     setShowFiniquito(!!empleado.fecha_salida);
@@ -274,6 +285,9 @@ export const EditarPersonalDialog = ({
         finiquito: formData.finiquito ? parseFloat(formData.finiquito) : null,
         observaciones: formData.observaciones || null,
         es_supervisor: formData.es_supervisor,
+        centro_trabajo: formData.centro_trabajo || null,
+        tipo_jornada: formData.tipo_jornada || null,
+        modalidad_contratacion: formData.modalidad_contratacion || null,
       };
       
       const { error } = await supabase
@@ -483,6 +497,55 @@ export const EditarPersonalDialog = ({
                     />
                   </div>
                 )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="centro_trabajo">Centro de Trabajo</Label>
+                  <Input
+                    id="centro_trabajo"
+                    value={formData.centro_trabajo}
+                    onChange={(e) => setFormData({ ...formData, centro_trabajo: e.target.value })}
+                    placeholder="Ej: Oficinas Corporativas CDMX"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_jornada">Tipo de Jornada</Label>
+                  <Select
+                    value={formData.tipo_jornada}
+                    onValueChange={(value) => setFormData({ ...formData, tipo_jornada: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar jornada" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="completa">Jornada Completa</SelectItem>
+                      <SelectItem value="parcial">Jornada Parcial</SelectItem>
+                      <SelectItem value="nocturna">Jornada Nocturna</SelectItem>
+                      <SelectItem value="mixta">Jornada Mixta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="modalidad_contratacion">Modalidad de Contratación</Label>
+                  <Select
+                    value={formData.modalidad_contratacion}
+                    onValueChange={(value) => setFormData({ ...formData, modalidad_contratacion: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar modalidad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="indefinido">Contrato Indefinido</SelectItem>
+                      <SelectItem value="temporal">Contrato Temporal</SelectItem>
+                      <SelectItem value="obra_determinada">Obra Determinada</SelectItem>
+                      <SelectItem value="capacitacion">Capacitación Inicial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Checkbox de Supervisor */}
