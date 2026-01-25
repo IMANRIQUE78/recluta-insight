@@ -9,6 +9,10 @@ const corsHeaders = {
 const COSTO_SOURCING = 50; // 50 créditos por 10 candidatos
 const MAX_CANDIDATOS = 10;
 
+// Rate limiting constants
+const DRY_RUN_DAILY_LIMIT = 20; // por usuario por día
+const DRY_RUN_PER_VACANCY_LIMIT = 3; // por vacante por usuario por día
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -163,18 +167,18 @@ serve(async (req) => {
       }
     }
 
+    // Respuesta sanitizada para créditos insuficientes (no revelar balance exacto)
     if (creditosDisponibles < COSTO_SOURCING) {
       return new Response(
         JSON.stringify({ 
-          error: 'Créditos insuficientes',
-          creditos_disponibles: creditosDisponibles,
+          error: 'Créditos insuficientes para ejecutar sourcing',
           creditos_requeridos: COSTO_SOURCING
         }),
         { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`[Sourcing IA] Créditos OK: ${creditosDisponibles} disponibles, ${COSTO_SOURCING} requeridos`);
+    console.log(`[Sourcing IA] Créditos verificados`);
 
     // 4. Obtener candidatos del pool (excluyendo ya postulados y ya sourced)
     const { data: candidatos, error: candError } = await supabaseAdmin
@@ -241,9 +245,56 @@ serve(async (req) => {
       );
     }
 
-    // 5. DRY RUN - Solo simular sin gastar créditos
+    // 5. DRY RUN - Simular sin gastar créditos (CON RATE LIMITING)
     if (dry_run) {
-      console.log(`[Sourcing IA] DRY RUN - Simulación completada`);
+      const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+      
+      // Verificar límite diario por usuario
+      const { count: dailyCount } = await supabaseAdmin
+        .from('sourcing_audit')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('action', 'dry_run')
+        .gte('created_at', oneDayAgo);
+
+      if ((dailyCount || 0) >= DRY_RUN_DAILY_LIMIT) {
+        console.log(`[Sourcing IA] Rate limit diario alcanzado para usuario ${user.id}`);
+        return new Response(
+          JSON.stringify({ error: 'Límite diario de simulaciones alcanzado. Intenta mañana.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Verificar límite por vacante por usuario
+      const { count: vacancyCount } = await supabaseAdmin
+        .from('sourcing_audit')
+        .select('*', { count: 'exact', head: true })
+        .eq('vacante_id', vacante.id)
+        .eq('user_id', user.id)
+        .eq('action', 'dry_run')
+        .gte('created_at', oneDayAgo);
+
+      if ((vacancyCount || 0) >= DRY_RUN_PER_VACANCY_LIMIT) {
+        console.log(`[Sourcing IA] Rate limit por vacante alcanzado para ${vacante.id}`);
+        return new Response(
+          JSON.stringify({ error: 'Límite de simulaciones para esta vacante alcanzado. Intenta mañana o ejecuta el sourcing.' }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Registrar la llamada dry_run en auditoría
+      await supabaseAdmin
+        .from('sourcing_audit')
+        .insert({
+          user_id: user.id,
+          vacante_id: vacante.id,
+          publicacion_id: publicacion_id,
+          action: 'dry_run'
+        });
+
+      console.log(`[Sourcing IA] DRY RUN - Simulación completada (${(dailyCount || 0) + 1}/${DRY_RUN_DAILY_LIMIT} hoy)`);
+      
+      // Respuesta sanitizada - no revelar balances exactos ni conteos internos
       return new Response(
         JSON.stringify({
           success: true,
@@ -251,14 +302,11 @@ serve(async (req) => {
           mensaje: 'Simulación exitosa - No se consumieron créditos',
           vacante: {
             id: vacante.id,
-            titulo: publicacion.titulo_puesto,
-            perfil: publicacion.perfil_requerido
+            titulo: publicacion.titulo_puesto
           },
-          candidatos_disponibles: candidatosDisponibles.length,
           candidatos_a_analizar: Math.min(candidatosDisponibles.length, MAX_CANDIDATOS),
           costo_creditos: COSTO_SOURCING,
-          creditos_disponibles: creditosDisponibles,
-          permisos: { esReclutador, esEmpresa }
+          creditos_suficientes: true
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -274,6 +322,16 @@ serve(async (req) => {
         { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Registrar ejecución en auditoría
+    await supabaseAdmin
+      .from('sourcing_audit')
+      .insert({
+        user_id: user.id,
+        vacante_id: vacante.id,
+        publicacion_id: publicacion_id,
+        action: 'execution'
+      });
 
     // Preparar prompt para IA
     const vacanteInfo = {
@@ -489,31 +547,29 @@ Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ord
       );
     }
 
-    // 9. Registrar acceso a identidad para los candidatos encontrados
-    for (const match of matchesIA) {
+    // 9. Registrar acceso a identidades de candidatos
+    const accesosIdentidad = matchesIA.map(match => {
       const candidato = candidatosParaAnalisis[match.index];
-      
-      // Verificar si ya tiene acceso desbloqueado
-      if (esReclutador && reclutadorId) {
-        const { data: accesoExistente } = await supabaseAdmin
-          .from('acceso_identidad_candidato')
-          .select('id')
-          .eq('reclutador_id', reclutadorId)
-          .eq('candidato_user_id', candidato.user_id)
-          .single();
+      return {
+        reclutador_id: reclutadorId || empresaId,
+        candidato_user_id: candidato.user_id,
+        empresa_id: empresaId,
+        origen_pago: origenPago,
+        creditos_consumidos: 0 // Ya se cobró en el sourcing
+      };
+    });
 
-        if (!accesoExistente) {
-          await supabaseAdmin
-            .from('acceso_identidad_candidato')
-            .insert({
-              reclutador_id: reclutadorId,
-              candidato_user_id: candidato.user_id,
-              creditos_consumidos: 0, // Ya incluido en el costo de sourcing
-              empresa_id: empresaId,
-              origen_pago: 'sourcing_ia'
-            });
-        }
-      }
+    // Solo insertar accesos si es reclutador (tiene reclutadorId)
+    if (reclutadorId) {
+      await supabaseAdmin
+        .from('acceso_identidad_candidato')
+        .upsert(accesosIdentidad.map(a => ({
+          ...a,
+          reclutador_id: reclutadorId
+        })), { 
+          onConflict: 'reclutador_id,candidato_user_id',
+          ignoreDuplicates: true 
+        });
     }
 
     console.log(`[Sourcing IA] Completado - ${matchesIA.length} candidatos encontrados`);
@@ -524,7 +580,7 @@ Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ord
         lote_sourcing: loteSourcing,
         candidatos_encontrados: matchesIA.length,
         creditos_consumidos: COSTO_SOURCING,
-        mensaje: `Se encontraron ${matchesIA.length} candidatos con match para la vacante`
+        mensaje: `Se encontraron ${matchesIA.length} candidatos potenciales para la vacante "${publicacion.titulo_puesto}"`
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -532,7 +588,7 @@ Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ord
   } catch (error) {
     console.error('[Sourcing IA] Error general:', error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Error interno' }),
+      JSON.stringify({ error: 'Error interno del servidor' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
