@@ -1577,6 +1577,33 @@ export type Database = {
           },
         ]
       }
+      sourcing_audit: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          publicacion_id: string
+          user_id: string
+          vacante_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          publicacion_id: string
+          user_id: string
+          vacante_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          publicacion_id?: string
+          user_id?: string
+          vacante_id?: string
+        }
+        Relationships: []
+      }
       sourcing_ia: {
         Row: {
           candidato_user_id: string
