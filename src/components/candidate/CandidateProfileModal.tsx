@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Plus, Trash2, AlertCircle, Shield, User, Briefcase, GraduationCap, Heart, Target, Link as LinkIcon } from "lucide-react";
+import { Loader2, Plus, Trash2, AlertCircle, Shield, User, Briefcase, GraduationCap, Heart, Target, Link as LinkIcon, Sparkles } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-
+import { ImproveResumenDialog } from "@/components/candidate/ImproveResumenDialog";
 interface CandidateProfileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -154,6 +154,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [porcentajeLlenado, setPorcentajeLlenado] = useState(0);
+  const [improveDialogOpen, setImproveDialogOpen] = useState(false);
   
   const [codigoCandidato, setCodigoCandidato] = useState<string>("");
   
@@ -505,7 +506,20 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
             </div>
             
             <div>
-              <Label htmlFor="resumen_profesional">Resumen Profesional</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label htmlFor="resumen_profesional">Resumen Profesional</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setImproveDialogOpen(true)}
+                  disabled={!formData.resumen_profesional || formData.resumen_profesional.length < 20}
+                  className="h-7 text-xs gap-1.5"
+                >
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Mejorar con IA
+                </Button>
+              </div>
               <Textarea
                 id="resumen_profesional"
                 rows={4}
@@ -515,7 +529,7 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
                 className="mt-1"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                💡 Tip: Incluye palabras clave relevantes para tu industria y destaca logros cuantificables
+                💡 Tip: Escribe al menos 20 caracteres y usa el botón "Mejorar con IA" para optimizar tu resumen
               </p>
             </div>
           </div>
@@ -895,6 +909,24 @@ export const CandidateProfileModal = ({ open, onOpenChange, onSuccess }: Candida
           </div>
         </form>
       </DialogContent>
+
+      <ImproveResumenDialog
+        open={improveDialogOpen}
+        onOpenChange={setImproveDialogOpen}
+        resumenActual={formData.resumen_profesional}
+        puestoBuscado={formData.puesto_actual}
+        habilidadesTecnicas={formData.habilidades_tecnicas.split(",").map(h => h.trim()).filter(h => h)}
+        habilidadesBlandas={formData.habilidades_blandas.split(",").map(h => h.trim()).filter(h => h)}
+        experienciaLaboral={experiencias.filter(e => e.empresa || e.puesto).map(e => ({
+          empresa: e.empresa,
+          puesto: e.puesto,
+          descripcion: e.descripcion,
+          tags: e.tags
+        }))}
+        onSuccess={(resumenMejorado) => {
+          setFormData(prev => ({ ...prev, resumen_profesional: resumenMejorado }));
+        }}
+      />
     </Dialog>
   );
 };

@@ -3,6 +3,9 @@ project_id = "xlmtucojkefacqqgbvra"
 [functions.sourcing-ia]
 verify_jwt = true
 
+[functions.improve-candidate-summary]
+verify_jwt = true
+
 [functions.create-checkout]
 verify_jwt = false
 
