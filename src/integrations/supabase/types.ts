@@ -890,18 +890,23 @@ export type Database = {
           email: string
           empresa_actual: string | null
           experiencia_laboral: Json | null
+          fecha_indexado_ia: string | null
           github_url: string | null
           habilidades_blandas: string[] | null
           habilidades_tecnicas: string[] | null
           id: string
           idiomas: Json | null
+          industrias_detectadas: string[] | null
           institucion: string | null
+          keywords_sourcing: string[] | null
           linkedin_url: string | null
           modalidad_preferida: string | null
           nivel_educacion: string | null
+          nivel_experiencia_ia: string | null
           nombre_completo: string
           portfolio_url: string | null
           puesto_actual: string | null
+          resumen_indexado_ia: string | null
           resumen_profesional: string | null
           salario_esperado_max: number | null
           salario_esperado_min: number | null
@@ -922,18 +927,23 @@ export type Database = {
           email: string
           empresa_actual?: string | null
           experiencia_laboral?: Json | null
+          fecha_indexado_ia?: string | null
           github_url?: string | null
           habilidades_blandas?: string[] | null
           habilidades_tecnicas?: string[] | null
           id?: string
           idiomas?: Json | null
+          industrias_detectadas?: string[] | null
           institucion?: string | null
+          keywords_sourcing?: string[] | null
           linkedin_url?: string | null
           modalidad_preferida?: string | null
           nivel_educacion?: string | null
+          nivel_experiencia_ia?: string | null
           nombre_completo: string
           portfolio_url?: string | null
           puesto_actual?: string | null
+          resumen_indexado_ia?: string | null
           resumen_profesional?: string | null
           salario_esperado_max?: number | null
           salario_esperado_min?: number | null
@@ -954,18 +964,23 @@ export type Database = {
           email?: string
           empresa_actual?: string | null
           experiencia_laboral?: Json | null
+          fecha_indexado_ia?: string | null
           github_url?: string | null
           habilidades_blandas?: string[] | null
           habilidades_tecnicas?: string[] | null
           id?: string
           idiomas?: Json | null
+          industrias_detectadas?: string[] | null
           institucion?: string | null
+          keywords_sourcing?: string[] | null
           linkedin_url?: string | null
           modalidad_preferida?: string | null
           nivel_educacion?: string | null
+          nivel_experiencia_ia?: string | null
           nombre_completo?: string
           portfolio_url?: string | null
           puesto_actual?: string | null
+          resumen_indexado_ia?: string | null
           resumen_profesional?: string | null
           salario_esperado_max?: number | null
           salario_esperado_min?: number | null
