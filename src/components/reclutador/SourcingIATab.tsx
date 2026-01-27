@@ -186,24 +186,29 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
         <div className="flex-1">
           <h3 className="font-semibold text-lg flex items-center gap-2">
             Sourcing con IA
-            <Badge variant="secondary" className="text-xs">Premium</Badge>
+            <Badge variant="secondary" className="text-xs">Datos Indexados</Badge>
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            La IA analiza el pool de candidatos y encuentra los {MAX_CANDIDATOS} mejores matches para tu vacante.
+            La IA cruza los <strong className="text-foreground">perfiles indexados de candidatos</strong> con los requisitos de tu vacante 
+            (sector, área, perfil requerido, sueldo) para encontrar los {MAX_CANDIDATOS} mejores matches.
             <strong className="text-foreground"> Las identidades se desbloquean automáticamente.</strong>
           </p>
-          <div className="flex items-center gap-4 mt-3 text-sm">
+          <div className="flex items-center gap-4 mt-3 text-sm flex-wrap">
             <div className="flex items-center gap-1.5">
               <Coins className="h-4 w-4 text-amber-500" />
               <span className="font-medium">{COSTO_SOURCING} créditos</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Users className="h-4 w-4 text-blue-500" />
-              <span>{MAX_CANDIDATOS} candidatos</span>
+              <span>Hasta {MAX_CANDIDATOS} candidatos</span>
             </div>
             <div className="flex items-center gap-1.5">
               <Target className="h-4 w-4 text-green-500" />
-              <span>Match inteligente</span>
+              <span>Match por keywords e industria</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Briefcase className="h-4 w-4 text-purple-500" />
+              <span>Nivel de experiencia</span>
             </div>
           </div>
         </div>
@@ -213,12 +218,13 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
       {resultados.length === 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2">
               <Zap className="h-5 w-5 text-amber-500" />
-              Probar antes de ejecutar
+              Simulación gratuita
             </CardTitle>
             <CardDescription>
-              Simula el sourcing para ver cuántos candidatos están disponibles sin gastar créditos
+              Verifica cuántos candidatos con <strong>perfil indexado</strong> están disponibles para esta vacante sin gastar créditos.
+              La IA priorizará perfiles optimizados con keywords, industria y nivel de experiencia detectados.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -246,22 +252,33 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
                 <Alert className="bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
                   <AlertTitle>Simulación completada</AlertTitle>
-                  <AlertDescription className="mt-2 space-y-2">
+                  <AlertDescription className="mt-2 space-y-3">
+                    {/* Información de la vacante */}
+                    {simulacion.vacante && (
+                      <div className="p-2 bg-white/50 dark:bg-black/20 rounded-md border border-green-200/50 dark:border-green-700/50">
+                        <p className="text-xs font-medium text-green-800 dark:text-green-300 mb-1">Vacante analizada:</p>
+                        <p className="font-semibold text-sm">{simulacion.vacante.titulo}</p>
+                        {simulacion.vacante.perfil && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{simulacion.vacante.perfil}</p>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Candidatos disponibles:</span>
+                        <span className="text-muted-foreground">Candidatos en pool:</span>
                         <p className="font-semibold text-lg">{simulacion.candidatos_disponibles}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Se analizarán:</span>
+                        <span className="text-muted-foreground">Perfiles a analizar con IA:</span>
                         <p className="font-semibold text-lg">{simulacion.candidatos_a_analizar}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Costo:</span>
+                        <span className="text-muted-foreground">Costo del sourcing:</span>
                         <p className="font-semibold text-lg">{simulacion.costo_creditos} créditos</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Tus créditos:</span>
+                        <span className="text-muted-foreground">Tus créditos disponibles:</span>
                         <p className="font-semibold text-lg">{simulacion.creditos_disponibles}</p>
                       </div>
                     </div>
@@ -369,10 +386,15 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
 
           {/* Lista de candidatos */}
           <div className="space-y-3">
-            <h4 className="font-semibold flex items-center gap-2">
-              <Target className="h-5 w-5" />
-              Candidatos encontrados por IA
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Candidatos encontrados por IA
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Ordenados por score de match (datos indexados + requisitos de vacante)
+              </p>
+            </div>
             
             {resultados.map((resultado) => {
               const isExpanded = expandedCard === resultado.id;
@@ -609,8 +631,14 @@ export const SourcingIATab = ({ vacanteId, publicacionId, tituloPuesto, reclutad
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium">Aún no has ejecutado sourcing IA</p>
-          <p className="text-sm">Simula primero para ver los candidatos disponibles</p>
+          <p className="font-medium">Aún no has ejecutado sourcing IA para esta vacante</p>
+          <p className="text-sm mt-1">
+            Simula primero para ver cuántos candidatos indexados están disponibles.
+          </p>
+          <p className="text-xs mt-2 max-w-md mx-auto">
+            La IA cruzará los perfiles optimizados (keywords, industria, nivel de experiencia) 
+            con los requisitos de tu vacante para encontrar los mejores matches.
+          </p>
         </div>
       )}
 
