@@ -59,7 +59,7 @@ serve(async (req) => {
 
     console.log(`[Sourcing IA] Usuario: ${user.id}, Publicación: ${publicacion_id}, DryRun: ${dry_run}`);
 
-    // 1. Obtener datos de la publicación y vacante
+    // 1. Obtener datos COMPLETOS de la publicación, vacante, cliente/área y empresa
     const { data: publicacion, error: pubError } = await supabaseAdmin
       .from('publicaciones_marketplace')
       .select(`
@@ -69,13 +69,22 @@ serve(async (req) => {
         ubicacion,
         lugar_trabajo,
         sueldo_bruto_aprobado,
+        cliente_area,
+        observaciones,
         vacante_id,
         user_id,
         vacantes!inner(
           id,
+          titulo_puesto,
+          perfil_requerido,
+          motivo,
+          lugar_trabajo,
+          sueldo_bruto_aprobado,
+          observaciones,
           reclutador_asignado_id,
           empresa_id,
-          user_id
+          user_id,
+          cliente_area_id
         )
       `)
       .eq('id', publicacion_id)
@@ -93,10 +102,39 @@ serve(async (req) => {
     // vacantes viene como objeto único por el !inner join
     const vacante = publicacion.vacantes as unknown as {
       id: string;
+      titulo_puesto: string;
+      perfil_requerido: string | null;
+      motivo: string;
+      lugar_trabajo: string;
+      sueldo_bruto_aprobado: number | null;
+      observaciones: string | null;
       reclutador_asignado_id: string | null;
       empresa_id: string | null;
       user_id: string;
+      cliente_area_id: string | null;
     };
+
+    // Obtener datos del cliente/área y empresa para contexto completo
+    let clienteArea: { cliente_nombre: string; area: string; ubicacion: string | null } | null = null;
+    let empresaInfo: { nombre_empresa: string; sector: string | null } | null = null;
+
+    if (vacante.cliente_area_id) {
+      const { data: ca } = await supabaseAdmin
+        .from('clientes_areas')
+        .select('cliente_nombre, area, ubicacion')
+        .eq('id', vacante.cliente_area_id)
+        .maybeSingle();
+      clienteArea = ca;
+    }
+
+    if (vacante.empresa_id) {
+      const { data: emp } = await supabaseAdmin
+        .from('empresas')
+        .select('nombre_empresa, sector')
+        .eq('id', vacante.empresa_id)
+        .maybeSingle();
+      empresaInfo = emp;
+    }
 
     // 2. Verificar permisos (reclutador asignado o empresa dueña)
     let esReclutador = false;
@@ -340,27 +378,45 @@ serve(async (req) => {
         action: 'execution'
       });
 
-    // Preparar prompt para IA
+    // Preparar contexto COMPLETO de la vacante para IA
     const vacanteInfo = {
       titulo: publicacion.titulo_puesto,
-      perfil_requerido: publicacion.perfil_requerido || 'No especificado',
-      ubicacion: publicacion.ubicacion || 'No especificada',
-      modalidad: publicacion.lugar_trabajo,
-      salario: publicacion.sueldo_bruto_aprobado
+      perfil_requerido: publicacion.perfil_requerido || vacante.perfil_requerido || 'No especificado',
+      ubicacion: publicacion.ubicacion || clienteArea?.ubicacion || 'No especificada',
+      modalidad: publicacion.lugar_trabajo || vacante.lugar_trabajo,
+      salario: publicacion.sueldo_bruto_aprobado || vacante.sueldo_bruto_aprobado,
+      observaciones: publicacion.observaciones || vacante.observaciones || '',
+      motivo_vacante: vacante.motivo || 'No especificado',
+      cliente: clienteArea?.cliente_nombre || publicacion.cliente_area || 'No especificado',
+      area: clienteArea?.area || 'No especificada',
+      empresa: empresaInfo?.nombre_empresa || 'No especificada',
+      sector: empresaInfo?.sector || 'No especificado'
     };
 
     const candidatosParaAnalisis = candidatosDisponibles.slice(0, 50); // Analizar hasta 50
 
-    const prompt = `Eres un experto en reclutamiento y selección de talento. Analiza los siguientes candidatos y selecciona los ${MAX_CANDIDATOS} mejores matches para la vacante.
+    const prompt = `Eres un experto en reclutamiento y selección de talento para el mercado mexicano. Analiza los candidatos y selecciona los ${MAX_CANDIDATOS} mejores matches para la vacante.
 
-VACANTE:
-- Título: ${vacanteInfo.titulo}
-- Perfil requerido: ${vacanteInfo.perfil_requerido}
+===== CONTEXTO DE LA VACANTE =====
+EMPRESA SOLICITANTE:
+- Empresa: ${vacanteInfo.empresa}
+- Sector/Industria: ${vacanteInfo.sector}
+- Cliente interno: ${vacanteInfo.cliente}
+- Área: ${vacanteInfo.area}
+
+DETALLES DE LA POSICIÓN:
+- Título del puesto: ${vacanteInfo.titulo}
+- Motivo de la vacante: ${vacanteInfo.motivo_vacante}
+- Modalidad de trabajo: ${vacanteInfo.modalidad}
 - Ubicación: ${vacanteInfo.ubicacion}
-- Modalidad: ${vacanteInfo.modalidad}
-- Salario: ${vacanteInfo.salario ? '$' + vacanteInfo.salario : 'No especificado'}
+- Rango salarial: ${vacanteInfo.salario ? '$' + vacanteInfo.salario + ' MXN brutos' : 'No especificado'}
 
-CANDIDATOS:
+PERFIL REQUERIDO:
+${vacanteInfo.perfil_requerido}
+
+${vacanteInfo.observaciones ? `OBSERVACIONES ADICIONALES:\n${vacanteInfo.observaciones}` : ''}
+
+===== POOL DE CANDIDATOS =====
 ${candidatosParaAnalisis.map((c, i) => {
   // Usar datos indexados por IA si están disponibles
   const tieneIndexado = !!c.resumen_indexado_ia;
@@ -368,34 +424,39 @@ ${candidatosParaAnalisis.map((c, i) => {
   const industrias = (c.industrias_detectadas as string[] || []).join(', ');
   
   return `
-[${i}] ${tieneIndexado ? '✓ INDEXADO' : ''}
+[${i}] ${tieneIndexado ? '✓ PERFIL INDEXADO' : '○ SIN INDEXAR'}
 - Nivel experiencia: ${c.nivel_experiencia_ia || 'No clasificado'}
 - Puesto actual: ${c.puesto_actual || 'No especificado'}
-- Empresa: ${c.empresa_actual || 'No especificada'}
-- Educación: ${c.nivel_educacion || 'No especificado'} - ${c.carrera || ''}
+- Empresa actual: ${c.empresa_actual || 'No especificada'}
+- Educación: ${c.nivel_educacion || 'No especificado'}${c.carrera ? ' en ' + c.carrera : ''}${c.institucion ? ' (' + c.institucion + ')' : ''}
 - Keywords técnicas: ${keywords || (c.habilidades_tecnicas || []).join(', ') || 'No especificadas'}
-- Industrias: ${industrias || 'No especificadas'}
+- Industrias donde ha trabajado: ${industrias || 'No especificadas'}
 - Habilidades blandas: ${(c.habilidades_blandas || []).join(', ') || 'No especificadas'}
 - Ubicación: ${c.ubicacion || 'No especificada'}
-- Modalidad preferida: ${c.modalidad_preferida || 'No especificada'}
-- Expectativa salarial: ${c.salario_esperado_min ? '$' + c.salario_esperado_min + ' - $' + c.salario_esperado_max : 'No especificada'}
-- Resumen optimizado: ${c.resumen_indexado_ia || c.resumen_profesional || 'No disponible'}
+- Modalidad preferida: ${c.modalidad_preferida || 'Flexible'}
+- Disponibilidad: ${c.disponibilidad || 'No especificada'}
+- Expectativa salarial: ${c.salario_esperado_min ? '$' + c.salario_esperado_min + ' - $' + c.salario_esperado_max + ' MXN' : 'No especificada'}
+- Resumen profesional: ${c.resumen_indexado_ia || c.resumen_profesional || 'No disponible'}
 `;
 }).join('\n')}
 
-INSTRUCCIONES:
-- Prioriza candidatos marcados como "✓ INDEXADO" ya que tienen datos optimizados.
-- Considera el nivel de experiencia (junior, mid, senior, lead, executive).
-- Usa las keywords técnicas e industrias para un matching más preciso.
+===== CRITERIOS DE MATCHING =====
+1. PRIORIZA candidatos marcados como "✓ PERFIL INDEXADO" (datos optimizados por IA).
+2. Considera la COMPATIBILIDAD DE SECTOR/INDUSTRIA entre el candidato y la empresa.
+3. Evalúa la COHERENCIA DEL NIVEL DE EXPERIENCIA con el perfil requerido.
+4. Verifica COMPATIBILIDAD GEOGRÁFICA y de modalidad de trabajo.
+5. Compara EXPECTATIVAS SALARIALES vs el rango ofrecido.
+6. Analiza las KEYWORDS TÉCNICAS vs los requisitos del perfil.
 
-Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ordenados por score de match (mayor a menor):
+===== FORMATO DE RESPUESTA =====
+Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ordenados por score (100=match perfecto):
 [
   {
     "index": 0,
     "score": 85,
-    "razon": "Breve explicación del match",
+    "razon": "Explicación concisa del match (máx 100 caracteres)",
     "habilidades_match": ["habilidad1", "habilidad2"],
-    "experiencia_relevante": ["experiencia1"]
+    "experiencia_relevante": ["experiencia1", "experiencia2"]
   }
 ]`;
 
