@@ -181,6 +181,7 @@ serve(async (req) => {
     console.log(`[Sourcing IA] Créditos verificados`);
 
     // 4. Obtener candidatos del pool (excluyendo ya postulados y ya sourced)
+    // PRIORIZAR candidatos con datos indexados por IA
     const { data: candidatos, error: candError } = await supabaseAdmin
       .from('perfil_candidato')
       .select(`
@@ -201,9 +202,15 @@ serve(async (req) => {
         salario_esperado_max,
         disponibilidad,
         modalidad_preferida,
-        resumen_profesional
+        resumen_profesional,
+        resumen_indexado_ia,
+        keywords_sourcing,
+        industrias_detectadas,
+        nivel_experiencia_ia,
+        fecha_indexado_ia
       `)
-      .limit(100); // Pool inicial
+      .order('fecha_indexado_ia', { ascending: false, nullsFirst: false })
+      .limit(100); // Pool inicial - priorizando indexados
 
     if (candError) {
       console.error('Error fetching candidates:', candError);
@@ -354,18 +361,32 @@ VACANTE:
 - Salario: ${vacanteInfo.salario ? '$' + vacanteInfo.salario : 'No especificado'}
 
 CANDIDATOS:
-${candidatosParaAnalisis.map((c, i) => `
-[${i}] 
+${candidatosParaAnalisis.map((c, i) => {
+  // Usar datos indexados por IA si están disponibles
+  const tieneIndexado = !!c.resumen_indexado_ia;
+  const keywords = (c.keywords_sourcing as string[] || []).join(', ');
+  const industrias = (c.industrias_detectadas as string[] || []).join(', ');
+  
+  return `
+[${i}] ${tieneIndexado ? '✓ INDEXADO' : ''}
+- Nivel experiencia: ${c.nivel_experiencia_ia || 'No clasificado'}
 - Puesto actual: ${c.puesto_actual || 'No especificado'}
 - Empresa: ${c.empresa_actual || 'No especificada'}
 - Educación: ${c.nivel_educacion || 'No especificado'} - ${c.carrera || ''}
-- Habilidades técnicas: ${(c.habilidades_tecnicas || []).join(', ') || 'No especificadas'}
+- Keywords técnicas: ${keywords || (c.habilidades_tecnicas || []).join(', ') || 'No especificadas'}
+- Industrias: ${industrias || 'No especificadas'}
 - Habilidades blandas: ${(c.habilidades_blandas || []).join(', ') || 'No especificadas'}
 - Ubicación: ${c.ubicacion || 'No especificada'}
 - Modalidad preferida: ${c.modalidad_preferida || 'No especificada'}
 - Expectativa salarial: ${c.salario_esperado_min ? '$' + c.salario_esperado_min + ' - $' + c.salario_esperado_max : 'No especificada'}
-- Resumen: ${c.resumen_profesional || 'No disponible'}
-`).join('\n')}
+- Resumen optimizado: ${c.resumen_indexado_ia || c.resumen_profesional || 'No disponible'}
+`;
+}).join('\n')}
+
+INSTRUCCIONES:
+- Prioriza candidatos marcados como "✓ INDEXADO" ya que tienen datos optimizados.
+- Considera el nivel de experiencia (junior, mid, senior, lead, executive).
+- Usa las keywords técnicas e industrias para un matching más preciso.
 
 Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ordenados por score de match (mayor a menor):
 [
