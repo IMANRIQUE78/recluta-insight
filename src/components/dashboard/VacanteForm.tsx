@@ -75,13 +75,85 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
   }, [open]);
 
   const loadClientes = async () => {
-    const { data, error } = await supabase
-      .from("clientes_areas")
-      .select("*")
-      .order("cliente_nombre");
-    
-    if (!error && data) {
-      setClientes(data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Obtener empresa_id del usuario
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
+      if (!userRoles?.empresa_id) {
+        setClientes([]);
+        return;
+      }
+
+      // Obtener áreas únicas desde personal_empresa
+      const { data: personalAreas, error: personalError } = await supabase
+        .from("personal_empresa")
+        .select("area")
+        .eq("empresa_id", userRoles.empresa_id)
+        .not("area", "is", null);
+
+      if (personalError) throw personalError;
+
+      // Crear lista de áreas únicas y ordenadas
+      const areasUnicas = [...new Set(
+        (personalAreas || [])
+          .map(p => p.area)
+          .filter(Boolean) as string[]
+      )].sort();
+
+      // Obtener clientes/áreas existentes de la empresa
+      const { data: clientesExistentes, error: clientesError } = await supabase
+        .from("clientes_areas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("cliente_nombre");
+
+      if (clientesError) throw clientesError;
+
+      // Crear set de nombres existentes para evitar duplicados
+      const nombresExistentes = new Set(
+        (clientesExistentes || []).map(c => c.cliente_nombre.toLowerCase())
+      );
+
+      // Sincronizar áreas del personal con clientes_areas (solo las que no existen)
+      for (const area of areasUnicas) {
+        if (!nombresExistentes.has(area.toLowerCase())) {
+          await supabase.from("clientes_areas").insert({
+            cliente_nombre: area,
+            area: area,
+            tipo_cliente: "interno",
+            user_id: user.id,
+          });
+        }
+      }
+
+      // Recargar la lista actualizada, eliminando duplicados por nombre
+      const { data: clientesFinales } = await supabase
+        .from("clientes_areas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("cliente_nombre");
+
+      // Filtrar duplicados manteniendo solo el primero de cada nombre
+      const clientesSinDuplicados = (clientesFinales || []).reduce((acc: any[], curr) => {
+        const existe = acc.find(c => c.cliente_nombre.toLowerCase() === curr.cliente_nombre.toLowerCase());
+        if (!existe) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
+
+      setClientes(clientesSinDuplicados);
+    } catch (error) {
+      console.error("Error cargando clientes/áreas:", error);
+      setClientes([]);
     }
   };
 
@@ -219,11 +291,23 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Verificar si ya existe (evitar duplicados)
+      const existente = clientes.find(
+        c => c.cliente_nombre.toLowerCase() === newClienteValue.trim().toLowerCase()
+      );
+      
+      if (existente) {
+        form.setValue("cliente_area_id", existente.id);
+        setNewClienteValue("");
+        setOpenClienteCombo(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("clientes_areas")
         .insert({
-          cliente_nombre: newClienteValue,
-          area: "General",
+          cliente_nombre: newClienteValue.trim(),
+          area: newClienteValue.trim(), // Usar el mismo valor para área
           tipo_cliente: "interno",
           user_id: user.id,
         })
@@ -236,6 +320,11 @@ export const VacanteForm = ({ open, onOpenChange, onSuccess }: VacanteFormProps)
       form.setValue("cliente_area_id", data.id);
       setNewClienteValue("");
       setOpenClienteCombo(false);
+      
+      toast({
+        title: "Área creada",
+        description: `"${newClienteValue.trim()}" agregada correctamente`,
+      });
     } catch (error: any) {
       toast({
         title: "Error",

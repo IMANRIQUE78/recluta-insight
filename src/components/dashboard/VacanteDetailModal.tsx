@@ -186,13 +186,84 @@ export const VacanteDetailModal = ({ open, onOpenChange, vacante, onSuccess }: V
   };
 
   const loadClientes = async () => {
-    const { data, error } = await supabase
-      .from("clientes_areas")
-      .select("*")
-      .order("cliente_nombre");
-    
-    if (!error && data) {
-      setClientes(data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Obtener empresa_id del usuario
+      const { data: userRoles } = await supabase
+        .from("user_roles")
+        .select("empresa_id")
+        .eq("user_id", user.id)
+        .eq("role", "admin_empresa")
+        .maybeSingle();
+
+      if (!userRoles?.empresa_id) {
+        setClientes([]);
+        return;
+      }
+
+      // Obtener áreas únicas desde personal_empresa
+      const { data: personalAreas, error: personalError } = await supabase
+        .from("personal_empresa")
+        .select("area")
+        .eq("empresa_id", userRoles.empresa_id)
+        .not("area", "is", null);
+
+      if (personalError) throw personalError;
+
+      // Crear lista de áreas únicas
+      const areasUnicas = [...new Set(
+        (personalAreas || [])
+          .map(p => p.area)
+          .filter(Boolean) as string[]
+      )].sort();
+
+      // Obtener clientes/áreas existentes
+      const { data: clientesExistentes, error: clientesError } = await supabase
+        .from("clientes_areas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("cliente_nombre");
+
+      if (clientesError) throw clientesError;
+
+      // Crear set de nombres existentes
+      const nombresExistentes = new Set(
+        (clientesExistentes || []).map(c => c.cliente_nombre.toLowerCase())
+      );
+
+      // Sincronizar áreas del personal
+      for (const area of areasUnicas) {
+        if (!nombresExistentes.has(area.toLowerCase())) {
+          await supabase.from("clientes_areas").insert({
+            cliente_nombre: area,
+            area: area,
+            tipo_cliente: "interno",
+            user_id: user.id,
+          });
+        }
+      }
+
+      // Recargar lista sin duplicados
+      const { data: clientesFinales } = await supabase
+        .from("clientes_areas")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("cliente_nombre");
+
+      const clientesSinDuplicados = (clientesFinales || []).reduce((acc: any[], curr) => {
+        const existe = acc.find(c => c.cliente_nombre.toLowerCase() === curr.cliente_nombre.toLowerCase());
+        if (!existe) {
+          acc.push(curr);
+        }
+        return acc;
+      }, []);
+
+      setClientes(clientesSinDuplicados);
+    } catch (error) {
+      console.error("Error cargando clientes/áreas:", error);
+      setClientes([]);
     }
   };
 
