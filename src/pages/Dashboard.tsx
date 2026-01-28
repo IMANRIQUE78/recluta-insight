@@ -13,6 +13,7 @@ import { AttentionBadges } from "@/components/dashboard/AttentionBadges";
 import { WalletEmpresaCard } from "@/components/dashboard/WalletEmpresaCard";
 import { useKPIs } from "@/hooks/useKPIs";
 import { useKPIDetails } from "@/hooks/useKPIDetails";
+import { useCostosReclutamiento } from "@/hooks/useCostosReclutamiento";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Clock, 
@@ -58,6 +59,7 @@ const Dashboard = () => {
   const [selectedAsociacionId, setSelectedAsociacionId] = useState<string | undefined>(undefined);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedInvitationId, setSelectedInvitationId] = useState<string | undefined>(undefined);
+  const [empresaId, setEmpresaId] = useState<string | null>(null);
   
   // Filtros globales
   const [clientes, setClientes] = useState<Array<{ id: string; cliente_nombre: string; area: string }>>([]);
@@ -68,6 +70,7 @@ const Dashboard = () => {
   
   const { kpis: kpiData, loading: kpiLoading } = useKPIs(refreshTrigger, selectedCliente, selectedReclutador, selectedEstatus);
   const { data: detailData, columns: detailColumns, loading: detailLoading } = useKPIDetails(selectedKPI);
+  const { reporte: costosReporte, loading: costosLoading } = useCostosReclutamiento(empresaId);
 
   // Contador de filtros activos
   const activeFiltersCount = [selectedCliente, selectedReclutador, selectedEstatus].filter(f => f !== "todos").length;
@@ -109,6 +112,9 @@ const Dashboard = () => {
     let formattedReclutadores: any[] = [];
 
     if (userRole?.empresa_id) {
+      // Set empresaId for cost hook
+      setEmpresaId(userRole.empresa_id);
+      
       const { data: asociaciones } = await supabase
         .from("reclutador_empresa")
         .select("reclutador_id")
@@ -175,11 +181,12 @@ const Dashboard = () => {
     },
     {
       title: "Costo por Contratación",
-      value: kpiData.costoPromedioContratacion > 0 
-        ? `$${kpiData.costoPromedioContratacion.toLocaleString()}` 
+      value: costosReporte.costoPorContratacion > 0 
+        ? `$${Math.round(costosReporte.costoPorContratacion).toLocaleString()}` 
         : "$0",
       icon: <DollarSign className="h-4 w-4" />,
-      category: "financiero"
+      category: "financiero",
+      onClick: () => navigate("/costos-reclutamiento")
     },
     {
       title: "Satisfacción del Cliente",
@@ -380,7 +387,7 @@ const Dashboard = () => {
                           value={kpi.value}
                           unit={kpi.unit}
                           icon={kpi.icon}
-                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                          onDoubleClick={'onClick' in kpi && kpi.onClick ? kpi.onClick : () => handleKPIDoubleClick(kpi.title)}
                         />
                       ))}
                     </div>
@@ -410,7 +417,7 @@ const Dashboard = () => {
                           value={kpi.value}
                           unit={kpi.unit}
                           icon={kpi.icon}
-                          onDoubleClick={() => handleKPIDoubleClick(kpi.title)}
+                          onDoubleClick={'onClick' in kpi && kpi.onClick ? kpi.onClick : () => handleKPIDoubleClick(kpi.title)}
                         />
                       ))}
                     </div>
