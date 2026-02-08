@@ -1178,6 +1178,7 @@ export type Database = {
           escolaridad: string | null
           estado_civil: string | null
           estatus: string
+          fecha_fin_contrato: string | null
           fecha_ingreso: string | null
           fecha_nacimiento: string | null
           fecha_salida: string | null
@@ -1226,6 +1227,7 @@ export type Database = {
           escolaridad?: string | null
           estado_civil?: string | null
           estatus?: string
+          fecha_fin_contrato?: string | null
           fecha_ingreso?: string | null
           fecha_nacimiento?: string | null
           fecha_salida?: string | null
@@ -1274,6 +1276,7 @@ export type Database = {
           escolaridad?: string | null
           estado_civil?: string | null
           estatus?: string
+          fecha_fin_contrato?: string | null
           fecha_ingreso?: string | null
           fecha_nacimiento?: string | null
           fecha_salida?: string | null

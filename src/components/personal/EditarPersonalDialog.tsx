@@ -62,6 +62,7 @@ interface PersonalEmpleado {
   centro_trabajo: string | null;
   tipo_jornada: string | null;
   modalidad_contratacion: string | null;
+  fecha_fin_contrato: string | null;
 }
 
 interface Supervisor {
@@ -150,6 +151,7 @@ export const EditarPersonalDialog = ({
     centro_trabajo: empleado.centro_trabajo || "",
     tipo_jornada: empleado.tipo_jornada || "completa",
     modalidad_contratacion: empleado.modalidad_contratacion || "indefinido",
+    fecha_fin_contrato: empleado.fecha_fin_contrato || "",
   });
 
   const [showFechaSalida, setShowFechaSalida] = useState(empleado.estatus === "inactivo");
@@ -219,6 +221,7 @@ export const EditarPersonalDialog = ({
       centro_trabajo: empleado.centro_trabajo || "",
       tipo_jornada: empleado.tipo_jornada || "completa",
       modalidad_contratacion: empleado.modalidad_contratacion || "indefinido",
+      fecha_fin_contrato: empleado.fecha_fin_contrato || "",
     });
     setShowFechaSalida(empleado.estatus === "inactivo");
     setShowFiniquito(!!empleado.fecha_salida);
@@ -288,6 +291,7 @@ export const EditarPersonalDialog = ({
         centro_trabajo: formData.centro_trabajo || null,
         tipo_jornada: formData.tipo_jornada || null,
         modalidad_contratacion: formData.modalidad_contratacion || null,
+        fecha_fin_contrato: (formData.modalidad_contratacion === "temporal" || formData.modalidad_contratacion === "obra_determinada") && formData.fecha_fin_contrato ? formData.fecha_fin_contrato : null,
       };
       
       const { error } = await supabase
@@ -533,7 +537,7 @@ export const EditarPersonalDialog = ({
                   <Label htmlFor="modalidad_contratacion">Modalidad de Contratación</Label>
                   <Select
                     value={formData.modalidad_contratacion}
-                    onValueChange={(value) => setFormData({ ...formData, modalidad_contratacion: value })}
+                    onValueChange={(value) => setFormData({ ...formData, modalidad_contratacion: value, fecha_fin_contrato: value === "indefinido" || value === "capacitacion" ? "" : formData.fecha_fin_contrato })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar modalidad" />
@@ -547,6 +551,26 @@ export const EditarPersonalDialog = ({
                   </Select>
                 </div>
               </div>
+
+              {/* Fecha fin de contrato - solo para temporal u obra determinada */}
+              {(formData.modalidad_contratacion === "temporal" || formData.modalidad_contratacion === "obra_determinada") && (
+                <div className="space-y-2 p-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
+                  <Label htmlFor="fecha_fin_contrato" className="flex items-center gap-2">
+                    <span className="text-orange-600">📅</span>
+                    Fecha de Término de Contrato
+                  </Label>
+                  <Input
+                    id="fecha_fin_contrato"
+                    type="date"
+                    value={formData.fecha_fin_contrato}
+                    onChange={(e) => setFormData({ ...formData, fecha_fin_contrato: e.target.value })}
+                    className="bg-white dark:bg-background"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Fecha en que finaliza el contrato temporal. Recibirás alertas antes del vencimiento.
+                  </p>
+                </div>
+              )}
 
               {/* Checkbox de Supervisor */}
               <div className="flex items-center space-x-3 p-3 rounded-lg border bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800">
