@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { 
   Users, 
   Plus, 
@@ -42,7 +43,9 @@ import {
   RefreshCw,
   Shield,
   Crown,
-  Filter
+  Filter,
+  AlertTriangle,
+  Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -90,6 +93,7 @@ interface PersonalEmpleado {
   centro_trabajo: string | null;
   tipo_jornada: string | null;
   modalidad_contratacion: string | null;
+  fecha_fin_contrato: string | null;
 }
 
 const PersonalEmpresaDashboard = () => {
@@ -230,6 +234,33 @@ const PersonalEmpresaDashboard = () => {
 
   const personalActivo = personal.filter(p => p.estatus === 'activo');
 
+  // Calcular contratos próximos a vencer (30 días)
+  const calcularContratosProximosVencer = () => {
+    const hoy = new Date();
+    const en30Dias = new Date();
+    en30Dias.setDate(en30Dias.getDate() + 30);
+    
+    return personalActivo.filter(emp => {
+      if (!emp.fecha_fin_contrato) return false;
+      const fechaFin = parseISO(emp.fecha_fin_contrato);
+      return fechaFin >= hoy && fechaFin <= en30Dias;
+    }).sort((a, b) => {
+      const fechaA = parseISO(a.fecha_fin_contrato!);
+      const fechaB = parseISO(b.fecha_fin_contrato!);
+      return fechaA.getTime() - fechaB.getTime();
+    });
+  };
+
+  const contratosProximosVencer = calcularContratosProximosVencer();
+
+  // Calcular días restantes del contrato
+  const calcularDiasRestantes = (fechaFin: string) => {
+    const hoy = new Date();
+    const fecha = parseISO(fechaFin);
+    const dias = differenceInDays(fecha, hoy);
+    return dias;
+  };
+
   // Calcular promedio de edad
   const calcularPromedioEdad = (): number => {
     const activosConFecha = personalActivo.filter(p => p.fecha_nacimiento);
@@ -270,6 +301,7 @@ const PersonalEmpresaDashboard = () => {
     promedioEdad: calcularPromedioEdad(),
     permanenciaPromedio: calcularPermanenciaPromedio(),
     genero: calcularPorcentajeGenero(),
+    contratosProximosVencer: contratosProximosVencer.length,
   };
 
   return (
@@ -371,6 +403,44 @@ const PersonalEmpresaDashboard = () => {
             </CardHeader>
           </Card>
         </div>
+
+        {/* Alertas de vencimiento de contratos */}
+        {contratosProximosVencer.length > 0 && (
+          <Alert className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertTitle className="text-orange-800 dark:text-orange-300">
+              Contratos próximos a vencer ({contratosProximosVencer.length})
+            </AlertTitle>
+            <AlertDescription className="text-orange-700 dark:text-orange-400">
+              <div className="mt-2 space-y-2">
+                {contratosProximosVencer.map((emp) => {
+                  const diasRestantes = calcularDiasRestantes(emp.fecha_fin_contrato!);
+                  const esUrgente = diasRestantes <= 7;
+                  return (
+                    <div 
+                      key={emp.id} 
+                      className={`flex items-center justify-between p-2 rounded-md ${esUrgente ? 'bg-red-100 dark:bg-red-950/50' : 'bg-orange-100 dark:bg-orange-900/30'}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Calendar className={`h-4 w-4 ${esUrgente ? 'text-red-600' : 'text-orange-600'}`} />
+                        <span className="font-medium">{emp.nombre_completo}</span>
+                        <span className="text-sm text-muted-foreground">({emp.puesto || 'Sin puesto'})</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={esUrgente ? 'bg-red-500/20 text-red-700 border-red-500/30' : 'bg-orange-500/20 text-orange-700 border-orange-500/30'}>
+                          {diasRestantes === 0 ? '¡Vence hoy!' : diasRestantes === 1 ? 'Vence mañana' : `${diasRestantes} días restantes`}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {format(parseISO(emp.fecha_fin_contrato!), "dd/MM/yyyy", { locale: es })}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Main Table Card */}
         <Card>

@@ -59,6 +59,14 @@ interface PersonalEmpleado {
   finiquito: number | null;
   observaciones: string | null;
   created_at: string;
+  // Campos NOM-035
+  centro_trabajo?: string | null;
+  tipo_jornada?: string | null;
+  modalidad_contratacion?: string | null;
+  fecha_fin_contrato?: string | null;
+  es_supervisor?: boolean;
+  empresa_id?: string;
+  codigo_postal?: string | null;
 }
 
 interface VerPersonalModalProps {
