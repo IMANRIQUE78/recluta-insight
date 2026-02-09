@@ -102,6 +102,7 @@ const PersonalEmpresaDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [empresaId, setEmpresaId] = useState<string | null>(null);
+  const [nombreEmpresa, setNombreEmpresa] = useState<string>("");
   const [registrarOpen, setRegistrarOpen] = useState(false);
   const [editarOpen, setEditarOpen] = useState(false);
   const [verOpen, setVerOpen] = useState(false);
@@ -141,6 +142,17 @@ const PersonalEmpresaDashboard = () => {
       }
 
       setEmpresaId(userRole.empresa_id);
+
+      // Obtener nombre de empresa
+      const { data: empresaData } = await supabase
+        .from("empresas")
+        .select("nombre_empresa")
+        .eq("id", userRole.empresa_id)
+        .single();
+      
+      if (empresaData) {
+        setNombreEmpresa(empresaData.nombre_empresa);
+      }
 
       // Cargar personal
       const { data: personalData, error } = await supabase
@@ -622,6 +634,7 @@ const PersonalEmpresaDashboard = () => {
             open={verOpen}
             onOpenChange={setVerOpen}
             empleado={selectedEmpleado}
+            nombreEmpresa={nombreEmpresa}
           />
         </>
       )}

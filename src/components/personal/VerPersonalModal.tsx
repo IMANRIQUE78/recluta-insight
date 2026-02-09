@@ -6,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
@@ -13,20 +14,19 @@ import {
   Briefcase, 
   MapPin, 
   Phone, 
-  Mail, 
   CreditCard, 
-  GraduationCap, 
   HeartPulse,
-  Calendar,
   DollarSign,
   UserCheck,
   UserX,
   RefreshCw,
-  Clock,
-  FileText
+  FileText,
+  Download
 } from "lucide-react";
 import { differenceInYears, differenceInMonths, differenceInDays, parseISO, format } from "date-fns";
 import { es } from "date-fns/locale";
+import { usePersonalPdf } from "@/hooks/usePersonalPdf";
+import { toast } from "sonner";
 
 interface PersonalEmpleado {
   id: string;
@@ -73,13 +73,26 @@ interface VerPersonalModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   empleado: PersonalEmpleado;
+  nombreEmpresa?: string;
 }
 
 export const VerPersonalModal = ({
   open,
   onOpenChange,
   empleado,
+  nombreEmpresa = "Empresa",
 }: VerPersonalModalProps) => {
+  const { generarExpedientePdf } = usePersonalPdf();
+
+  const handleDescargarPdf = () => {
+    try {
+      generarExpedientePdf(empleado, nombreEmpresa);
+      toast.success("Expediente descargado correctamente");
+    } catch (error) {
+      console.error("Error al generar PDF:", error);
+      toast.error("Error al generar el PDF");
+    }
+  };
   const calcularEdad = (fechaNacimiento: string | null): string => {
     if (!fechaNacimiento) return "-";
     const edad = differenceInYears(new Date(), parseISO(fechaNacimiento));
@@ -145,6 +158,15 @@ export const VerPersonalModal = ({
                 {getEstatusBadge(empleado.estatus)}
               </DialogDescription>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDescargarPdf}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Descargar PDF
+            </Button>
           </div>
         </DialogHeader>
 
