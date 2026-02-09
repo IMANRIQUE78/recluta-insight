@@ -36,8 +36,6 @@ import {
   Edit, 
   Trash2, 
   Eye,
-  Download,
-  Upload,
   UserCheck,
   UserX,
   RefreshCw,
@@ -45,7 +43,10 @@ import {
   Crown,
   Filter,
   AlertTriangle,
-  Calendar
+  Calendar,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -113,6 +114,11 @@ const PersonalEmpresaDashboard = () => {
   const [filterEstatus, setFilterEstatus] = useState<string>("todos");
   const [filterArea, setFilterArea] = useState<string>("todas");
   const [filterSupervisor, setFilterSupervisor] = useState<string>("todos");
+  
+  // Ordenamiento
+  type SortColumn = 'codigo_empleado' | 'nombre_completo' | 'puesto' | 'area' | 'es_supervisor' | 'estatus' | 'fecha_nacimiento' | 'fecha_ingreso';
+  const [sortColumn, setSortColumn] = useState<SortColumn>('nombre_completo');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     loadEmpresaAndPersonal();
@@ -240,6 +246,73 @@ const PersonalEmpresaDashboard = () => {
     
     return matchesSearch && matchesEstatus && matchesArea && matchesSupervisor;
   });
+
+  // Aplicar ordenamiento
+  const sortedPersonal = [...filteredPersonal].sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortColumn) {
+      case 'codigo_empleado':
+        comparison = a.codigo_empleado.localeCompare(b.codigo_empleado);
+        break;
+      case 'nombre_completo':
+        comparison = a.nombre_completo.localeCompare(b.nombre_completo);
+        break;
+      case 'puesto':
+        comparison = (a.puesto || '').localeCompare(b.puesto || '');
+        break;
+      case 'area':
+        comparison = (a.area || '').localeCompare(b.area || '');
+        break;
+      case 'es_supervisor':
+        comparison = (a.es_supervisor === b.es_supervisor) ? 0 : a.es_supervisor ? -1 : 1;
+        break;
+      case 'estatus':
+        comparison = a.estatus.localeCompare(b.estatus);
+        break;
+      case 'fecha_nacimiento':
+        const fechaNacA = a.fecha_nacimiento ? new Date(a.fecha_nacimiento).getTime() : 0;
+        const fechaNacB = b.fecha_nacimiento ? new Date(b.fecha_nacimiento).getTime() : 0;
+        comparison = fechaNacA - fechaNacB;
+        break;
+      case 'fecha_ingreso':
+        const fechaIngA = a.fecha_ingreso ? new Date(a.fecha_ingreso).getTime() : 0;
+        const fechaIngB = b.fecha_ingreso ? new Date(b.fecha_ingreso).getTime() : 0;
+        comparison = fechaIngA - fechaIngB;
+        break;
+    }
+    
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortableHeader = ({ column, children }: { column: SortColumn; children: React.ReactNode }) => (
+    <TableHead 
+      className="cursor-pointer hover:bg-muted/50 select-none transition-colors"
+      onClick={() => handleSort(column)}
+    >
+      <div className="flex items-center gap-1">
+        {children}
+        {sortColumn === column ? (
+          sortDirection === 'asc' ? (
+            <ArrowUp className="h-3 w-3 text-primary" />
+          ) : (
+            <ArrowDown className="h-3 w-3 text-primary" />
+          )
+        ) : (
+          <ArrowUpDown className="h-3 w-3 text-muted-foreground/50" />
+        )}
+      </div>
+    </TableHead>
+  );
 
   // Obtener áreas únicas para el filtro
   const areasUnicas = [...new Set(personal.map(p => p.area).filter(Boolean) as string[])].sort();
@@ -530,19 +603,19 @@ const PersonalEmpresaDashboard = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Código</TableHead>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Puesto</TableHead>
-                      <TableHead>Área</TableHead>
-                      <TableHead>Supervisor</TableHead>
-                      <TableHead>Estatus</TableHead>
-                      <TableHead>Edad</TableHead>
-                      <TableHead>Antigüedad</TableHead>
+                      <SortableHeader column="codigo_empleado">Código</SortableHeader>
+                      <SortableHeader column="nombre_completo">Nombre</SortableHeader>
+                      <SortableHeader column="puesto">Puesto</SortableHeader>
+                      <SortableHeader column="area">Área</SortableHeader>
+                      <SortableHeader column="es_supervisor">Supervisor</SortableHeader>
+                      <SortableHeader column="estatus">Estatus</SortableHeader>
+                      <SortableHeader column="fecha_nacimiento">Edad</SortableHeader>
+                      <SortableHeader column="fecha_ingreso">Antigüedad</SortableHeader>
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPersonal.map((empleado) => (
+                    {sortedPersonal.map((empleado) => (
                       <TableRow key={empleado.id}>
                         <TableCell className="font-mono text-xs">{empleado.codigo_empleado}</TableCell>
                         <TableCell className="font-medium">
