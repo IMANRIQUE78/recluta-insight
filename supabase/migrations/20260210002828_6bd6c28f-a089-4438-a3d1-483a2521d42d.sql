@@ -1,0 +1,1 @@
+ALTER TABLE public.personal_empresa ADD COLUMN motivo_baja text NULL;

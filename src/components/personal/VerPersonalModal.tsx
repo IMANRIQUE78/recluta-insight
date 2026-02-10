@@ -58,6 +58,7 @@ interface PersonalEmpleado {
   sueldo_asignado: number | null;
   finiquito: number | null;
   observaciones: string | null;
+  motivo_baja: string | null;
   created_at: string;
   // Campos NOM-035
   centro_trabajo?: string | null;
@@ -131,7 +132,7 @@ export const VerPersonalModal = ({
       case 'activo':
         return <Badge className="bg-green-500/10 text-green-600 border-green-500/20"><UserCheck className="h-3 w-3 mr-1" />Activo</Badge>;
       case 'inactivo':
-        return <Badge variant="secondary" className="bg-red-500/10 text-red-600 border-red-500/20"><UserX className="h-3 w-3 mr-1" />Inactivo</Badge>;
+        return <Badge variant="secondary" className="bg-red-500/10 text-red-600 border-red-500/20"><UserX className="h-3 w-3 mr-1" />Inactivo{empleado.motivo_baja ? ` — ${empleado.motivo_baja}` : ''}</Badge>;
       case 'reingreso':
         return <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20"><RefreshCw className="h-3 w-3 mr-1" />Reingreso</Badge>;
       default:

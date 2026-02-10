@@ -1187,6 +1187,7 @@ export type Database = {
           id: string
           jefe_directo: string | null
           modalidad_contratacion: string | null
+          motivo_baja: string | null
           nombre_completo: string
           nss: string | null
           nss_encrypted: string | null
@@ -1236,6 +1237,7 @@ export type Database = {
           id?: string
           jefe_directo?: string | null
           modalidad_contratacion?: string | null
+          motivo_baja?: string | null
           nombre_completo: string
           nss?: string | null
           nss_encrypted?: string | null
@@ -1285,6 +1287,7 @@ export type Database = {
           id?: string
           jefe_directo?: string | null
           modalidad_contratacion?: string | null
+          motivo_baja?: string | null
           nombre_completo?: string
           nss?: string | null
           nss_encrypted?: string | null
