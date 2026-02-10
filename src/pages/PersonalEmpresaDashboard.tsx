@@ -87,6 +87,7 @@ interface PersonalEmpleado {
   sueldo_asignado: number | null;
   finiquito: number | null;
   observaciones: string | null;
+  motivo_baja: string | null;
   es_supervisor: boolean;
   empresa_id: string;
   created_at: string;

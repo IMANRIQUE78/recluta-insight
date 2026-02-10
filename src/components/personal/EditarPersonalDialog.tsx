@@ -58,6 +58,7 @@ interface PersonalEmpleado {
   observaciones: string | null;
   es_supervisor: boolean;
   empresa_id: string;
+  motivo_baja: string | null;
   // Campos NOM-035
   centro_trabajo: string | null;
   tipo_jornada: string | null;
@@ -109,6 +110,15 @@ const ESTATUS_OPTIONS = [
   { value: "reingreso", label: "Reingreso" }
 ];
 
+const MOTIVO_BAJA_OPTIONS = [
+  "Renuncia voluntaria",
+  "Término de contrato",
+  "Bajo desempeño",
+  "Recorte de personal",
+  "Abandono de trabajo",
+  "Mutuo acuerdo",
+];
+
 export const EditarPersonalDialog = ({
   open,
   onOpenChange,
@@ -147,6 +157,7 @@ export const EditarPersonalDialog = ({
     finiquito: empleado.finiquito?.toString() || "",
     observaciones: empleado.observaciones || "",
     es_supervisor: empleado.es_supervisor,
+    motivo_baja: empleado.motivo_baja || "",
     // Campos NOM-035
     centro_trabajo: empleado.centro_trabajo || "",
     tipo_jornada: empleado.tipo_jornada || "completa",
@@ -218,6 +229,7 @@ export const EditarPersonalDialog = ({
       finiquito: empleado.finiquito?.toString() || "",
       observaciones: empleado.observaciones || "",
       es_supervisor: empleado.es_supervisor,
+      motivo_baja: empleado.motivo_baja || "",
       centro_trabajo: empleado.centro_trabajo || "",
       tipo_jornada: empleado.tipo_jornada || "completa",
       modalidad_contratacion: empleado.modalidad_contratacion || "indefinido",
@@ -233,7 +245,7 @@ export const EditarPersonalDialog = ({
       setShowFechaSalida(true);
     } else {
       setShowFechaSalida(false);
-      setFormData(prev => ({ ...prev, fecha_salida: "", finiquito: "" }));
+      setFormData(prev => ({ ...prev, fecha_salida: "", finiquito: "", motivo_baja: "" }));
       setShowFiniquito(false);
     }
   };
@@ -288,6 +300,7 @@ export const EditarPersonalDialog = ({
         finiquito: formData.finiquito ? parseFloat(formData.finiquito) : null,
         observaciones: formData.observaciones || null,
         es_supervisor: formData.es_supervisor,
+        motivo_baja: formData.estatus === "inactivo" ? (formData.motivo_baja || null) : null,
         centro_trabajo: formData.centro_trabajo || null,
         tipo_jornada: formData.tipo_jornada || null,
         modalidad_contratacion: formData.modalidad_contratacion || null,
@@ -348,6 +361,23 @@ export const EditarPersonalDialog = ({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.estatus === "inactivo" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="motivo_baja">Motivo de Baja</Label>
+                    <Select value={formData.motivo_baja} onValueChange={(v) => setFormData({ ...formData, motivo_baja: v })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar motivo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {MOTIVO_BAJA_OPTIONS.map(m => (
+                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="nombre_completo">Nombre Completo *</Label>
                   <Input

@@ -33,6 +33,7 @@ interface PersonalEmpleado {
   sueldo_asignado: number | null;
   finiquito: number | null;
   observaciones: string | null;
+  motivo_baja: string | null;
   centro_trabajo?: string | null;
   tipo_jornada?: string | null;
   modalidad_contratacion?: string | null;
@@ -123,18 +124,22 @@ export function usePersonalPdf() {
     doc.text(`Código: ${empleado.codigo_empleado}`, margin + 5, yPosition + 18);
     
     // Estatus badge
-    const estatusX = pageWidth - margin - 25;
+    const estatusLabel = empleado.estatus === 'inactivo' && empleado.motivo_baja
+      ? `Inactivo — ${empleado.motivo_baja}`
+      : empleado.estatus.charAt(0).toUpperCase() + empleado.estatus.slice(1);
     const estatusColor: [number, number, number] = empleado.estatus === 'activo' 
       ? [34, 197, 94] 
       : empleado.estatus === 'inactivo' 
         ? [239, 68, 68] 
         : [59, 130, 246];
+    const badgeWidth = Math.max(20, doc.getTextWidth(estatusLabel) + 8);
+    const estatusX = pageWidth - margin - badgeWidth;
     doc.setFillColor(...estatusColor);
-    doc.roundedRect(estatusX, yPosition + 4, 20, 8, 2, 2, 'F');
+    doc.roundedRect(estatusX, yPosition + 4, badgeWidth, 8, 2, 2, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text(empleado.estatus.charAt(0).toUpperCase() + empleado.estatus.slice(1), estatusX + 10, yPosition + 9.5, { align: 'center' });
+    doc.text(estatusLabel, estatusX + badgeWidth / 2, yPosition + 9.5, { align: 'center' });
     
     yPosition += 35;
 
