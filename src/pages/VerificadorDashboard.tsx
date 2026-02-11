@@ -19,6 +19,7 @@ import {
   Building,
   User,
   LogOut,
+  Plus,
   Settings
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +40,7 @@ import { es } from "date-fns/locale";
 import SubirDatosEstudioModal from "@/components/verificador/SubirDatosEstudioModal";
 import EstudioDetalleModal from "@/components/verificador/EstudioDetalleModal";
 import { EditarPerfilVerificadorDialog } from "@/components/verificador/EditarPerfilVerificadorDialog";
+import { NuevoEstudioVerificadorDialog } from "@/components/verificador/NuevoEstudioVerificadorDialog";
 import vvgiLogo from "@/assets/vvgi-logo.png";
 
 const estatusConfig: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -62,6 +64,7 @@ export default function VerificadorDashboard() {
   const [modalSubirDatos, setModalSubirDatos] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
   const [modalPerfil, setModalPerfil] = useState(false);
+  const [modalNuevoEstudio, setModalNuevoEstudio] = useState(false);
 
   // Fetch verificador profile
   const { data: perfilVerificador } = useQuery({
@@ -204,6 +207,22 @@ export default function VerificadorDashboard() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={() => setModalNuevoEstudio(true)}
+              className="hidden sm:flex"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nuevo Estudio
+            </Button>
+            <Button
+              size="icon"
+              onClick={() => setModalNuevoEstudio(true)}
+              className="sm:hidden"
+              title="Nuevo Estudio"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -583,6 +602,16 @@ export default function VerificadorDashboard() {
           onOpenChange={setModalPerfil}
           verificadorUserId={user.id}
           onSuccess={() => {}}
+        />
+      )}
+
+      {perfilVerificador && user?.id && (
+        <NuevoEstudioVerificadorDialog
+          open={modalNuevoEstudio}
+          onOpenChange={setModalNuevoEstudio}
+          verificadorId={perfilVerificador.id}
+          verificadorUserId={user.id}
+          onSuccess={() => refetchEstudios()}
         />
       )}
     </div>
