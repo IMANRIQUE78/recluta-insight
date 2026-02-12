@@ -20,7 +20,8 @@ import {
   User,
   LogOut,
   Plus,
-  Settings
+  Settings,
+  Download
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { format, differenceInDays, isAfter } from "date-fns";
+import { useEstudioPdf } from "@/hooks/useEstudioPdf";
 import { es } from "date-fns/locale";
 import SubirDatosEstudioModal from "@/components/verificador/SubirDatosEstudioModal";
 import EstudioDetalleModal from "@/components/verificador/EstudioDetalleModal";
@@ -56,6 +58,7 @@ export default function VerificadorDashboard() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const scrollDirection = useScrollDirection();
+  const { downloadEstudioPdf } = useEstudioPdf();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [estatusFilter, setEstatusFilter] = useState<string>("todos");
@@ -437,7 +440,12 @@ export default function VerificadorDashboard() {
                       <div className="bg-background/60 rounded-md p-2 mb-2 border space-y-1">
                         <div className="flex items-center gap-2 text-sm">
                           <Building className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <span className="font-medium">{estudio.empresas?.nombre_empresa || "Sin empresa"}</span>
+                          <span className="font-medium">
+                            {estudio.cliente_empresa || estudio.empresas?.nombre_empresa || "Cliente directo"}
+                          </span>
+                          {estudio.es_estudio_directo && (
+                            <Badge className="bg-blue-100 text-blue-700 text-[10px] px-1.5 py-0">Directo</Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span className="ml-5">Puesto: {estudio.vacante_puesto}</span>
@@ -559,13 +567,24 @@ export default function VerificadorDashboard() {
                               }
                             </td>
                             <td className="p-3">
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                onClick={() => handleVerDetalle(estudio)}
-                              >
-                                Ver
-                              </Button>
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm"
+                                  onClick={() => handleVerDetalle(estudio)}
+                                >
+                                  Ver
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => downloadEstudioPdf(estudio)}
+                                  title="Descargar PDF"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))
