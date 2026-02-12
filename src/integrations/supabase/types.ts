@@ -424,6 +424,7 @@ export type Database = {
           calificacion_riesgo: string | null
           candidato_presente: boolean | null
           candidato_user_id: string
+          cliente_empresa: string | null
           created_at: string
           datos_economicos: Json | null
           datos_laborales: Json | null
@@ -431,7 +432,9 @@ export type Database = {
           datos_sociodemograficos: Json | null
           datos_vivienda: Json | null
           direccion_visita: string
+          email_candidato: string | null
           empresa_id: string | null
+          es_estudio_directo: boolean
           estatus: string
           evidencias: Json | null
           fecha_asignacion: string | null
@@ -449,6 +452,7 @@ export type Database = {
           postulacion_id: string | null
           resultado_general: string | null
           solicitante_user_id: string
+          telefono_candidato: string | null
           updated_at: string
           vacante_puesto: string
           verificador_id: string | null
@@ -458,6 +462,7 @@ export type Database = {
           calificacion_riesgo?: string | null
           candidato_presente?: boolean | null
           candidato_user_id: string
+          cliente_empresa?: string | null
           created_at?: string
           datos_economicos?: Json | null
           datos_laborales?: Json | null
@@ -465,7 +470,9 @@ export type Database = {
           datos_sociodemograficos?: Json | null
           datos_vivienda?: Json | null
           direccion_visita: string
+          email_candidato?: string | null
           empresa_id?: string | null
+          es_estudio_directo?: boolean
           estatus?: string
           evidencias?: Json | null
           fecha_asignacion?: string | null
@@ -483,6 +490,7 @@ export type Database = {
           postulacion_id?: string | null
           resultado_general?: string | null
           solicitante_user_id: string
+          telefono_candidato?: string | null
           updated_at?: string
           vacante_puesto: string
           verificador_id?: string | null
@@ -492,6 +500,7 @@ export type Database = {
           calificacion_riesgo?: string | null
           candidato_presente?: boolean | null
           candidato_user_id?: string
+          cliente_empresa?: string | null
           created_at?: string
           datos_economicos?: Json | null
           datos_laborales?: Json | null
@@ -499,7 +508,9 @@ export type Database = {
           datos_sociodemograficos?: Json | null
           datos_vivienda?: Json | null
           direccion_visita?: string
+          email_candidato?: string | null
           empresa_id?: string | null
+          es_estudio_directo?: boolean
           estatus?: string
           evidencias?: Json | null
           fecha_asignacion?: string | null
@@ -517,6 +528,7 @@ export type Database = {
           postulacion_id?: string | null
           resultado_general?: string | null
           solicitante_user_id?: string
+          telefono_candidato?: string | null
           updated_at?: string
           vacante_puesto?: string
           verificador_id?: string | null
