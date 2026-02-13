@@ -189,6 +189,16 @@ export function useEstudioPdf() {
       y = (doc as any).lastAutoTable.finalY + 10;
     }
 
+    // Blank "Fotos" page
+    doc.addPage();
+    const fotosY = 20;
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 0);
+    doc.text("Fotos", pageWidth / 2, fotosY, { align: "center" });
+    doc.setDrawColor(200);
+    doc.line(15, fotosY + 4, pageWidth - 15, fotosY + 4);
+
     // Footer
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
