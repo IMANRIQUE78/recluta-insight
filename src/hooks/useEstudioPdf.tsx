@@ -155,7 +155,68 @@ export function useEstudioPdf() {
 
     addSection("Datos Sociodemográficos", estudio.datos_sociodemograficos);
     addSection("Datos de Vivienda", estudio.datos_vivienda);
-    addSection("Datos Económicos", estudio.datos_economicos);
+
+    // Económicos - handle ingresos/egresos arrays specially
+    const econ = estudio.datos_economicos;
+    if (econ) {
+      const econGeneral: Record<string, any> = { ...econ };
+      delete econGeneral.ingresos;
+      delete econGeneral.egresos;
+      delete econGeneral.total_ingresos;
+      delete econGeneral.total_egresos;
+      addSection("Datos Económicos - General", econGeneral);
+
+      // Ingresos table
+      if (Array.isArray(econ.ingresos) && econ.ingresos.length > 0) {
+        if (y > 260) { doc.addPage(); y = 15; }
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Ingresos Mensuales", 15, y);
+        y += 5;
+        const ingRows = econ.ingresos
+          .filter((i: any) => i.concepto || i.monto)
+          .map((i: any) => [i.concepto || "", `$${parseFloat(i.monto || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`]);
+        const totalIng = econ.total_ingresos || econ.ingresos.reduce((s: number, i: any) => s + (parseFloat(i.monto) || 0), 0);
+        ingRows.push(["TOTAL", `$${parseFloat(totalIng).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`]);
+        autoTable(doc, {
+          startY: y,
+          head: [["Concepto", "Monto"]],
+          body: ingRows,
+          theme: "striped",
+          headStyles: { fillColor: [34, 139, 34], fontSize: 8 },
+          bodyStyles: { fontSize: 8 },
+          columnStyles: { 1: { halign: "right" } },
+          margin: { left: 15, right: 15 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+      }
+
+      // Egresos table
+      if (Array.isArray(econ.egresos) && econ.egresos.length > 0) {
+        if (y > 260) { doc.addPage(); y = 15; }
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "bold");
+        doc.text("Egresos Mensuales", 15, y);
+        y += 5;
+        const egrRows = econ.egresos
+          .filter((e: any) => e.concepto || e.monto)
+          .map((e: any) => [e.concepto || "", `$${parseFloat(e.monto || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`]);
+        const totalEgr = econ.total_egresos || econ.egresos.reduce((s: number, e: any) => s + (parseFloat(e.monto) || 0), 0);
+        egrRows.push(["TOTAL", `$${parseFloat(totalEgr).toLocaleString("es-MX", { minimumFractionDigits: 2 })}`]);
+        autoTable(doc, {
+          startY: y,
+          head: [["Concepto", "Monto"]],
+          body: egrRows,
+          theme: "striped",
+          headStyles: { fillColor: [220, 53, 69], fontSize: 8 },
+          bodyStyles: { fontSize: 8 },
+          columnStyles: { 1: { halign: "right" } },
+          margin: { left: 15, right: 15 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 10;
+      }
+    }
+
     addSection("Datos Laborales", estudio.datos_laborales);
     addSection("Referencias", estudio.datos_referencias);
 

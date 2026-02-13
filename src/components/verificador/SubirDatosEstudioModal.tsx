@@ -187,28 +187,11 @@ export default function SubirDatosEstudioModal({
       fuente_ingresos_principal: estudio?.datos_economicos?.fuente_ingresos_principal || "",
       otra_fuente_ingresos: estudio?.datos_economicos?.otra_fuente_ingresos || false,
       
-      // Ingresos
-      ingreso_empleo: estudio?.datos_economicos?.ingreso_empleo || "",
-      otros_ingresos: estudio?.datos_economicos?.otros_ingresos || "",
-      total_ingresos: estudio?.datos_economicos?.total_ingresos || "",
+      // Ingresos (dynamic list)
+      ingresos: estudio?.datos_economicos?.ingresos || [{ concepto: "", monto: "" }],
       
-      // Egresos
-      egreso_renta: estudio?.datos_economicos?.egreso_renta || "",
-      egreso_agua: estudio?.datos_economicos?.egreso_agua || "",
-      egreso_luz: estudio?.datos_economicos?.egreso_luz || "",
-      egreso_telefono: estudio?.datos_economicos?.egreso_telefono || "",
-      egreso_internet: estudio?.datos_economicos?.egreso_internet || "",
-      egreso_cable: estudio?.datos_economicos?.egreso_cable || "",
-      egreso_gas: estudio?.datos_economicos?.egreso_gas || "",
-      egreso_transporte: estudio?.datos_economicos?.egreso_transporte || "",
-      egreso_alimentos: estudio?.datos_economicos?.egreso_alimentos || "",
-      egreso_educacion: estudio?.datos_economicos?.egreso_educacion || "",
-      egreso_salud: estudio?.datos_economicos?.egreso_salud || "",
-      egreso_vestido: estudio?.datos_economicos?.egreso_vestido || "",
-      egreso_creditos: estudio?.datos_economicos?.egreso_creditos || "",
-      egreso_ocio: estudio?.datos_economicos?.egreso_ocio || "",
-      egreso_otros: estudio?.datos_economicos?.egreso_otros || "",
-      total_egresos: estudio?.datos_economicos?.total_egresos || "",
+      // Egresos (dynamic list)
+      egresos: estudio?.datos_economicos?.egresos || [{ concepto: "", monto: "" }],
       
       // Propiedades y créditos
       tiene_auto_propio: estudio?.datos_economicos?.tiene_auto_propio || false,
@@ -450,25 +433,10 @@ export default function SubirDatosEstudioModal({
         cuantos_dependientes: data.cuantos_dependientes,
         fuente_ingresos_principal: data.fuente_ingresos_principal,
         otra_fuente_ingresos: data.otra_fuente_ingresos,
-        ingreso_empleo: data.ingreso_empleo,
-        otros_ingresos: data.otros_ingresos,
-        total_ingresos: data.total_ingresos,
-        egreso_renta: data.egreso_renta,
-        egreso_agua: data.egreso_agua,
-        egreso_luz: data.egreso_luz,
-        egreso_telefono: data.egreso_telefono,
-        egreso_internet: data.egreso_internet,
-        egreso_cable: data.egreso_cable,
-        egreso_gas: data.egreso_gas,
-        egreso_transporte: data.egreso_transporte,
-        egreso_alimentos: data.egreso_alimentos,
-        egreso_educacion: data.egreso_educacion,
-        egreso_salud: data.egreso_salud,
-        egreso_vestido: data.egreso_vestido,
-        egreso_creditos: data.egreso_creditos,
-        egreso_ocio: data.egreso_ocio,
-        egreso_otros: data.egreso_otros,
-        total_egresos: data.total_egresos,
+        ingresos: data.ingresos?.filter((i: any) => i.concepto || i.monto) || [],
+        egresos: data.egresos?.filter((e: any) => e.concepto || e.monto) || [],
+        total_ingresos: data.ingresos?.reduce((sum: number, i: any) => sum + (parseFloat(i.monto) || 0), 0) || 0,
+        total_egresos: data.egresos?.reduce((sum: number, e: any) => sum + (parseFloat(e.monto) || 0), 0) || 0,
         tiene_auto_propio: data.tiene_auto_propio,
         valor_auto_propio: data.valor_auto_propio,
         tiene_auto_familiar: data.tiene_auto_familiar,
@@ -1159,57 +1127,132 @@ export default function SubirDatosEstudioModal({
                   </Card>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ingresos Card */}
                     <Card>
                       <CardHeader className="py-3 bg-green-500/10">
                         <CardTitle className="text-sm text-green-700 dark:text-green-400">Ingresos Mensuales</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-3 pt-4">
-                        <div>
-                          <Label className="text-xs">Por Empleo</Label>
-                          <Input {...register("ingreso_empleo")} type="number" placeholder="$0.00" className="h-8" />
-                        </div>
-                        <div>
-                          <Label className="text-xs">Otros Ingresos</Label>
-                          <Input {...register("otros_ingresos")} type="number" placeholder="$0.00" className="h-8" />
-                        </div>
+                      <CardContent className="space-y-2 pt-4">
+                        {(watch("ingresos") as any[])?.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              value={item.concepto}
+                              onChange={(e) => {
+                                const updated = [...(watch("ingresos") as any[])];
+                                updated[index] = { ...updated[index], concepto: e.target.value };
+                                setValue("ingresos", updated);
+                              }}
+                              placeholder="Concepto"
+                              className="h-8 flex-1"
+                            />
+                            <Input
+                              value={item.monto}
+                              onChange={(e) => {
+                                const updated = [...(watch("ingresos") as any[])];
+                                updated[index] = { ...updated[index], monto: e.target.value };
+                                setValue("ingresos", updated);
+                              }}
+                              type="number"
+                              placeholder="$0.00"
+                              className="h-8 w-28"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => {
+                                const updated = (watch("ingresos") as any[]).filter((_: any, i: number) => i !== index);
+                                setValue("ingresos", updated.length ? updated : [{ concepto: "", monto: "" }]);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => {
+                            const current = watch("ingresos") as any[];
+                            setValue("ingresos", [...current, { concepto: "", monto: "" }]);
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Agregar Ingreso
+                        </Button>
                         <Separator />
-                        <div>
-                          <Label className="text-xs font-bold">TOTAL INGRESOS</Label>
-                          <Input {...register("total_ingresos")} type="number" placeholder="$0.00" className="h-8 font-bold" />
+                        <div className="flex justify-between items-center font-bold text-sm">
+                          <span>TOTAL INGRESOS:</span>
+                          <span className="text-green-700 dark:text-green-400">
+                            ${((watch("ingresos") as any[])?.reduce((sum: number, i: any) => sum + (parseFloat(i.monto) || 0), 0) || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
 
+                    {/* Egresos Card */}
                     <Card>
                       <CardHeader className="py-3 bg-red-500/10">
                         <CardTitle className="text-sm text-red-700 dark:text-red-400">Egresos Mensuales</CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="grid grid-cols-2 gap-2">
-                          {[
-                            { key: "egreso_renta", label: "Renta/Hipoteca" },
-                            { key: "egreso_agua", label: "Agua" },
-                            { key: "egreso_luz", label: "Luz" },
-                            { key: "egreso_telefono", label: "Teléfono" },
-                            { key: "egreso_internet", label: "Internet" },
-                            { key: "egreso_gas", label: "Gas" },
-                            { key: "egreso_transporte", label: "Transporte" },
-                            { key: "egreso_alimentos", label: "Alimentos" },
-                            { key: "egreso_educacion", label: "Educación" },
-                            { key: "egreso_salud", label: "Salud" },
-                            { key: "egreso_creditos", label: "Créditos" },
-                            { key: "egreso_otros", label: "Otros" },
-                          ].map(({ key, label }) => (
-                            <div key={key}>
-                              <Label className="text-xs">{label}</Label>
-                              <Input {...register(key as any)} type="number" placeholder="$0" className="h-7 text-xs" />
-                            </div>
-                          ))}
-                        </div>
-                        <Separator className="my-3" />
-                        <div>
-                          <Label className="text-xs font-bold">TOTAL EGRESOS</Label>
-                          <Input {...register("total_egresos")} type="number" placeholder="$0.00" className="h-8 font-bold" />
+                      <CardContent className="space-y-2 pt-4">
+                        {(watch("egresos") as any[])?.map((item: any, index: number) => (
+                          <div key={index} className="flex items-center gap-2">
+                            <Input
+                              value={item.concepto}
+                              onChange={(e) => {
+                                const updated = [...(watch("egresos") as any[])];
+                                updated[index] = { ...updated[index], concepto: e.target.value };
+                                setValue("egresos", updated);
+                              }}
+                              placeholder="Concepto"
+                              className="h-8 flex-1"
+                            />
+                            <Input
+                              value={item.monto}
+                              onChange={(e) => {
+                                const updated = [...(watch("egresos") as any[])];
+                                updated[index] = { ...updated[index], monto: e.target.value };
+                                setValue("egresos", updated);
+                              }}
+                              type="number"
+                              placeholder="$0.00"
+                              className="h-8 w-28"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 shrink-0"
+                              onClick={() => {
+                                const updated = (watch("egresos") as any[]).filter((_: any, i: number) => i !== index);
+                                setValue("egresos", updated.length ? updated : [{ concepto: "", monto: "" }]);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => {
+                            const current = watch("egresos") as any[];
+                            setValue("egresos", [...current, { concepto: "", monto: "" }]);
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Agregar Egreso
+                        </Button>
+                        <Separator />
+                        <div className="flex justify-between items-center font-bold text-sm">
+                          <span>TOTAL EGRESOS:</span>
+                          <span className="text-red-700 dark:text-red-400">
+                            ${((watch("egresos") as any[])?.reduce((sum: number, e: any) => sum + (parseFloat(e.monto) || 0), 0) || 0).toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </CardContent>
                     </Card>
