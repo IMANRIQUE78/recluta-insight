@@ -132,33 +132,33 @@ export default function Home() {
   const features = [
     {
       icon: <Brain className="h-8 w-8" />,
-      title: "IA para Reclutadores",
-      description: "Asistente inteligente que analiza perfiles, sugiere candidatos ideales y automatiza la selección con precisión."
+      title: "Sourcing con IA",
+      description: "Busca y filtra candidatos del pool de talento automáticamente con inteligencia artificial. Encuentra al candidato ideal en segundos."
     },
     {
       icon: <Sparkles className="h-8 w-8" />,
-      title: "IA para Empresas",
-      description: "Predicción de necesidades de personal, análisis de tendencias salariales y optimización de procesos de contratación."
+      title: "Análisis Inteligente de CVs",
+      description: "La IA analiza y resume currículos, detecta habilidades clave, nivel de experiencia e industrias relevantes de cada candidato."
     },
     {
       icon: <Target className="h-8 w-8" />,
-      title: "IA para Candidatos",
-      description: "Recomendaciones personalizadas de vacantes, optimización de perfiles y preparación inteligente para entrevistas."
+      title: "Marketplace de Vacantes",
+      description: "Publica vacantes visibles para miles de candidatos. Los candidatos se postulan directamente y tú gestionas cada etapa."
     },
     {
       icon: <BarChart3 className="h-8 w-8" />,
-      title: "KPIs en Tiempo Real",
-      description: "Dashboard inteligente con métricas clave, forecasts y análisis predictivo impulsado por IA."
+      title: "KPIs y Forecast",
+      description: "Dashboard con métricas de reclutamiento en tiempo real: tiempo promedio de cierre, tasa de conversión, forecast mensual y más."
     },
     {
       icon: <Users className="h-8 w-8" />,
-      title: "Marketplace de Talento",
-      description: "Matching inteligente entre candidatos y vacantes usando algoritmos de IA para mejores resultados."
+      title: "Gestión Multi-Empresa",
+      description: "Reclutadores pueden vincularse a múltiples empresas. Las empresas asignan créditos y controlan presupuestos desde su wallet."
     },
     {
       icon: <Rocket className="h-8 w-8" />,
-      title: "Automatización Total",
-      description: "Desde la publicación hasta la contratación, la IA trabaja 24/7 optimizando cada paso del proceso."
+      title: "Estudios Socioeconómicos",
+      description: "Solicita y gestiona estudios socioeconómicos con verificadores certificados. Descarga reportes en PDF ejecutivos."
     }
   ];
 
@@ -183,18 +183,18 @@ export default function Home() {
 
   const aiFeatures = [
     {
-      title: "Análisis Inteligente de CVs",
-      description: "La IA lee y evalúa miles de perfiles en segundos, identificando los mejores candidatos automáticamente.",
+      title: "Sourcing IA Automatizado",
+      description: "Ingresa los requisitos de tu vacante y la IA busca en todo el pool de candidatos registrados, ordenándolos por compatibilidad.",
       icon: <Brain className="h-6 w-6 text-primary" />
     },
     {
-      title: "Predicción de Éxito",
-      description: "Algoritmos que predicen la probabilidad de éxito de cada candidato basándose en datos históricos.",
+      title: "Resumen Inteligente de Perfil",
+      description: "Cada candidato obtiene un resumen profesional generado por IA que destaca sus fortalezas, habilidades técnicas e industrias.",
       icon: <Award className="h-6 w-6 text-primary" />
     },
     {
-      title: "Asistente Virtual 24/7",
-      description: "Chatbot inteligente que responde preguntas de candidatos y reclutadores en tiempo real.",
+      title: "Mejora de CV con IA",
+      description: "Los candidatos pueden mejorar su resumen profesional con inteligencia artificial para destacar ante reclutadores.",
       icon: <Sparkles className="h-6 w-6 text-primary" />
     }
   ];
@@ -245,57 +245,62 @@ export default function Home() {
 
   const pricingPlans = [
     {
-      name: "Básico",
-      price: "49",
-      currency: "USD",
-      period: "mes",
-      description: "Perfecto para empresas pequeñas que inician",
+      name: "20 Créditos",
+      price: "2,400",
+      currency: "MXN",
+      period: "pago único",
+      description: "Ideal para probar la plataforma o necesidades puntuales",
       popular: false,
+      pricePerCredit: "$120",
+      discount: null as string | null,
       features: [
-        "Hasta 5 vacantes activas",
-        "Publicación en Marketplace",
-        "Dashboard básico de KPIs",
-        "Soporte por email",
-        "1 usuario administrador",
-        "Análisis básico de CVs con IA"
+        "20 créditos para usar en la plataforma",
+        "Publicar vacantes en el Marketplace (10 créditos c/u)",
+        "Sourcing con IA (50 créditos c/u)",
+        "Desbloquear identidad de candidatos (2 créditos c/u)",
+        "Dashboard de KPIs y forecast",
+        "Sin fecha de expiración"
       ]
     },
     {
-      name: "Profesional",
-      price: "149",
-      currency: "USD",
-      period: "mes",
-      description: "Ideal para empresas en crecimiento",
+      name: "50 Créditos",
+      price: "5,580",
+      currency: "MXN",
+      period: "pago único",
+      description: "El más popular — mejor relación precio-valor",
       popular: true,
+      pricePerCredit: "$111.60",
+      discount: "7% de descuento",
       features: [
-        "Hasta 20 vacantes activas",
-        "Publicaciones destacadas",
-        "Analytics avanzado con IA",
-        "Soporte prioritario 24/7",
-        "Hasta 5 usuarios",
-        "Predicción de éxito de candidatos",
-        "Integración con reclutadores freelance",
-        "Pool de candidatos premium",
-        "Reportes personalizados"
+        "50 créditos para usar en la plataforma",
+        "Publicar vacantes en el Marketplace (10 créditos c/u)",
+        "Sourcing con IA (50 créditos c/u)",
+        "Desbloquear identidad de candidatos (2 créditos c/u)",
+        "Dashboard de KPIs y forecast",
+        "Asignación de créditos a reclutadores vinculados",
+        "Gestión de wallet empresa y reclutador",
+        "Sin fecha de expiración"
       ]
     },
     {
-      name: "Enterprise",
-      price: "Personalizado",
-      currency: "",
-      period: "",
-      description: "Solución completa para grandes corporativos",
+      name: "100 Créditos",
+      price: "10,800",
+      currency: "MXN",
+      period: "pago único",
+      description: "Máximo ahorro para empresas con alto volumen",
       popular: false,
+      pricePerCredit: "$108",
+      discount: "10% de descuento",
       features: [
-        "Vacantes ilimitadas",
-        "IA personalizada para tu industria",
-        "Account manager dedicado",
-        "Onboarding y capacitación",
-        "Usuarios ilimitados",
-        "API access completo",
-        "Integraciones personalizadas",
-        "SLA garantizado",
-        "Cumplimiento y seguridad enterprise"
+        "100 créditos para usar en la plataforma",
+        "Publicar vacantes en el Marketplace (10 créditos c/u)",
+        "Sourcing con IA (50 créditos c/u)",
+        "Desbloquear identidad de candidatos (2 créditos c/u)",
+        "Dashboard de KPIs y forecast",
+        "Asignación de créditos a reclutadores vinculados",
+        "Gestión de wallet empresa y reclutador",
+        "Estudios socioeconómicos con verificadores",
+        "Sin fecha de expiración"
       ]
     }
   ];
@@ -322,7 +327,7 @@ export default function Home() {
               ¿Por Qué VVGI?
             </a>
             <a href="#precios" className="text-sm font-medium hover:text-primary transition-colors">
-              Precios
+              Créditos
             </a>
             <a href="#contacto" className="text-sm font-medium hover:text-primary transition-colors">
               Contacto
@@ -623,24 +628,28 @@ export default function Home() {
                 </div>
                 <h4 className="text-2xl font-bold">Para Empresas</h4>
                 <p className="text-muted-foreground leading-relaxed">
-                  Gestiona tu proceso de reclutamiento de principio a fin con herramientas potenciadas por IA.
+                  Controla tu proceso de reclutamiento con dashboard de KPIs, wallet de créditos, gestión de reclutadores y publicación en marketplace.
                 </p>
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Dashboard de KPIs en tiempo real
+                    Dashboard con KPIs y forecast en tiempo real
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Publicación en Marketplace
+                    Wallet de créditos para publicar y buscar talento
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Gestión de reclutadores
+                    Vinculación y gestión de reclutadores
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Análisis predictivo de demanda
+                    Cumplimiento NOM-035 y gestión de personal
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Costeo de reclutamiento por vacante
                   </li>
                 </ul>
                 <Button className="w-full mt-4" onClick={() => navigate("/auth")}>
@@ -662,24 +671,28 @@ export default function Home() {
                 </div>
                 <h4 className="text-2xl font-bold">Para Reclutadores</h4>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tu perfil profesional es tuyo para siempre. Construye tu reputación y trabaja con múltiples empresas.
+                  Tu perfil profesional es tuyo para siempre. Acumula indicadores, construye tu reputación y trabaja con múltiples empresas.
                 </p>
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-accent" />
-                    Perfil 100% gratuito
+                    Perfil y registro 100% gratuito
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-accent" />
-                    Indicadores portables
+                    KPIs portables entre empresas
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-accent" />
-                    Ranking profesional
+                    Ranking y leaderboard profesional
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-accent" />
-                    Acceso a pool de candidatos
+                    Sourcing con IA y pool de candidatos
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-accent" />
+                    Gestión de entrevistas y postulaciones
                   </li>
                 </ul>
                 <Button className="w-full mt-4 bg-accent hover:bg-accent/90" onClick={() => navigate("/auth")}>
@@ -698,24 +711,28 @@ export default function Home() {
                 </div>
                 <h4 className="text-2xl font-bold">Para Candidatos</h4>
                 <p className="text-muted-foreground leading-relaxed">
-                  Encuentra tu próxima oportunidad laboral con recomendaciones personalizadas por IA.
+                  Crea tu perfil, sube tu CV y postúlate a vacantes. Recibe feedback, gestiona entrevistas y mejora tu perfil con IA.
                 </p>
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Perfil profesional gratuito
+                    Perfil profesional 100% gratuito
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Matching inteligente
+                    Postulación directa a vacantes del marketplace
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Seguimiento de postulaciones
+                    Seguimiento en tiempo real de postulaciones
                   </li>
                   <li className="flex items-center gap-2 text-sm">
                     <Check className="h-4 w-4 text-primary" />
-                    Feedback de entrevistas
+                    Feedback de entrevistas y mejora con IA
+                  </li>
+                  <li className="flex items-center gap-2 text-sm">
+                    <Check className="h-4 w-4 text-primary" />
+                    Carga de CV con análisis automático
                   </li>
                 </ul>
                 <Button variant="outline" className="w-full mt-4" onClick={() => navigate("/marketplace")}>
@@ -956,13 +973,13 @@ export default function Home() {
           <div className="text-center mb-16">
             <Badge variant="secondary" className="mb-4">
               <Zap className="h-4 w-4 mr-2" />
-              Planes y Precios
+              Paquetes de Créditos
             </Badge>
             <h3 className="text-3xl md:text-4xl font-bold mb-4">
-              Inversión que Se Paga Sola
+              Paga Solo lo que Necesitas
             </h3>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Precios transparentes y flexibles que crecen con tu empresa. Sin sorpresas ni costos ocultos.
+              Compra paquetes de créditos y úsalos cuando los necesites. Sin suscripciones, sin mensualidades, sin fecha de vencimiento.
             </p>
           </div>
 
@@ -986,13 +1003,15 @@ export default function Home() {
                     <h4 className="text-2xl font-bold mb-2">{plan.name}</h4>
                     <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                     <div className="flex items-baseline gap-1">
-                      {plan.price !== "Personalizado" ? (
-                        <>
-                          <span className="text-4xl font-bold text-primary">${plan.price}</span>
-                          <span className="text-muted-foreground">{plan.currency} / {plan.period}</span>
-                        </>
-                      ) : (
-                        <span className="text-3xl font-bold text-primary">Contactar Ventas</span>
+                      <span className="text-4xl font-bold text-primary">${plan.price}</span>
+                      <span className="text-muted-foreground">{plan.currency}</span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <p className="text-sm text-muted-foreground">{plan.pricePerCredit} por crédito</p>
+                      {plan.discount && (
+                        <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-200 text-xs">
+                          {plan.discount}
+                        </Badge>
                       )}
                     </div>
                   </div>
@@ -1003,7 +1022,7 @@ export default function Home() {
                     size="lg"
                     onClick={() => navigate("/auth")}
                   >
-                    {plan.price !== "Personalizado" ? "Comenzar Ahora" : "Agendar Demo"}
+                    Comprar Créditos
                     <ArrowRight className="h-4 w-4 ml-2" />
                   </Button>
 
@@ -1020,9 +1039,28 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-12 space-y-4">
+            <Card className="max-w-3xl mx-auto border-2 border-primary/20">
+              <CardContent className="p-6">
+                <h4 className="font-bold text-lg mb-3">¿Cómo funcionan los créditos?</h4>
+                <div className="grid sm:grid-cols-3 gap-4 text-sm">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="font-bold text-primary text-lg">10 créditos</p>
+                    <p className="text-muted-foreground">Publicar una vacante en el Marketplace</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="font-bold text-primary text-lg">50 créditos</p>
+                    <p className="text-muted-foreground">Búsqueda de candidatos con Sourcing IA</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="font-bold text-primary text-lg">2 créditos</p>
+                    <p className="text-muted-foreground">Desbloquear identidad de un candidato</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
             <p className="text-sm text-muted-foreground">
-              Todos los planes incluyen acceso al Marketplace, actualizaciones gratuitas y soporte técnico.
+              Los créditos se compran desde la wallet de tu empresa o reclutador. Pago seguro con Stripe.
               <br />
               ¿Necesitas un plan personalizado? <a href="mailto:admin@vvgi.com.mx" className="text-primary hover:underline">Contáctanos</a>
             </p>
@@ -1192,7 +1230,7 @@ export default function Home() {
             {/* Copyright and Links */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <p className="text-sm text-muted-foreground">
-                © 2025 VVGI. Todos los derechos reservados. Un proyecto de <span className="font-semibold text-foreground">Israel Manrique</span>
+                © 2026 VVGI. Todos los derechos reservados. Un proyecto de <span className="font-semibold text-foreground">Israel Manrique</span>
               </p>
               <div className="flex gap-6 text-sm text-muted-foreground">
                 <a href="#" className="hover:text-primary transition-colors">Aviso de Privacidad</a>
