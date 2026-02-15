@@ -6,8 +6,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // ============================================================================
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const COSTO_SOURCING = 50;
@@ -47,15 +47,46 @@ interface MatchIA {
   experiencia_relevante: string[];
 }
 
+interface LogMetadata {
+  user_id?: string;
+  vacante_id?: string;
+  publicacion_id?: string;
+  [key: string]: any;
+}
+
 // ============================================================================
 // FUNCIONES UTILITARIAS
 // ============================================================================
 
+/** Sistema de logging estructurado con persistencia en BD */
+async function logEvent(supabase: any, level: "info" | "warn" | "error", action: string, metadata: LogMetadata) {
+  const timestamp = new Date().toISOString();
+
+  // Log a consola (debugging inmediato)
+  console.log(`[${timestamp}] [${level.toUpperCase()}] ${action}:`, JSON.stringify(metadata));
+
+  // Persistir en BD (no bloqueante)
+  try {
+    await supabase.from("logs_sistema").insert({
+      nivel: level,
+      accion: action,
+      metadata: metadata,
+      created_at: timestamp,
+    });
+  } catch (error) {
+    // No fallar si el logging falla
+    console.error("[LOG ERROR]", error);
+  }
+}
+
 /** Sanitiza texto para prevenir prompt injection */
 function sanitizeForPrompt(text: string | null | undefined): string {
-  if (!text) return 'No especificado';
+  if (!text) return "No especificado";
   return text
-    .replace(/IGNORA|IGNORE|OLVIDA|FORGET|NUEVA INSTRUCCIÓN|NEW INSTRUCTION|BYPASS|SYSTEM:|ASSISTANT:|USER:/gi, '[filtrado]')
+    .replace(
+      /IGNORA|IGNORE|OLVIDA|FORGET|NUEVA INSTRUCCIÓN|NEW INSTRUCTION|BYPASS|SYSTEM:|ASSISTANT:|USER:/gi,
+      "[filtrado]",
+    )
     .replace(/[`]/g, "'")
     .substring(0, 2000)
     .trim();
@@ -64,12 +95,13 @@ function sanitizeForPrompt(text: string | null | undefined): string {
 /** Valida estructura de respuesta de IA */
 function validateAIResponse(data: any): data is MatchIA[] {
   if (!Array.isArray(data) || data.length === 0) return false;
-  return data.every(item =>
-    typeof item.index === 'number' &&
-    typeof item.score === 'number' &&
-    typeof item.razon === 'string' &&
-    Array.isArray(item.habilidades_match) &&
-    Array.isArray(item.experiencia_relevante)
+  return data.every(
+    (item) =>
+      typeof item.index === "number" &&
+      typeof item.score === "number" &&
+      typeof item.razon === "string" &&
+      Array.isArray(item.habilidades_match) &&
+      Array.isArray(item.experiencia_relevante),
   );
 }
 
@@ -78,22 +110,22 @@ async function parseAIResponse(content: string): Promise<MatchIA[]> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       let clean = content
-        .replace(/```json\n?|\n?```/g, '')
-        .replace(/```\n?|\n?```/g, '')
-        .replace(/,\s*]/g, ']')
-        .replace(/,\s*}/g, '}')
+        .replace(/```json\n?|\n?```/g, "")
+        .replace(/```\n?|\n?```/g, "")
+        .replace(/,\s*]/g, "]")
+        .replace(/,\s*}/g, "}")
         .trim();
 
       const jsonMatch = clean.match(/\[[\s\S]*\]/);
       if (jsonMatch) clean = jsonMatch[0];
 
       const parsed = JSON.parse(clean);
-      if (!validateAIResponse(parsed)) throw new Error('Estructura inválida');
+      if (!validateAIResponse(parsed)) throw new Error("Estructura inválida");
       return parsed;
     } catch (error) {
       console.error(`[Parse] Intento ${attempt}/3:`, error);
-      if (attempt === 3) throw new Error('No se pudo parsear respuesta IA');
-      await new Promise(r => setTimeout(r, 500 * attempt));
+      if (attempt === 3) throw new Error("No se pudo parsear respuesta IA");
+      await new Promise((r) => setTimeout(r, 500 * attempt));
     }
   }
   return [];
@@ -103,29 +135,33 @@ async function parseAIResponse(content: string): Promise<MatchIA[]> {
 async function callAIWithRetry(apiKey: string, prompt: string): Promise<any> {
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
-      const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: 'google/gemini-2.5-flash',
+          model: "google/gemini-2.5-flash",
           messages: [
-            { role: 'system', content: 'Eres un experto en reclutamiento mexicano. Responde SOLO con JSON válido, sin markdown, sin texto adicional.' },
-            { role: 'user', content: prompt }
+            {
+              role: "system",
+              content:
+                "Eres un experto en reclutamiento mexicano. Responde SOLO con JSON válido, sin markdown, sin texto adicional.",
+            },
+            { role: "user", content: prompt },
           ],
           temperature: 0.3,
-          max_tokens: 4000
+          max_tokens: 4000,
         }),
       });
 
       if (response.ok) return await response.json();
 
       if (response.status === 429 && attempt < 2) {
-        const retryAfter = response.headers.get('Retry-After') || '5';
+        const retryAfter = response.headers.get("Retry-After") || "5";
         console.log(`[AI Retry] Rate limited, esperando ${retryAfter}s...`);
-        await new Promise(r => setTimeout(r, parseInt(retryAfter) * 1000));
+        await new Promise((r) => setTimeout(r, parseInt(retryAfter) * 1000));
         continue;
       }
 
@@ -134,10 +170,10 @@ async function callAIWithRetry(apiKey: string, prompt: string): Promise<any> {
     } catch (error) {
       if (attempt === 2) throw error;
       console.log(`[AI Retry] Intento ${attempt + 1} falló, reintentando...`);
-      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
     }
   }
-  throw new Error('AI API no disponible');
+  throw new Error("AI API no disponible");
 }
 
 /** Deduce créditos de forma atómica (previene race conditions) */
@@ -146,28 +182,98 @@ async function deducirCreditosAtomico(
   esReclutador: boolean,
   walletReclutadorId: string | null,
   walletEmpresaId: string | null,
-  costo: number
-): Promise<{ success: boolean; origen: 'reclutador' | 'empresa' | 'heredado_empresa'; error?: string }> {
+  costo: number,
+): Promise<{ success: boolean; origen: "reclutador" | "empresa" | "heredado_empresa"; error?: string }> {
   if (esReclutador && walletReclutadorId) {
-    const { data, error } = await supabase.rpc('deducir_creditos_reclutador_atomico', {
+    const { data, error } = await supabase.rpc("deducir_creditos_reclutador_atomico", {
       p_wallet_id: walletReclutadorId,
-      p_costo: costo
+      p_costo: costo,
     });
     if (error || !data?.success) {
-      return { success: false, origen: 'reclutador', error: data?.error || 'Créditos insuficientes' };
+      return { success: false, origen: "reclutador", error: data?.error || "Créditos insuficientes" };
     }
     return { success: true, origen: data.origen_usado as any };
   } else if (walletEmpresaId) {
-    const { data, error } = await supabase.rpc('deducir_creditos_empresa_atomico', {
+    const { data, error } = await supabase.rpc("deducir_creditos_empresa_atomico", {
       p_wallet_id: walletEmpresaId,
-      p_costo: costo
+      p_costo: costo,
     });
     if (error || !data?.success) {
-      return { success: false, origen: 'empresa', error: data?.error || 'Créditos insuficientes' };
+      return { success: false, origen: "empresa", error: data?.error || "Créditos insuficientes" };
     }
-    return { success: true, origen: 'empresa' };
+    return { success: true, origen: "empresa" };
   }
-  return { success: false, origen: 'reclutador', error: 'No se encontró wallet válido' };
+  return { success: false, origen: "reclutador", error: "No se encontró wallet válido" };
+}
+
+/** Construye el prompt para la IA (función helper para reutilización) */
+function buildPrompt(vacanteInfo: any, candidatosParaAnalisis: any[], maxCandidatos: number): string {
+  return `Eres un experto en reclutamiento y selección de talento para el mercado mexicano. Analiza los candidatos y selecciona los ${maxCandidatos} mejores matches para la vacante.
+
+===== CONTEXTO DE LA VACANTE =====
+EMPRESA SOLICITANTE:
+- Empresa: ${vacanteInfo.empresa}
+- Sector/Industria: ${vacanteInfo.sector}
+- Cliente interno: ${vacanteInfo.cliente}
+- Área: ${vacanteInfo.area}
+
+DETALLES DE LA POSICIÓN:
+- Título del puesto: ${vacanteInfo.titulo}
+- Motivo de la vacante: ${vacanteInfo.motivo_vacante}
+- Modalidad de trabajo: ${vacanteInfo.modalidad}
+- Ubicación: ${vacanteInfo.ubicacion}
+- Rango salarial: ${vacanteInfo.salario ? "$" + vacanteInfo.salario + " MXN brutos" : "No especificado"}
+
+PERFIL REQUERIDO:
+${vacanteInfo.perfil_requerido}
+
+${vacanteInfo.observaciones !== "No especificado" ? `OBSERVACIONES ADICIONALES:\n${vacanteInfo.observaciones}` : ""}
+
+===== POOL DE CANDIDATOS =====
+${candidatosParaAnalisis
+  .map((c, i) => {
+    const tieneIndexado = !!c.resumen_indexado_ia;
+    const keywords = ((c.keywords_sourcing as string[]) || []).join(", ");
+    const industrias = ((c.industrias_detectadas as string[]) || []).join(", ");
+
+    return `
+[${i}] ${tieneIndexado ? "✓ PERFIL INDEXADO" : "○ SIN INDEXAR"}
+- Nivel experiencia: ${c.nivel_experiencia_ia || "No clasificado"}
+- Puesto actual: ${sanitizeForPrompt(c.puesto_actual)}
+- Empresa actual: ${sanitizeForPrompt(c.empresa_actual)}
+- Educación: ${sanitizeForPrompt(c.nivel_educacion)}${c.carrera ? " en " + sanitizeForPrompt(c.carrera) : ""}
+- Keywords técnicas: ${keywords || (c.habilidades_tecnicas || []).join(", ") || "No especificadas"}
+- Industrias: ${industrias || "No especificadas"}
+- Habilidades blandas: ${(c.habilidades_blandas || []).join(", ") || "No especificadas"}
+- Ubicación: ${sanitizeForPrompt(c.ubicacion)}
+- Modalidad preferida: ${sanitizeForPrompt(c.modalidad_preferida)}
+- Disponibilidad: ${sanitizeForPrompt(c.disponibilidad)}
+- Expectativa salarial: ${c.salario_esperado_min ? "$" + c.salario_esperado_min + " - $" + c.salario_esperado_max + " MXN" : "No especificada"}
+- Resumen profesional: ${sanitizeForPrompt(c.resumen_indexado_ia || c.resumen_profesional)}
+`;
+  })
+  .join("\n")}
+
+===== CRITERIOS DE MATCHING =====
+1. PRIORIZA candidatos marcados como "✓ PERFIL INDEXADO".
+2. Considera la COMPATIBILIDAD DE SECTOR/INDUSTRIA.
+3. Evalúa la COHERENCIA DEL NIVEL DE EXPERIENCIA.
+4. Verifica COMPATIBILIDAD GEOGRÁFICA y de modalidad.
+5. Compara EXPECTATIVAS SALARIALES vs el rango ofrecido.
+6. Analiza las KEYWORDS TÉCNICAS vs los requisitos del perfil.
+
+===== FORMATO DE RESPUESTA =====
+Responde SOLO con un JSON array de los ${maxCandidatos} mejores candidatos, ordenados por score (100=match perfecto).
+NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
+[
+  {
+    "index": 0,
+    "score": 85,
+    "razon": "Explicación concisa del match (máx 100 caracteres)",
+    "habilidades_match": ["habilidad1", "habilidad2"],
+    "experiencia_relevante": ["experiencia1", "experiencia2"]
+  }
+]`;
 }
 
 // ============================================================================
@@ -175,43 +281,47 @@ async function deducirCreditosAtomico(
 // ============================================================================
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const requestStartTime = Date.now();
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return new Response(
-        JSON.stringify({ error: 'Configuración del servidor incompleta' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Configuración del servidor incompleta" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'No autorizado - Token requerido' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "No autorizado - Token requerido" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     const supabaseUser = createClient(supabaseUrl, supabaseServiceKey, {
-      global: { headers: { Authorization: authHeader } }
+      global: { headers: { Authorization: authHeader } },
     });
 
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseUser.auth.getUser();
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Usuario no válido' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "warn", "auth_failed", { error: userError?.message });
+      return new Response(JSON.stringify({ error: "Usuario no válido" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ========================================================================
@@ -222,38 +332,43 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return new Response(
-        JSON.stringify({ error: 'Body JSON inválido' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Body JSON inválido" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { publicacion_id, dry_run = true } = body;
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (!publicacion_id || !uuidRegex.test(publicacion_id)) {
-      return new Response(
-        JSON.stringify({ error: 'publicacion_id inválido (UUID requerido)' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "publicacion_id inválido (UUID requerido)" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    if (typeof dry_run !== 'boolean') {
-      return new Response(
-        JSON.stringify({ error: 'dry_run debe ser boolean' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (typeof dry_run !== "boolean") {
+      return new Response(JSON.stringify({ error: "dry_run debe ser boolean" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    console.log(`[Sourcing IA] Usuario: ${user.id}, Pub: ${publicacion_id}, DryRun: ${dry_run}`);
+    await logEvent(supabaseAdmin, "info", "sourcing_iniciado", {
+      user_id: user.id,
+      publicacion_id,
+      dry_run,
+    });
 
     // ========================================================================
     // OBTENER DATOS DE LA PUBLICACIÓN
     // ========================================================================
 
     const { data: publicacion, error: pubError } = await supabaseAdmin
-      .from('publicaciones_marketplace')
-      .select(`
+      .from("publicaciones_marketplace")
+      .select(
+        `
         id, titulo_puesto, perfil_requerido, ubicacion, lugar_trabajo,
         sueldo_bruto_aprobado, cliente_area, observaciones, vacante_id, user_id,
         vacantes!inner(
@@ -261,16 +376,22 @@ serve(async (req) => {
           sueldo_bruto_aprobado, observaciones, reclutador_asignado_id,
           empresa_id, user_id, cliente_area_id
         )
-      `)
-      .eq('id', publicacion_id)
-      .eq('publicada', true)
+      `,
+      )
+      .eq("id", publicacion_id)
+      .eq("publicada", true)
       .single();
 
     if (pubError || !publicacion) {
-      return new Response(
-        JSON.stringify({ error: 'Publicación no encontrada o no publicada' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "warn", "publicacion_no_encontrada", {
+        user_id: user.id,
+        publicacion_id,
+        error: pubError?.message,
+      });
+      return new Response(JSON.stringify({ error: "Publicación no encontrada o no publicada" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const vacante = publicacion.vacantes as unknown as VacanteData;
@@ -280,18 +401,18 @@ serve(async (req) => {
 
     if (vacante.cliente_area_id) {
       const { data: ca } = await supabaseAdmin
-        .from('clientes_areas')
-        .select('cliente_nombre, area, ubicacion')
-        .eq('id', vacante.cliente_area_id)
+        .from("clientes_areas")
+        .select("cliente_nombre, area, ubicacion")
+        .eq("id", vacante.cliente_area_id)
         .maybeSingle();
       clienteArea = ca;
     }
 
     if (vacante.empresa_id) {
       const { data: emp } = await supabaseAdmin
-        .from('empresas')
-        .select('nombre_empresa, sector')
-        .eq('id', vacante.empresa_id)
+        .from("empresas")
+        .select("nombre_empresa, sector")
+        .eq("id", vacante.empresa_id)
         .maybeSingle();
       empresaInfo = emp;
     }
@@ -307,10 +428,10 @@ serve(async (req) => {
 
     if (vacante.reclutador_asignado_id) {
       const { data: perfilReclutador } = await supabaseAdmin
-        .from('perfil_reclutador')
-        .select('id')
-        .eq('id', vacante.reclutador_asignado_id)
-        .eq('user_id', user.id)
+        .from("perfil_reclutador")
+        .select("id")
+        .eq("id", vacante.reclutador_asignado_id)
+        .eq("user_id", user.id)
         .single();
 
       if (perfilReclutador) {
@@ -324,10 +445,14 @@ serve(async (req) => {
     }
 
     if (!esReclutador && !esEmpresa) {
-      return new Response(
-        JSON.stringify({ error: 'No tienes permisos para ejecutar sourcing en esta vacante' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "warn", "permisos_insuficientes", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+      });
+      return new Response(JSON.stringify({ error: "No tienes permisos para ejecutar sourcing en esta vacante" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ========================================================================
@@ -340,9 +465,9 @@ serve(async (req) => {
 
     if (esReclutador && reclutadorId) {
       const { data: walletRec } = await supabaseAdmin
-        .from('wallet_reclutador')
-        .select('id, creditos_propios, creditos_heredados')
-        .eq('reclutador_id', reclutadorId)
+        .from("wallet_reclutador")
+        .select("id, creditos_propios, creditos_heredados")
+        .eq("reclutador_id", reclutadorId)
         .single();
 
       if (walletRec) {
@@ -351,9 +476,9 @@ serve(async (req) => {
       }
     } else if (esEmpresa && empresaId) {
       const { data: walletEmp } = await supabaseAdmin
-        .from('wallet_empresa')
-        .select('id, creditos_disponibles')
-        .eq('empresa_id', empresaId)
+        .from("wallet_empresa")
+        .select("id, creditos_disponibles")
+        .eq("empresa_id", empresaId)
         .single();
 
       if (walletEmp) {
@@ -363,12 +488,17 @@ serve(async (req) => {
     }
 
     if (creditosDisponibles < COSTO_SOURCING) {
+      await logEvent(supabaseAdmin, "warn", "creditos_insuficientes", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        creditos_requeridos: COSTO_SOURCING,
+      });
       return new Response(
         JSON.stringify({
-          error: 'Créditos insuficientes para ejecutar sourcing',
-          creditos_requeridos: COSTO_SOURCING
+          error: "Créditos insuficientes para ejecutar sourcing",
+          creditos_requeridos: COSTO_SOURCING,
         }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -386,51 +516,54 @@ serve(async (req) => {
     `;
 
     const { data: candidatosIndexados } = await supabaseAdmin
-      .from('perfil_candidato')
+      .from("perfil_candidato")
       .select(candidateSelect)
-      .not('fecha_indexado_ia', 'is', null)
-      .order('fecha_indexado_ia', { ascending: false })
+      .not("fecha_indexado_ia", "is", null)
+      .order("fecha_indexado_ia", { ascending: false })
       .limit(POOL_SIZE_INDEXADOS);
 
     const { data: candidatosSinIndexar } = await supabaseAdmin
-      .from('perfil_candidato')
+      .from("perfil_candidato")
       .select(candidateSelect)
-      .is('fecha_indexado_ia', null)
+      .is("fecha_indexado_ia", null)
       .limit(POOL_SIZE_SIN_INDEXAR);
 
-    const todosCandidatos = [
-      ...(candidatosIndexados || []),
-      ...(candidatosSinIndexar || [])
-    ];
+    const todosCandidatos = [...(candidatosIndexados || []), ...(candidatosSinIndexar || [])];
 
     // Filtrar ya postulados y ya sourced
     const { data: postulacionesExistentes } = await supabaseAdmin
-      .from('postulaciones')
-      .select('candidato_user_id')
-      .eq('publicacion_id', publicacion_id);
+      .from("postulaciones")
+      .select("candidato_user_id")
+      .eq("publicacion_id", publicacion_id);
 
-    const idsPostulados = new Set((postulacionesExistentes || []).map(p => p.candidato_user_id));
+    const idsPostulados = new Set((postulacionesExistentes || []).map((p) => p.candidato_user_id));
 
     const { data: sourcingExistente } = await supabaseAdmin
-      .from('sourcing_ia')
-      .select('candidato_user_id')
-      .eq('vacante_id', vacante.id);
+      .from("sourcing_ia")
+      .select("candidato_user_id")
+      .eq("vacante_id", vacante.id);
 
-    const idsSourceados = new Set((sourcingExistente || []).map(s => s.candidato_user_id));
+    const idsSourceados = new Set((sourcingExistente || []).map((s) => s.candidato_user_id));
 
-    const candidatosDisponibles = todosCandidatos.filter(c =>
-      !idsPostulados.has(c.user_id) && !idsSourceados.has(c.user_id)
+    const candidatosDisponibles = todosCandidatos.filter(
+      (c) => !idsPostulados.has(c.user_id) && !idsSourceados.has(c.user_id),
     );
 
-    console.log(`[Sourcing IA] Pool: ${candidatosIndexados?.length || 0} indexados + ${candidatosSinIndexar?.length || 0} sin indexar = ${candidatosDisponibles.length} disponibles`);
+    await logEvent(supabaseAdmin, "info", "pool_candidatos", {
+      user_id: user.id,
+      vacante_id: vacante.id,
+      total_indexados: candidatosIndexados?.length || 0,
+      total_sin_indexar: candidatosSinIndexar?.length || 0,
+      total_disponibles: candidatosDisponibles.length,
+    });
 
     if (candidatosDisponibles.length === 0) {
       return new Response(
         JSON.stringify({
-          error: 'No hay candidatos disponibles para sourcing',
-          mensaje: 'Todos los candidatos ya fueron postulados o sourced para esta vacante'
+          error: "No hay candidatos disponibles para sourcing",
+          mensaje: "Todos los candidatos ya fueron postulados o sourced para esta vacante",
         }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -442,55 +575,59 @@ serve(async (req) => {
       const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
 
       const { count: dailyCount } = await supabaseAdmin
-        .from('sourcing_audit')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('action', 'dry_run')
-        .gte('created_at', oneDayAgo);
+        .from("sourcing_audit")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("action", "dry_run")
+        .gte("created_at", oneDayAgo);
 
       if ((dailyCount || 0) >= DRY_RUN_DAILY_LIMIT) {
-        return new Response(
-          JSON.stringify({ error: 'Límite diario de simulaciones alcanzado. Intenta mañana.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Límite diario de simulaciones alcanzado. Intenta mañana." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
       const { count: vacancyCount } = await supabaseAdmin
-        .from('sourcing_audit')
-        .select('*', { count: 'exact', head: true })
-        .eq('vacante_id', vacante.id)
-        .eq('user_id', user.id)
-        .eq('action', 'dry_run')
-        .gte('created_at', oneDayAgo);
+        .from("sourcing_audit")
+        .select("*", { count: "exact", head: true })
+        .eq("vacante_id", vacante.id)
+        .eq("user_id", user.id)
+        .eq("action", "dry_run")
+        .gte("created_at", oneDayAgo);
 
       if ((vacancyCount || 0) >= DRY_RUN_PER_VACANCY_LIMIT) {
-        return new Response(
-          JSON.stringify({ error: 'Límite de simulaciones para esta vacante alcanzado.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return new Response(JSON.stringify({ error: "Límite de simulaciones para esta vacante alcanzado." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      await supabaseAdmin
-        .from('sourcing_audit')
-        .insert({
-          user_id: user.id,
-          vacante_id: vacante.id,
-          publicacion_id: publicacion_id,
-          action: 'dry_run'
-        });
+      await supabaseAdmin.from("sourcing_audit").insert({
+        user_id: user.id,
+        vacante_id: vacante.id,
+        publicacion_id: publicacion_id,
+        action: "dry_run",
+      });
+
+      await logEvent(supabaseAdmin, "info", "dry_run_completado", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        count_diario: (dailyCount || 0) + 1,
+      });
 
       return new Response(
         JSON.stringify({
           success: true,
           dry_run: true,
-          mensaje: 'Simulación exitosa - No se consumieron créditos',
+          mensaje: "Simulación exitosa - No se consumieron créditos",
           vacante: { id: vacante.id, titulo: publicacion.titulo_puesto },
           candidatos_a_analizar: Math.min(candidatosDisponibles.length, MAX_CANDIDATOS_ANALISIS),
           costo_creditos: COSTO_SOURCING,
           creditos_suficientes: true,
-          simulaciones_restantes_hoy: DRY_RUN_DAILY_LIMIT - ((dailyCount || 0) + 1)
+          simulaciones_restantes_hoy: DRY_RUN_DAILY_LIMIT - ((dailyCount || 0) + 1),
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -499,20 +636,18 @@ serve(async (req) => {
     // ========================================================================
 
     if (!lovableApiKey) {
-      return new Response(
-        JSON.stringify({ error: 'Servicio de IA no configurado' }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Servicio de IA no configurado" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    await supabaseAdmin
-      .from('sourcing_audit')
-      .insert({
-        user_id: user.id,
-        vacante_id: vacante.id,
-        publicacion_id: publicacion_id,
-        action: 'execution'
-      });
+    await supabaseAdmin.from("sourcing_audit").insert({
+      user_id: user.id,
+      vacante_id: vacante.id,
+      publicacion_id: publicacion_id,
+      action: "execution",
+    });
 
     // Contexto sanitizado para IA
     const vacanteInfo = {
@@ -526,86 +661,38 @@ serve(async (req) => {
       cliente: sanitizeForPrompt(clienteArea?.cliente_nombre || publicacion.cliente_area),
       area: sanitizeForPrompt(clienteArea?.area),
       empresa: sanitizeForPrompt(empresaInfo?.nombre_empresa),
-      sector: sanitizeForPrompt(empresaInfo?.sector)
+      sector: sanitizeForPrompt(empresaInfo?.sector),
     };
 
     let candidatosParaAnalisis = candidatosDisponibles.slice(0, MAX_CANDIDATOS_ANALISIS);
 
-    let prompt = `Eres un experto en reclutamiento y selección de talento para el mercado mexicano. Analiza los candidatos y selecciona los ${MAX_CANDIDATOS} mejores matches para la vacante.
+    // Construir prompt inicial
+    let prompt = buildPrompt(vacanteInfo, candidatosParaAnalisis, MAX_CANDIDATOS);
 
-===== CONTEXTO DE LA VACANTE =====
-EMPRESA SOLICITANTE:
-- Empresa: ${vacanteInfo.empresa}
-- Sector/Industria: ${vacanteInfo.sector}
-- Cliente interno: ${vacanteInfo.cliente}
-- Área: ${vacanteInfo.area}
-
-DETALLES DE LA POSICIÓN:
-- Título del puesto: ${vacanteInfo.titulo}
-- Motivo de la vacante: ${vacanteInfo.motivo_vacante}
-- Modalidad de trabajo: ${vacanteInfo.modalidad}
-- Ubicación: ${vacanteInfo.ubicacion}
-- Rango salarial: ${vacanteInfo.salario ? '$' + vacanteInfo.salario + ' MXN brutos' : 'No especificado'}
-
-PERFIL REQUERIDO:
-${vacanteInfo.perfil_requerido}
-
-${vacanteInfo.observaciones !== 'No especificado' ? `OBSERVACIONES ADICIONALES:\n${vacanteInfo.observaciones}` : ''}
-
-===== POOL DE CANDIDATOS =====
-${candidatosParaAnalisis.map((c, i) => {
-  const tieneIndexado = !!c.resumen_indexado_ia;
-  const keywords = (c.keywords_sourcing as string[] || []).join(', ');
-  const industrias = (c.industrias_detectadas as string[] || []).join(', ');
-
-  return `
-[${i}] ${tieneIndexado ? '✓ PERFIL INDEXADO' : '○ SIN INDEXAR'}
-- Nivel experiencia: ${c.nivel_experiencia_ia || 'No clasificado'}
-- Puesto actual: ${sanitizeForPrompt(c.puesto_actual)}
-- Empresa actual: ${sanitizeForPrompt(c.empresa_actual)}
-- Educación: ${sanitizeForPrompt(c.nivel_educacion)}${c.carrera ? ' en ' + sanitizeForPrompt(c.carrera) : ''}
-- Keywords técnicas: ${keywords || (c.habilidades_tecnicas || []).join(', ') || 'No especificadas'}
-- Industrias: ${industrias || 'No especificadas'}
-- Habilidades blandas: ${(c.habilidades_blandas || []).join(', ') || 'No especificadas'}
-- Ubicación: ${sanitizeForPrompt(c.ubicacion)}
-- Modalidad preferida: ${sanitizeForPrompt(c.modalidad_preferida)}
-- Disponibilidad: ${sanitizeForPrompt(c.disponibilidad)}
-- Expectativa salarial: ${c.salario_esperado_min ? '$' + c.salario_esperado_min + ' - $' + c.salario_esperado_max + ' MXN' : 'No especificada'}
-- Resumen profesional: ${sanitizeForPrompt(c.resumen_indexado_ia || c.resumen_profesional)}
-`;
-}).join('\n')}
-
-===== CRITERIOS DE MATCHING =====
-1. PRIORIZA candidatos marcados como "✓ PERFIL INDEXADO".
-2. Considera la COMPATIBILIDAD DE SECTOR/INDUSTRIA.
-3. Evalúa la COHERENCIA DEL NIVEL DE EXPERIENCIA.
-4. Verifica COMPATIBILIDAD GEOGRÁFICA y de modalidad.
-5. Compara EXPECTATIVAS SALARIALES vs el rango ofrecido.
-6. Analiza las KEYWORDS TÉCNICAS vs los requisitos del perfil.
-
-===== FORMATO DE RESPUESTA =====
-Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ordenados por score (100=match perfecto).
-NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
-[
-  {
-    "index": 0,
-    "score": 85,
-    "razon": "Explicación concisa del match (máx 100 caracteres)",
-    "habilidades_match": ["habilidad1", "habilidad2"],
-    "experiencia_relevante": ["experiencia1", "experiencia2"]
-  }
-]`;
-
-    // Verificar longitud del prompt
+    // ✅ FIX CRÍTICO: Verificar y RECONSTRUIR prompt si es muy largo
     if (prompt.length > MAX_PROMPT_LENGTH) {
-      candidatosParaAnalisis = candidatosParaAnalisis.slice(0, 20);
-      console.log(`[Sourcing IA] Prompt reducido: ${MAX_CANDIDATOS_ANALISIS} → ${candidatosParaAnalisis.length} candidatos`);
-      // Rebuild prompt with reduced candidates would happen here in production
-      // For now, truncate
-      prompt = prompt.substring(0, MAX_PROMPT_LENGTH);
+      // Reducir candidatos hasta que el prompt quepa
+      const reduccionFactor = Math.ceil(candidatosParaAnalisis.length / 2);
+      candidatosParaAnalisis = candidatosParaAnalisis.slice(0, Math.max(10, reduccionFactor));
+
+      await logEvent(supabaseAdmin, "warn", "prompt_reducido", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        candidatos_originales: MAX_CANDIDATOS_ANALISIS,
+        candidatos_reducidos: candidatosParaAnalisis.length,
+        prompt_original_length: prompt.length,
+      });
+
+      // RECONSTRUIR prompt con menos candidatos
+      prompt = buildPrompt(vacanteInfo, candidatosParaAnalisis, MAX_CANDIDATOS);
     }
 
-    console.log(`[Sourcing IA] Llamando IA con ${candidatosParaAnalisis.length} candidatos, prompt: ${prompt.length} chars`);
+    await logEvent(supabaseAdmin, "info", "llamada_ia_iniciada", {
+      user_id: user.id,
+      vacante_id: vacante.id,
+      candidatos_analizar: candidatosParaAnalisis.length,
+      prompt_length: prompt.length,
+    });
 
     // ========================================================================
     // LLAMAR A IA CON RETRY
@@ -615,26 +702,31 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     try {
       aiData = await callAIWithRetry(lovableApiKey, prompt);
     } catch (error: any) {
-      console.error('[Sourcing IA] Error IA:', error.message);
-      if (error.message.includes('429')) {
-        return new Response(
-          JSON.stringify({ error: 'Límite de solicitudes de IA excedido, intenta más tarde' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      await logEvent(supabaseAdmin, "error", "ia_error", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        error: error.message,
+      });
+
+      if (error.message.includes("429")) {
+        return new Response(JSON.stringify({ error: "Límite de solicitudes de IA excedido, intenta más tarde" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      if (error.message.includes('402')) {
-        return new Response(
-          JSON.stringify({ error: 'Créditos de IA agotados' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+      if (error.message.includes("402")) {
+        return new Response(JSON.stringify({ error: "Créditos de IA agotados" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      return new Response(
-        JSON.stringify({ error: 'Error al procesar con IA' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Error al procesar con IA" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    const aiContent = aiData.choices?.[0]?.message?.content || '[]';
+    const aiContent = aiData.choices?.[0]?.message?.content || "[]";
 
     // ========================================================================
     // PARSEAR RESPUESTA CON REINTENTOS
@@ -644,36 +736,62 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     try {
       matchesIA = await parseAIResponse(aiContent);
     } catch (parseError: any) {
-      console.error('[Sourcing IA] Parse error:', parseError.message, 'Preview:', aiContent.substring(0, 200));
-      return new Response(
-        JSON.stringify({ error: 'Error al procesar respuesta de IA' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "error", "parse_ia_error", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        error: parseError.message,
+        ai_content_preview: aiContent.substring(0, 200),
+      });
+
+      return new Response(JSON.stringify({ error: "Error al procesar respuesta de IA" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (matchesIA.length === 0) {
-      return new Response(
-        JSON.stringify({ error: 'La IA no encontró candidatos compatibles' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "warn", "ia_sin_matches", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+      });
+      return new Response(JSON.stringify({ error: "La IA no encontró candidatos compatibles" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const loteSourcing = crypto.randomUUID();
+
+    await logEvent(supabaseAdmin, "info", "matches_encontrados", {
+      user_id: user.id,
+      vacante_id: vacante.id,
+      total_matches: matchesIA.length,
+      lote: loteSourcing,
+    });
 
     // ========================================================================
     // DEDUCIR CRÉDITOS DE FORMA ATÓMICA
     // ========================================================================
 
     const deduccionResult = await deducirCreditosAtomico(
-      supabaseAdmin, esReclutador, walletReclutadorId, walletEmpresaId, COSTO_SOURCING
+      supabaseAdmin,
+      esReclutador,
+      walletReclutadorId,
+      walletEmpresaId,
+      COSTO_SOURCING,
     );
 
     if (!deduccionResult.success) {
-      console.error('[Sourcing IA] Deducción fallida:', deduccionResult.error);
-      return new Response(
-        JSON.stringify({ error: deduccionResult.error }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      await logEvent(supabaseAdmin, "error", "deduccion_creditos_fallida", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        error: deduccionResult.error,
+      });
+
+      return new Response(JSON.stringify({ error: deduccionResult.error }), {
+        status: 402,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const origenPago = deduccionResult.origen;
@@ -682,25 +800,25 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     // REGISTRAR MOVIMIENTO DE CRÉDITOS
     // ========================================================================
 
-    await supabaseAdmin.rpc('registrar_movimiento_creditos', {
+    await supabaseAdmin.rpc("registrar_movimiento_creditos", {
       p_origen_pago: origenPago,
       p_wallet_empresa_id: walletEmpresaId,
       p_wallet_reclutador_id: walletReclutadorId,
       p_empresa_id: empresaId,
       p_reclutador_user_id: user.id,
-      p_tipo_accion: 'sourcing_ia',
+      p_tipo_accion: "sourcing_ia",
       p_creditos_cantidad: -COSTO_SOURCING,
       p_descripcion: `Sourcing IA para vacante: ${publicacion.titulo_puesto}`,
       p_vacante_id: vacante.id,
-      p_metodo: 'automatico_ia',
-      p_metadata: { lote_sourcing: loteSourcing, candidatos_analizados: matchesIA.length, origen_pago: origenPago }
+      p_metodo: "automatico_ia",
+      p_metadata: { lote_sourcing: loteSourcing, candidatos_analizados: matchesIA.length, origen_pago: origenPago },
     });
 
     // ========================================================================
     // INSERTAR RESULTADOS CON COMPENSACIÓN EN CASO DE ERROR
     // ========================================================================
 
-    const sourcingRecords = matchesIA.map(match => {
+    const sourcingRecords = matchesIA.map((match) => {
       const candidato = candidatosParaAnalisis[match.index];
       return {
         vacante_id: vacante.id,
@@ -713,35 +831,36 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
         razon_match: match.razon.substring(0, 255),
         habilidades_coincidentes: match.habilidades_match || [],
         experiencia_relevante: match.experiencia_relevante || [],
-        estado: 'pendiente',
+        estado: "pendiente",
         creditos_consumidos: COSTO_SOURCING / MAX_CANDIDATOS,
-        lote_sourcing: loteSourcing
+        lote_sourcing: loteSourcing,
       };
     });
 
-    const { error: insertError } = await supabaseAdmin
-      .from('sourcing_ia')
-      .insert(sourcingRecords);
+    const { error: insertError } = await supabaseAdmin.from("sourcing_ia").insert(sourcingRecords);
 
     if (insertError) {
-      console.error('[Sourcing IA] Error inserting results:', insertError);
+      await logEvent(supabaseAdmin, "error", "insert_sourcing_error", {
+        user_id: user.id,
+        vacante_id: vacante.id,
+        lote: loteSourcing,
+        error: insertError.message,
+      });
 
-      // Registrar compensación pendiente (créditos ya deducidos)
-      await supabaseAdmin
-        .from('creditos_compensacion')
-        .insert({
-          user_id: user.id,
-          wallet_reclutador_id: walletReclutadorId,
-          wallet_empresa_id: walletEmpresaId,
-          creditos_compensar: COSTO_SOURCING,
-          razon: `Error al insertar sourcing: ${insertError.message}`,
-          lote_sourcing: loteSourcing
-        });
+      // Registrar compensación pendiente
+      await supabaseAdmin.from("creditos_compensacion").insert({
+        user_id: user.id,
+        wallet_reclutador_id: walletReclutadorId,
+        wallet_empresa_id: walletEmpresaId,
+        creditos_compensar: COSTO_SOURCING,
+        razon: `Error al insertar sourcing: ${insertError.message}`,
+        lote_sourcing: loteSourcing,
+      });
 
-      return new Response(
-        JSON.stringify({ error: 'Error al guardar resultados. Se compensarán los créditos.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return new Response(JSON.stringify({ error: "Error al guardar resultados. Se compensarán los créditos." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // ========================================================================
@@ -749,20 +868,18 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     // ========================================================================
 
     if (reclutadorId) {
-      const accesosIdentidad = matchesIA.map(match => ({
+      const accesosIdentidad = matchesIA.map((match) => ({
         reclutador_id: reclutadorId,
         candidato_user_id: candidatosParaAnalisis[match.index].user_id,
         empresa_id: empresaId,
         origen_pago: origenPago,
-        creditos_consumidos: 0
+        creditos_consumidos: 0,
       }));
 
-      await supabaseAdmin
-        .from('acceso_identidad_candidato')
-        .upsert(accesosIdentidad, {
-          onConflict: 'reclutador_id,candidato_user_id',
-          ignoreDuplicates: true
-        });
+      await supabaseAdmin.from("acceso_identidad_candidato").upsert(accesosIdentidad, {
+        onConflict: "reclutador_id,candidato_user_id",
+        ignoreDuplicates: true,
+      });
     }
 
     // ========================================================================
@@ -770,7 +887,16 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     // ========================================================================
 
     const executionTime = Date.now() - requestStartTime;
-    console.log(`[Sourcing IA] Completado - ${matchesIA.length} candidatos, ${executionTime}ms`);
+
+    await logEvent(supabaseAdmin, "info", "sourcing_completado", {
+      user_id: user.id,
+      vacante_id: vacante.id,
+      lote: loteSourcing,
+      candidatos_encontrados: matchesIA.length,
+      creditos_consumidos: COSTO_SOURCING,
+      origen_pago: origenPago,
+      execution_time_ms: executionTime,
+    });
 
     return new Response(
       JSON.stringify({
@@ -780,16 +906,26 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
         creditos_consumidos: COSTO_SOURCING,
         origen_pago: origenPago,
         mensaje: `Se encontraron ${matchesIA.length} candidatos potenciales para la vacante "${publicacion.titulo_puesto}"`,
-        execution_time_ms: executionTime
+        execution_time_ms: executionTime,
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-
   } catch (error: any) {
-    console.error('[Sourcing IA] Error general:', error);
-    return new Response(
-      JSON.stringify({ error: 'Error interno del servidor' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Log de error general
+    try {
+      const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+      await logEvent(supabaseAdmin, "error", "error_no_controlado", {
+        error: error.message,
+        stack: error.stack,
+      });
+    } catch {
+      console.error("[Sourcing IA] Error general:", error);
+    }
+
+    return new Response(JSON.stringify({ error: "Error interno del servidor" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
