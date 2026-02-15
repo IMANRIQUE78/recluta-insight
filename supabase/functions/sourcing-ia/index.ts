@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ============================================================================
+// CONFIGURACIÓN Y CONSTANTES
+// ============================================================================
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,8 +16,14 @@ const POOL_SIZE_INDEXADOS = 150;
 const POOL_SIZE_SIN_INDEXAR = 50;
 const MAX_CANDIDATOS_ANALISIS = 50;
 const MAX_PROMPT_LENGTH = 120000;
+
+// Rate limiting
 const DRY_RUN_DAILY_LIMIT = 20;
 const DRY_RUN_PER_VACANCY_LIMIT = 3;
+
+// ============================================================================
+// TIPOS
+// ============================================================================
 
 interface VacanteData {
   id: string;
@@ -36,6 +46,10 @@ interface MatchIA {
   habilidades_match: string[];
   experiencia_relevante: string[];
 }
+
+// ============================================================================
+// FUNCIONES UTILITARIAS
+// ============================================================================
 
 /** Sanitiza texto para prevenir prompt injection */
 function sanitizeForPrompt(text: string | null | undefined): string {
@@ -63,7 +77,7 @@ function validateAIResponse(data: any): data is MatchIA[] {
   );
 }
 
-/** Parsea respuesta de IA con reintentos */
+/** Parsea respuesta de IA con reintentos y limpieza robusta */
 async function parseAIResponse(content: string): Promise<MatchIA[]> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -89,7 +103,7 @@ async function parseAIResponse(content: string): Promise<MatchIA[]> {
   return [];
 }
 
-/** Llama a la API de IA con retry */
+/** Llama a la API de IA con retry automático */
 async function callAIWithRetry(apiKey: string, prompt: string): Promise<any> {
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
@@ -134,7 +148,7 @@ async function callAIWithRetry(apiKey: string, prompt: string): Promise<any> {
   throw new Error("AI API no disponible");
 }
 
-/** Deduce créditos de forma atómica */
+/** Deduce créditos de forma atómica (previene race conditions) - VERSIÓN CORREGIDA */
 async function deducirCreditosAtomico(
   supabase: any,
   esReclutador: boolean,
@@ -142,27 +156,71 @@ async function deducirCreditosAtomico(
   walletEmpresaId: string | null,
   costo: number,
 ): Promise<{ success: boolean; origen: "reclutador" | "empresa" | "heredado_empresa"; error?: string }> {
+  // Caso 1: Es reclutador y tiene wallet
   if (esReclutador && walletReclutadorId) {
     const { data, error } = await supabase.rpc("deducir_creditos_reclutador_atomico", {
       p_wallet_id: walletReclutadorId,
       p_costo: costo,
     });
-    if (error || !data?.success) {
-      return { success: false, origen: "reclutador", error: data?.error || "Créditos insuficientes" };
+
+    if (error) {
+      console.error("[Créditos] Error en RPC reclutador:", error);
+      return { success: false, origen: "reclutador", error: error.message };
     }
-    return { success: true, origen: data.origen_usado as any };
-  } else if (walletEmpresaId) {
+
+    // Si la deducción fue exitosa
+    if (data?.success) {
+      return { success: true, origen: data.origen_usado as any };
+    }
+
+    // Si falló la deducción del reclutador, intentar con wallet de empresa si existe
+    if (walletEmpresaId) {
+      console.log("[Créditos] Reclutador sin créditos, intentando con wallet de empresa");
+      return await deducirCreditosAtomico(supabase, false, null, walletEmpresaId, costo);
+    }
+
+    // Si no hay wallet de empresa, devolver error
+    return {
+      success: false,
+      origen: "reclutador",
+      error: data?.mensaje || "Créditos insuficientes en wallet del reclutador",
+    };
+  }
+
+  // Caso 2: Es empresa o fallback a wallet de empresa
+  if (walletEmpresaId) {
     const { data, error } = await supabase.rpc("deducir_creditos_empresa_atomico", {
       p_wallet_id: walletEmpresaId,
       p_costo: costo,
     });
-    if (error || !data?.success) {
-      return { success: false, origen: "empresa", error: data?.error || "Créditos insuficientes" };
+
+    if (error) {
+      console.error("[Créditos] Error en RPC empresa:", error);
+      return { success: false, origen: "empresa", error: error.message };
     }
+
+    if (!data?.success) {
+      return {
+        success: false,
+        origen: "empresa",
+        error: data?.mensaje || "Créditos insuficientes en wallet de empresa",
+      };
+    }
+
     return { success: true, origen: "empresa" };
   }
-  return { success: false, origen: "reclutador", error: "No se encontró wallet válido" };
+
+  // Caso 3: No hay wallets disponibles
+  return {
+    success: false,
+    origen: "reclutador",
+    error: "No se encontró wallet válido para deducir créditos",
+  };
 }
+
+// ============================================================================
+// EDGE FUNCTION PRINCIPAL
+// ============================================================================
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -207,6 +265,10 @@ serve(async (req) => {
       });
     }
 
+    // ========================================================================
+    // VALIDACIÓN DE PARÁMETROS
+    // ========================================================================
+
     let body: any;
     try {
       body = await req.json();
@@ -235,6 +297,10 @@ serve(async (req) => {
     }
 
     console.log(`[Sourcing IA] Usuario: ${user.id}, Pub: ${publicacion_id}, DryRun: ${dry_run}`);
+
+    // ========================================================================
+    // OBTENER DATOS DE LA PUBLICACIÓN
+    // ========================================================================
 
     const { data: publicacion, error: pubError } = await supabaseAdmin
       .from("publicaciones_marketplace")
@@ -283,6 +349,10 @@ serve(async (req) => {
       empresaInfo = emp;
     }
 
+    // ========================================================================
+    // VERIFICAR PERMISOS
+    // ========================================================================
+
     let esReclutador = false;
     let esEmpresa = false;
     let reclutadorId: string | null = null;
@@ -312,6 +382,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ========================================================================
+    // VERIFICAR CRÉDITOS
+    // ========================================================================
 
     let creditosDisponibles = 0;
     let walletReclutadorId: string | null = null;
@@ -346,10 +420,15 @@ serve(async (req) => {
         JSON.stringify({
           error: "Créditos insuficientes para ejecutar sourcing",
           creditos_requeridos: COSTO_SOURCING,
+          creditos_disponibles: creditosDisponibles,
         }),
         { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // ========================================================================
+    // OBTENER POOL DE CANDIDATOS (DIVERSIFICADO)
+    // ========================================================================
 
     const candidateSelect = `
       user_id, nombre_completo, email, telefono, ubicacion,
@@ -375,6 +454,7 @@ serve(async (req) => {
 
     const todosCandidatos = [...(candidatosIndexados || []), ...(candidatosSinIndexar || [])];
 
+    // Filtrar ya postulados y ya sourced
     const { data: postulacionesExistentes } = await supabaseAdmin
       .from("postulaciones")
       .select("candidato_user_id")
@@ -406,6 +486,10 @@ serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
+
+    // ========================================================================
+    // DRY RUN - SIMULACIÓN CON RATE LIMITING
+    // ========================================================================
 
     if (dry_run) {
       const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
@@ -461,6 +545,10 @@ serve(async (req) => {
       );
     }
 
+    // ========================================================================
+    // EJECUCIÓN REAL
+    // ========================================================================
+
     if (!lovableApiKey) {
       return new Response(JSON.stringify({ error: "Servicio de IA no configurado" }), {
         status: 503,
@@ -475,6 +563,7 @@ serve(async (req) => {
       action: "execution",
     });
 
+    // Contexto sanitizado para IA
     const vacanteInfo = {
       titulo: sanitizeForPrompt(publicacion.titulo_puesto),
       perfil_requerido: sanitizeForPrompt(publicacion.perfil_requerido || vacante.perfil_requerido),
@@ -558,85 +647,22 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
   }
 ]`;
 
+    // Verificar longitud del prompt
     if (prompt.length > MAX_PROMPT_LENGTH) {
-      const reduccionFactor = Math.ceil(candidatosParaAnalisis.length / 2);
-      candidatosParaAnalisis = candidatosParaAnalisis.slice(0, Math.max(10, reduccionFactor));
+      candidatosParaAnalisis = candidatosParaAnalisis.slice(0, 20);
       console.log(
         `[Sourcing IA] Prompt reducido: ${MAX_CANDIDATOS_ANALISIS} → ${candidatosParaAnalisis.length} candidatos`,
       );
-
-      // Reconstruir prompt completo con menos candidatos
-      prompt = `Eres un experto en reclutamiento y selección de talento para el mercado mexicano. Analiza los candidatos y selecciona los ${MAX_CANDIDATOS} mejores matches para la vacante.
-
-===== CONTEXTO DE LA VACANTE =====
-EMPRESA SOLICITANTE:
-- Empresa: ${vacanteInfo.empresa}
-- Sector/Industria: ${vacanteInfo.sector}
-- Cliente interno: ${vacanteInfo.cliente}
-- Área: ${vacanteInfo.area}
-
-DETALLES DE LA POSICIÓN:
-- Título del puesto: ${vacanteInfo.titulo}
-- Motivo de la vacante: ${vacanteInfo.motivo_vacante}
-- Modalidad de trabajo: ${vacanteInfo.modalidad}
-- Ubicación: ${vacanteInfo.ubicacion}
-- Rango salarial: ${vacanteInfo.salario ? "$" + vacanteInfo.salario + " MXN brutos" : "No especificado"}
-
-PERFIL REQUERIDO:
-${vacanteInfo.perfil_requerido}
-
-${vacanteInfo.observaciones !== "No especificado" ? `OBSERVACIONES ADICIONALES:\n${vacanteInfo.observaciones}` : ""}
-
-===== POOL DE CANDIDATOS =====
-${candidatosParaAnalisis
-  .map((c, i) => {
-    const tieneIndexado = !!c.resumen_indexado_ia;
-    const keywords = ((c.keywords_sourcing as string[]) || []).join(", ");
-    const industrias = ((c.industrias_detectadas as string[]) || []).join(", ");
-
-    return `
-[${i}] ${tieneIndexado ? "✓ PERFIL INDEXADO" : "○ SIN INDEXAR"}
-- Nivel experiencia: ${c.nivel_experiencia_ia || "No clasificado"}
-- Puesto actual: ${sanitizeForPrompt(c.puesto_actual)}
-- Empresa actual: ${sanitizeForPrompt(c.empresa_actual)}
-- Educación: ${sanitizeForPrompt(c.nivel_educacion)}${c.carrera ? " en " + sanitizeForPrompt(c.carrera) : ""}
-- Keywords técnicas: ${keywords || (c.habilidades_tecnicas || []).join(", ") || "No especificadas"}
-- Industrias: ${industrias || "No especificadas"}
-- Habilidades blandas: ${(c.habilidades_blandas || []).join(", ") || "No especificadas"}
-- Ubicación: ${sanitizeForPrompt(c.ubicacion)}
-- Modalidad preferida: ${sanitizeForPrompt(c.modalidad_preferida)}
-- Disponibilidad: ${sanitizeForPrompt(c.disponibilidad)}
-- Expectativa salarial: ${c.salario_esperado_min ? "$" + c.salario_esperado_min + " - $" + c.salario_esperado_max + " MXN" : "No especificada"}
-- Resumen profesional: ${sanitizeForPrompt(c.resumen_indexado_ia || c.resumen_profesional)}
-`;
-  })
-  .join("\n")}
-
-===== CRITERIOS DE MATCHING =====
-1. PRIORIZA candidatos marcados como "✓ PERFIL INDEXADO".
-2. Considera la COMPATIBILIDAD DE SECTOR/INDUSTRIA.
-3. Evalúa la COHERENCIA DEL NIVEL DE EXPERIENCIA.
-4. Verifica COMPATIBILIDAD GEOGRÁFICA y de modalidad.
-5. Compara EXPECTATIVAS SALARIALES vs el rango ofrecido.
-6. Analiza las KEYWORDS TÉCNICAS vs los requisitos del perfil.
-
-===== FORMATO DE RESPUESTA =====
-Responde SOLO con un JSON array de los ${MAX_CANDIDATOS} mejores candidatos, ordenados por score (100=match perfecto).
-NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
-[
-  {
-    "index": 0,
-    "score": 85,
-    "razon": "Explicación concisa del match (máx 100 caracteres)",
-    "habilidades_match": ["habilidad1", "habilidad2"],
-    "experiencia_relevante": ["experiencia1", "experiencia2"]
-  }
-]`;
+      prompt = prompt.substring(0, MAX_PROMPT_LENGTH);
     }
 
     console.log(
       `[Sourcing IA] Llamando IA con ${candidatosParaAnalisis.length} candidatos, prompt: ${prompt.length} chars`,
     );
+
+    // ========================================================================
+    // LLAMAR A IA CON RETRY
+    // ========================================================================
 
     let aiData: any;
     try {
@@ -663,6 +689,10 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
 
     const aiContent = aiData.choices?.[0]?.message?.content || "[]";
 
+    // ========================================================================
+    // PARSEAR RESPUESTA CON REINTENTOS
+    // ========================================================================
+
     let matchesIA: MatchIA[];
     try {
       matchesIA = await parseAIResponse(aiContent);
@@ -683,6 +713,10 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
 
     const loteSourcing = crypto.randomUUID();
 
+    // ========================================================================
+    // DEDUCIR CRÉDITOS DE FORMA ATÓMICA (VERSIÓN CORREGIDA)
+    // ========================================================================
+
     const deduccionResult = await deducirCreditosAtomico(
       supabaseAdmin,
       esReclutador,
@@ -693,13 +727,20 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
 
     if (!deduccionResult.success) {
       console.error("[Sourcing IA] Deducción fallida:", deduccionResult.error);
-      return new Response(JSON.stringify({ error: deduccionResult.error }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({
+          error: deduccionResult.error,
+          origen_intentado: deduccionResult.origen,
+        }),
+        { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
 
     const origenPago = deduccionResult.origen;
+
+    // ========================================================================
+    // REGISTRAR MOVIMIENTO DE CRÉDITOS
+    // ========================================================================
 
     await supabaseAdmin.rpc("registrar_movimiento_creditos", {
       p_origen_pago: origenPago,
@@ -714,6 +755,10 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
       p_metodo: "automatico_ia",
       p_metadata: { lote_sourcing: loteSourcing, candidatos_analizados: matchesIA.length, origen_pago: origenPago },
     });
+
+    // ========================================================================
+    // INSERTAR RESULTADOS CON COMPENSACIÓN EN CASO DE ERROR (VERSIÓN MEJORADA)
+    // ========================================================================
 
     const sourcingRecords = matchesIA.map((match) => {
       const candidato = candidatosParaAnalisis[match.index];
@@ -739,20 +784,47 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     if (insertError) {
       console.error("[Sourcing IA] Error inserting results:", insertError);
 
-      await supabaseAdmin.from("creditos_compensacion").insert({
-        user_id: user.id,
-        wallet_reclutador_id: walletReclutadorId,
-        wallet_empresa_id: walletEmpresaId,
-        creditos_compensar: COSTO_SOURCING,
-        razon: `Error al insertar sourcing: ${insertError.message}`,
-        lote_sourcing: loteSourcing,
-      });
+      // Intentar registrar compensación, pero no fallar si no se puede
+      try {
+        // Verificar si la tabla existe antes de insertar
+        const { data: tableExists } = await supabaseAdmin
+          .from("information_schema.tables")
+          .select("table_name")
+          .eq("table_name", "creditos_compensacion")
+          .single();
 
-      return new Response(JSON.stringify({ error: "Error al guardar resultados. Se compensarán los créditos." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+        if (tableExists) {
+          await supabaseAdmin.from("creditos_compensacion").insert({
+            user_id: user.id,
+            wallet_reclutador_id: walletReclutadorId,
+            wallet_empresa_id: walletEmpresaId,
+            creditos_compensar: COSTO_SOURCING,
+            razon: `Error al insertar sourcing: ${insertError.message.substring(0, 200)}`,
+            lote_sourcing: loteSourcing,
+            estado: "pendiente",
+          });
+          console.log("[Sourcing IA] Compensación registrada correctamente");
+        } else {
+          console.error(
+            "[Sourcing IA] Tabla creditos_compensacion no existe. Créditos NO compensados automáticamente.",
+          );
+        }
+      } catch (compError) {
+        console.error("[Sourcing IA] Error al registrar compensación:", compError);
+      }
+
+      return new Response(
+        JSON.stringify({
+          error: "Error al guardar resultados. Se intentará compensar los créditos automáticamente.",
+          detalle: insertError.message,
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     }
+
+    // ========================================================================
+    // REGISTRAR ACCESO A IDENTIDADES
+    // ========================================================================
 
     if (reclutadorId) {
       const accesosIdentidad = matchesIA.map((match) => ({
@@ -768,6 +840,10 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
         ignoreDuplicates: true,
       });
     }
+
+    // ========================================================================
+    // RESPUESTA EXITOSA
+    // ========================================================================
 
     const executionTime = Date.now() - requestStartTime;
     console.log(`[Sourcing IA] Completado - ${matchesIA.length} candidatos, ${executionTime}ms`);
@@ -786,9 +862,12 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
     );
   } catch (error: any) {
     console.error("[Sourcing IA] Error general:", error);
-    return new Response(JSON.stringify({ error: "Error interno del servidor" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        error: "Error interno del servidor",
+        detalle: error.message,
+      }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   }
 });
