@@ -218,6 +218,63 @@ export type Database = {
           },
         ]
       }
+      creditos_compensacion: {
+        Row: {
+          created_at: string
+          creditos_compensar: number
+          estado: string
+          id: string
+          lote_sourcing: string | null
+          procesado_at: string | null
+          procesado_por: string | null
+          razon: string
+          user_id: string
+          wallet_empresa_id: string | null
+          wallet_reclutador_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          creditos_compensar: number
+          estado?: string
+          id?: string
+          lote_sourcing?: string | null
+          procesado_at?: string | null
+          procesado_por?: string | null
+          razon: string
+          user_id: string
+          wallet_empresa_id?: string | null
+          wallet_reclutador_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          creditos_compensar?: number
+          estado?: string
+          id?: string
+          lote_sourcing?: string | null
+          procesado_at?: string | null
+          procesado_por?: string | null
+          razon?: string
+          user_id?: string
+          wallet_empresa_id?: string | null
+          wallet_reclutador_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creditos_compensacion_wallet_empresa_id_fkey"
+            columns: ["wallet_empresa_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_empresa"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creditos_compensacion_wallet_reclutador_id_fkey"
+            columns: ["wallet_reclutador_id"]
+            isOneToOne: false
+            referencedRelation: "wallet_reclutador"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creditos_heredados_reclutador: {
         Row: {
           created_at: string
@@ -2196,6 +2253,14 @@ export type Database = {
       decrypt_sensitive_data: {
         Args: { encrypted_data: string }
         Returns: string
+      }
+      deducir_creditos_empresa_atomico: {
+        Args: { p_costo: number; p_wallet_id: string }
+        Returns: Json
+      }
+      deducir_creditos_reclutador_atomico: {
+        Args: { p_costo: number; p_wallet_id: string }
+        Returns: Json
       }
       encrypt_sensitive_data: { Args: { data: string }; Returns: string }
       generate_unique_code: { Args: { prefix: string }; Returns: string }
