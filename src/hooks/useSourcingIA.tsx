@@ -74,7 +74,15 @@ export function useSourcingIA() {
         return null;
       }
 
-      return response.data as SimulacionResult;
+      const result = response.data as SimulacionResult;
+      
+      // Handle "no candidates" gracefully
+      if (result && !result.success) {
+        toast.info((result as any).mensaje || 'No hay candidatos disponibles');
+        return null;
+      }
+
+      return result;
     } catch (error) {
       console.error('Error simulando sourcing:', error);
       toast.error('Error al conectar con el servicio de sourcing');
