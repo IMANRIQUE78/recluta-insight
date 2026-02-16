@@ -7,7 +7,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 const COSTO_SOURCING = 50;
@@ -480,10 +480,13 @@ serve(async (req) => {
     if (candidatosDisponibles.length === 0) {
       return new Response(
         JSON.stringify({
-          error: "No hay candidatos disponibles para sourcing",
-          mensaje: "Todos los candidatos ya fueron postulados o sourced para esta vacante",
+          success: false,
+          dry_run: dry_run,
+          mensaje: "No hay candidatos disponibles para sourcing. Todos los candidatos ya fueron postulados o analizados para esta vacante.",
+          candidatos_disponibles: 0,
+          vacante: { id: vacante.id, titulo: publicacion.titulo_puesto },
         }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -786,29 +789,16 @@ NO incluyas markdown, NO incluyas texto adicional, SOLO el array JSON:
 
       // Intentar registrar compensación, pero no fallar si no se puede
       try {
-        // Verificar si la tabla existe antes de insertar
-        const { data: tableExists } = await supabaseAdmin
-          .from("information_schema.tables")
-          .select("table_name")
-          .eq("table_name", "creditos_compensacion")
-          .single();
-
-        if (tableExists) {
-          await supabaseAdmin.from("creditos_compensacion").insert({
-            user_id: user.id,
-            wallet_reclutador_id: walletReclutadorId,
-            wallet_empresa_id: walletEmpresaId,
-            creditos_compensar: COSTO_SOURCING,
-            razon: `Error al insertar sourcing: ${insertError.message.substring(0, 200)}`,
-            lote_sourcing: loteSourcing,
-            estado: "pendiente",
-          });
-          console.log("[Sourcing IA] Compensación registrada correctamente");
-        } else {
-          console.error(
-            "[Sourcing IA] Tabla creditos_compensacion no existe. Créditos NO compensados automáticamente.",
-          );
-        }
+        await supabaseAdmin.from("creditos_compensacion").insert({
+          user_id: user.id,
+          wallet_reclutador_id: walletReclutadorId,
+          wallet_empresa_id: walletEmpresaId,
+          creditos_compensar: COSTO_SOURCING,
+          razon: `Error al insertar sourcing: ${insertError.message.substring(0, 200)}`,
+          lote_sourcing: loteSourcing,
+          estado: "pendiente",
+        });
+        console.log("[Sourcing IA] Compensación registrada correctamente");
       } catch (compError) {
         console.error("[Sourcing IA] Error al registrar compensación:", compError);
       }
