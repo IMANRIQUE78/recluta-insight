@@ -500,7 +500,7 @@ export const AuthForm = () => {
 
       <div className="text-center space-y-2 animate-in fade-in duration-1000 delay-300">
         <h2 className="text-3xl font-bold text-primary">VVGI</h2>
-        <p className="text-sm text-muted-foreground">un proyecto de Israel Manrique</p>
+        <p className="text-sm text-muted-foreground">un proyecto de Isra Manrique</p>
         <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
           hecho en México con <span className="text-red-500 animate-pulse">❤️</span> para toda Latinoamérica
         </p>
