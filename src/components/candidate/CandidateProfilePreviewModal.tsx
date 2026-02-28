@@ -144,7 +144,20 @@ export const CandidateProfilePreviewModal = ({
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+
+      // Supabase devuelve campos JSON como tipo genérico `Json`.
+      // Hacemos un cast explícito y seguro para que TypeScript lo acepte.
+      if (data) {
+        setProfile({
+          ...data,
+          experiencia_laboral: Array.isArray(data.experiencia_laboral)
+            ? (data.experiencia_laboral as unknown as ExperienciaLaboral[])
+            : [],
+          educacion: Array.isArray(data.educacion) ? (data.educacion as unknown as Educacion[]) : [],
+        } as CandidateProfile);
+      } else {
+        setProfile(null);
+      }
     } catch (error: any) {
       console.error("Error loading profile preview:", error.message);
       setLoadError(true);
