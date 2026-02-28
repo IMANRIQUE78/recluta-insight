@@ -2303,6 +2303,10 @@ export type Database = {
         Args: { p_publicacion_id: string }
         Returns: boolean
       }
+      puede_ver_perfil_candidato: {
+        Args: { p_candidato_user_id: string }
+        Returns: boolean
+      }
       registrar_movimiento_creditos: {
         Args: {
           p_candidato_user_id?: string
