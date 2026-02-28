@@ -13,20 +13,6 @@ import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfi
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 const CREDITOS_MINIMOS = 2;
-// Columnas explícitas — nunca SELECT * sobre datos sensibles
-const COLUMNAS_PUBLICAS = [
-  "user_id",
-  "puesto_actual",
-  "resumen_profesional",
-  "habilidades_tecnicas",
-  "habilidades_blandas",
-  "salario_esperado_min",
-  "salario_esperado_max",
-  "disponibilidad",
-  "modalidad_preferida",
-  "nivel_educacion",
-  "experiencia_laboral",
-].join(", ");
 
 // ─── Helpers de seguridad ─────────────────────────────────────────────────────
 const sanitizeText = (value: string | null | undefined): string => {
@@ -112,7 +98,12 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     try {
       const { data, error } = await supabase
         .from("perfil_candidato")
-        .select(COLUMNAS_PUBLICAS)
+        // String literal inline — necesario para que TypeScript infiera los tipos.
+        // Una constante externa produce GenericStringError porque TS no puede
+        // analizar el contenido en tiempo de compilación.
+        .select(
+          "user_id, puesto_actual, resumen_profesional, habilidades_tecnicas, habilidades_blandas, salario_esperado_min, salario_esperado_max, disponibilidad, modalidad_preferida, nivel_educacion, experiencia_laboral",
+        )
         .order("puesto_actual", { ascending: true });
 
       if (error) throw error;
