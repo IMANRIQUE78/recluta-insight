@@ -262,6 +262,19 @@ export const CandidateProfileViewModal = ({
     setCvSignedUrl(null);
 
     try {
+      // Esperar a que la sesión esté lista antes de consultar
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData?.session) {
+        // Si no hay sesión, esperar un poco y reintentar una vez
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const { data: retrySession } = await supabase.auth.getSession();
+        if (!retrySession?.session) {
+          setLoadError(true);
+          setLoading(false);
+          return;
+        }
+      }
+
       const { data, error } = await supabase
         .from("perfil_candidato")
         .select("*")
