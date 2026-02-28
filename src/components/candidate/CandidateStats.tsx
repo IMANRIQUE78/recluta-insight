@@ -1,21 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { BarChart3, Send, Calendar, MessageSquare, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight, MapPin, DollarSign } from "lucide-react";
+  BarChart3,
+  Send,
+  Calendar,
+  MessageSquare,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  DollarSign,
+  AlertCircle,
+} from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+const ITEMS_PER_PAGE = 10;
+
+// Estados válidos permitidos — cualquier otro valor se trata como desconocido
+const ESTADOS_VALIDOS = new Set(["pendiente", "aceptado", "contratado", "rechazado", "en_proceso"]);
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Stats {
   totalPostulaciones: number;
   postulacionesMes: number;
@@ -29,9 +44,7 @@ interface Feedback {
   comentario: string;
   puntuacion: number;
   created_at: string;
-  publicacion: {
-    titulo_puesto: string;
-  };
+  publicacion: { titulo_puesto: string };
 }
 
 interface MonthlyData {
@@ -50,18 +63,51 @@ interface Postulacion {
     ubicacion: string | null;
     lugar_trabajo: string;
     sueldo_bruto_aprobado: number | null;
-    vacante: {
-      estatus: string;
-    } | null;
+    vacante: { estatus: string } | null;
   } | null;
 }
 
-const ITEMS_PER_PAGE = 10;
+// ─── Helpers de seguridad ─────────────────────────────────────────────────────
+const sanitizeText = (value: string | null | undefined): string => {
+  if (!value) return "";
+  return value.replace(/[<>{}\[\]\\;`'"&|$^%*=+~]/g, "").trim();
+};
 
-const getEstadoColor = (estado: string, vacanteCerrada: boolean) => {
+// Formatea fecha de forma segura — nunca muestra "Invalid Date"
+const formatFecha = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return "—";
+  try {
+    const date = parseISO(dateStr);
+    if (!isValid(date)) return "—";
+    return format(date, "dd MMM yyyy", { locale: es });
+  } catch {
+    return "—";
+  }
+};
+
+// Formatea fecha larga de forma segura
+const formatFechaLarga = (dateStr: string | null | undefined): string => {
+  if (!dateStr) return "—";
+  try {
+    const date = parseISO(dateStr);
+    if (!isValid(date)) return "—";
+    return format(date, "d 'de' MMMM 'de' yyyy", { locale: es });
+  } catch {
+    return "—";
+  }
+};
+
+// Valida puntuación de estrellas: solo enteros 1-5
+const safePuntuacion = (val: number | null | undefined): number => {
+  if (typeof val !== "number" || isNaN(val)) return 0;
+  return Math.min(5, Math.max(0, Math.floor(val)));
+};
+
+// ─── Helpers de UI ────────────────────────────────────────────────────────────
+const getEstadoColor = (estado: string, vacanteCerrada: boolean): string => {
   if (vacanteCerrada) return "bg-gray-500/10 text-gray-500 border-gray-500/20";
-  
-  switch (estado.toLowerCase()) {
+  const normalizado = estado.toLowerCase().trim();
+  switch (normalizado) {
     case "pendiente":
       return "bg-yellow-500/10 text-yellow-600 border-yellow-500/20";
     case "aceptado":
@@ -76,15 +122,26 @@ const getEstadoColor = (estado: string, vacanteCerrada: boolean) => {
   }
 };
 
-const getModalidadLabel = (modalidad: string) => {
-  switch (modalidad) {
-    case "remoto": return "Remoto";
-    case "presencial": return "Presencial";
-    case "hibrido": return "Híbrido";
-    default: return modalidad;
-  }
+const getModalidadLabel = (modalidad: string): string => {
+  const map: Record<string, string> = {
+    remoto: "Remoto",
+    presencial: "Presencial",
+    hibrido: "Híbrido",
+  };
+  return map[modalidad?.toLowerCase()] ?? sanitizeText(modalidad) ?? "—";
 };
 
+// Etiqueta segura de estado — nunca renderiza texto arbitrario de la BD
+const getEstadoLabel = (estado: string, etapa: string | null, vacanteCerrada: boolean): string => {
+  if (vacanteCerrada) return "Vacante Cerrada";
+  // Mostrar etapa si existe y es texto limpio, o estado validado
+  if (etapa) return sanitizeText(etapa) || sanitizeText(estado) || "—";
+  const normalizado = estado.toLowerCase().trim();
+  if (!ESTADOS_VALIDOS.has(normalizado)) return "—";
+  return sanitizeText(estado);
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export const CandidateStats = () => {
   const [stats, setStats] = useState<Stats>({
     totalPostulaciones: 0,
@@ -96,193 +153,101 @@ export const CandidateStats = () => {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingTable, setLoadingTable] = useState(false);
+  const [statsError, setStatsError] = useState(false);
+  const [tableError, setTableError] = useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
+  // Ref para cancelar queries de paginación en vuelo si el usuario cambia
+  // de página antes de que termine la anterior
+  const pageRequestRef = useRef<number>(0);
 
-  useEffect(() => {
-    loadPostulaciones();
-  }, [currentPage]);
-
-  const loadPostulaciones = async () => {
+  // ── Cargar estadísticas generales ────────────────────────────────────────────
+  const loadStats = useCallback(async () => {
+    setLoadingStats(true);
+    setStatsError(false);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) return;
 
-      // Get total count
-      const { count } = await supabase
-        .from("postulaciones")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id);
-
-      setTotalCount(count || 0);
-
-      // Get paginated postulaciones first
-      const { data: postulacionesData, error: postError } = await supabase
-        .from("postulaciones")
-        .select("id, estado, etapa, fecha_postulacion, publicacion_id")
-        .eq("candidato_user_id", session.user.id)
-        .order("fecha_postulacion", { ascending: false })
-        .range((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE - 1);
-
-      if (postError) throw postError;
-
-      if (!postulacionesData || postulacionesData.length === 0) {
-        setPostulaciones([]);
-        return;
-      }
-
-      // Get publication IDs
-      const pubIds = postulacionesData.map(p => p.publicacion_id);
-
-      // Fetch publications separately (RLS allows seeing published ones)
-      const { data: publicacionesData } = await supabase
-        .from("publicaciones_marketplace")
-        .select("id, titulo_puesto, ubicacion, lugar_trabajo, sueldo_bruto_aprobado, vacante_id")
-        .in("id", pubIds);
-
-      // Get vacancy IDs from publications
-      const vacanteIds = (publicacionesData || [])
-        .map(p => p.vacante_id)
-        .filter(Boolean);
-
-      // Fetch vacancies to get status
-      const { data: vacantesData } = await supabase
-        .from("vacantes")
-        .select("id, estatus, titulo_puesto")
-        .in("id", vacanteIds);
-
-      // Build map for quick lookup
-      const vacantesMap = new Map(
-        (vacantesData || []).map(v => [v.id, v])
-      );
-
-      const publicacionesMap = new Map(
-        (publicacionesData || []).map(p => [p.id, {
-          ...p,
-          vacante: p.vacante_id ? vacantesMap.get(p.vacante_id) || null : null
-        }])
-      );
-
-      // Combine data
-      const combinedData: Postulacion[] = postulacionesData.map(post => {
-        const pub = publicacionesMap.get(post.publicacion_id);
-        return {
-          id: post.id,
-          estado: post.estado,
-          etapa: post.etapa,
-          fecha_postulacion: post.fecha_postulacion,
-          publicacion: pub ? {
-            titulo_puesto: pub.titulo_puesto,
-            ubicacion: pub.ubicacion,
-            lugar_trabajo: pub.lugar_trabajo,
-            sueldo_bruto_aprobado: pub.sueldo_bruto_aprobado,
-            vacante: pub.vacante ? { estatus: pub.vacante.estatus } : null
-          } : null
-        };
-      });
-
-      setPostulaciones(combinedData);
-    } catch (error) {
-      console.error("Error loading postulaciones:", error);
-    }
-  };
-
-  const loadStats = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      // Total postulaciones
-      const { count: totalCount } = await supabase
-        .from("postulaciones")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id);
-
-      // Calculate dates for last 3 months
+      const userId = session.user.id;
       const now = new Date();
       const currentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
 
-      // Postulaciones del mes actual
-      const { count: mesCount } = await supabase
-        .from("postulaciones")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id)
-        .gte("fecha_postulacion", currentMonth.toISOString());
+      // Lanzar todas las queries en paralelo — más rápido y fácil de manejar errores
+      const [totalResult, mesResult, mesAnteriorResult, dosMesesResult, entrevistasResult, feedbackResult] =
+        await Promise.all([
+          supabase.from("postulaciones").select("*", { count: "exact", head: true }).eq("candidato_user_id", userId),
+          supabase
+            .from("postulaciones")
+            .select("*", { count: "exact", head: true })
+            .eq("candidato_user_id", userId)
+            .gte("fecha_postulacion", currentMonth.toISOString()),
+          supabase
+            .from("postulaciones")
+            .select("*", { count: "exact", head: true })
+            .eq("candidato_user_id", userId)
+            .gte("fecha_postulacion", lastMonth.toISOString())
+            .lt("fecha_postulacion", currentMonth.toISOString()),
+          supabase
+            .from("postulaciones")
+            .select("*", { count: "exact", head: true })
+            .eq("candidato_user_id", userId)
+            .gte("fecha_postulacion", twoMonthsAgo.toISOString())
+            .lt("fecha_postulacion", lastMonth.toISOString()),
+          supabase
+            .from("entrevistas_candidato")
+            .select("*", { count: "exact", head: true })
+            .eq("candidato_user_id", userId)
+            .eq("asistio", true),
+          supabase
+            .from("feedback_candidato")
+            .select("id, comentario, puntuacion, created_at, postulacion_id")
+            .eq("candidato_user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(10),
+        ]);
 
-      // Postulaciones del mes anterior
-      const { count: mesAnteriorCount } = await supabase
-        .from("postulaciones")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id)
-        .gte("fecha_postulacion", lastMonth.toISOString())
-        .lt("fecha_postulacion", currentMonth.toISOString());
+      // Verificar errores de queries críticas
+      if (totalResult.error) throw totalResult.error;
 
-      // Postulaciones de hace 2 meses
-      const { count: dosMesesCount } = await supabase
-        .from("postulaciones")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id)
-        .gte("fecha_postulacion", twoMonthsAgo.toISOString())
-        .lt("fecha_postulacion", lastMonth.toISOString());
-
-      // Build monthly chart data (last 3 months)
       const getMonthName = (date: Date) => {
-        const name = date.toLocaleDateString('es-MX', { month: 'short' });
+        const name = date.toLocaleDateString("es-MX", { month: "short" });
         return name.charAt(0).toUpperCase() + name.slice(1);
       };
-      
+
       setMonthlyData([
-        { mes: getMonthName(twoMonthsAgo), postulaciones: dosMesesCount || 0, isCurrent: false },
-        { mes: getMonthName(lastMonth), postulaciones: mesAnteriorCount || 0, isCurrent: false },
-        { mes: getMonthName(currentMonth), postulaciones: mesCount || 0, isCurrent: true },
+        { mes: getMonthName(twoMonthsAgo), postulaciones: dosMesesResult.count || 0, isCurrent: false },
+        { mes: getMonthName(lastMonth), postulaciones: mesAnteriorResult.count || 0, isCurrent: false },
+        { mes: getMonthName(currentMonth), postulaciones: mesResult.count || 0, isCurrent: true },
       ]);
 
-      // Entrevistas asistidas
-      const { count: entrevistasCount } = await supabase
-        .from("entrevistas_candidato")
-        .select("*", { count: "exact", head: true })
-        .eq("candidato_user_id", session.user.id)
-        .eq("asistio", true);
-
-      // Feedback recibido
-      const { data: feedbackData, count: feedbackCount } = await supabase
-        .from("feedback_candidato")
-        .select(`
-          id,
-          comentario,
-          puntuacion,
-          created_at,
-          postulacion_id
-        `)
-        .eq("candidato_user_id", session.user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      // Obtener títulos de puestos para el feedback
-      if (feedbackData && feedbackData.length > 0) {
-        const postulacionIds = feedbackData.map(f => f.postulacion_id);
+      // Enriquecer feedback con títulos de puestos
+      if (feedbackResult.data && feedbackResult.data.length > 0) {
+        const postulacionIds = feedbackResult.data.map((f) => f.postulacion_id);
         const { data: postulacionesData } = await supabase
           .from("postulaciones")
-          .select(`
-            id,
-            publicacion:publicaciones_marketplace(titulo_puesto)
-          `)
+          .select("id, publicacion:publicaciones_marketplace(titulo_puesto)")
           .in("id", postulacionIds);
 
-        const feedbackConTitulos = feedbackData.map(f => {
-          const post = postulacionesData?.find(p => p.id === f.postulacion_id);
+        const feedbackConTitulos: Feedback[] = feedbackResult.data.map((f) => {
+          const post = postulacionesData?.find((p) => p.id === f.postulacion_id);
           return {
-            ...f,
+            id: f.id,
+            comentario: sanitizeText(f.comentario),
+            puntuacion: safePuntuacion(f.puntuacion),
+            created_at: f.created_at,
             publicacion: {
-              titulo_puesto: (post?.publicacion as any)?.titulo_puesto || "Vacante"
-            }
+              titulo_puesto: sanitizeText((post?.publicacion as any)?.titulo_puesto) || "Vacante",
+            },
           };
         });
 
@@ -290,19 +255,125 @@ export const CandidateStats = () => {
       }
 
       setStats({
-        totalPostulaciones: totalCount || 0,
-        postulacionesMes: mesCount || 0,
-        postulacionesMesAnterior: mesAnteriorCount || 0,
-        entrevistasAsistidas: entrevistasCount || 0,
-        feedbackRecibido: feedbackCount || 0,
+        totalPostulaciones: totalResult.count || 0,
+        postulacionesMes: mesResult.count || 0,
+        postulacionesMesAnterior: mesAnteriorResult.count || 0,
+        entrevistasAsistidas: entrevistasResult.count || 0,
+        feedbackRecibido: feedbackResult.count || 0,
       });
-    } catch (error) {
-      console.error("Error loading stats:", error);
+    } catch (error: any) {
+      console.error("Error loading stats:", error.message);
+      setStatsError(true);
     } finally {
-      setLoading(false);
+      setLoadingStats(false);
     }
-  };
+  }, []);
 
+  // ── Cargar postulaciones paginadas ────────────────────────────────────────────
+  const loadPostulaciones = useCallback(async (page: number) => {
+    setLoadingTable(true);
+    setTableError(false);
+
+    // Token de esta request — si el usuario cambia de página antes de que
+    // termine, descartamos el resultado de la request anterior
+    const requestId = ++pageRequestRef.current;
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const userId = session.user.id;
+
+      const { count } = await supabase
+        .from("postulaciones")
+        .select("*", { count: "exact", head: true })
+        .eq("candidato_user_id", userId);
+
+      const { data: postulacionesData, error: postError } = await supabase
+        .from("postulaciones")
+        .select("id, estado, etapa, fecha_postulacion, publicacion_id")
+        .eq("candidato_user_id", userId)
+        .order("fecha_postulacion", { ascending: false })
+        .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
+
+      if (postError) throw postError;
+
+      // Si llegó una request más nueva, descartar esta
+      if (requestId !== pageRequestRef.current) return;
+
+      if (!postulacionesData || postulacionesData.length === 0) {
+        setTotalCount(count || 0);
+        setPostulaciones([]);
+        return;
+      }
+
+      const pubIds = postulacionesData.map((p) => p.publicacion_id).filter(Boolean);
+
+      const { data: publicacionesData } = await supabase
+        .from("publicaciones_marketplace")
+        .select("id, titulo_puesto, ubicacion, lugar_trabajo, sueldo_bruto_aprobado, vacante_id")
+        .in("id", pubIds);
+
+      const vacanteIds = (publicacionesData || []).map((p) => p.vacante_id).filter(Boolean);
+
+      const { data: vacantesData } = await supabase.from("vacantes").select("id, estatus").in("id", vacanteIds);
+
+      if (requestId !== pageRequestRef.current) return;
+
+      const vacantesMap = new Map((vacantesData || []).map((v) => [v.id, v]));
+      const publicacionesMap = new Map(
+        (publicacionesData || []).map((p) => [
+          p.id,
+          {
+            ...p,
+            vacante: p.vacante_id ? vacantesMap.get(p.vacante_id) || null : null,
+          },
+        ]),
+      );
+
+      const combinedData: Postulacion[] = postulacionesData.map((post) => {
+        const pub = publicacionesMap.get(post.publicacion_id);
+        return {
+          id: post.id,
+          estado: post.estado,
+          etapa: post.etapa,
+          fecha_postulacion: post.fecha_postulacion,
+          publicacion: pub
+            ? {
+                titulo_puesto: sanitizeText(pub.titulo_puesto),
+                ubicacion: sanitizeText(pub.ubicacion),
+                lugar_trabajo: pub.lugar_trabajo,
+                sueldo_bruto_aprobado: pub.sueldo_bruto_aprobado,
+                vacante: pub.vacante ? { estatus: sanitizeText(pub.vacante.estatus) } : null,
+              }
+            : null,
+        };
+      });
+
+      setTotalCount(count || 0);
+      setPostulaciones(combinedData);
+    } catch (error: any) {
+      if (requestId !== pageRequestRef.current) return;
+      console.error("Error loading postulaciones:", error.message);
+      setTableError(true);
+    } finally {
+      if (requestId === pageRequestRef.current) {
+        setLoadingTable(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  useEffect(() => {
+    loadPostulaciones(currentPage);
+  }, [currentPage, loadPostulaciones]);
+
+  // ── Tendencia mes a mes ───────────────────────────────────────────────────────
   const getTrend = () => {
     const diff = stats.postulacionesMes - stats.postulacionesMesAnterior;
     if (diff > 0) return { icon: TrendingUp, color: "text-green-500", text: `+${diff} vs mes anterior` };
@@ -310,16 +381,57 @@ export const CandidateStats = () => {
     return { icon: Minus, color: "text-muted-foreground", text: "Sin cambio" };
   };
 
-  if (loading) {
-    return <div className="animate-pulse">Cargando estadísticas...</div>;
-  }
-
   const trend = getTrend();
   const TrendIcon = trend.icon;
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
 
+  // ── Skeleton de estadísticas ─────────────────────────────────────────────────
+  if (loadingStats) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="pb-2">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-48 w-full" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ── Error de estadísticas ─────────────────────────────────────────────────────
+  if (statsError) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          No se pudieron cargar las estadísticas.{" "}
+          <button type="button" className="underline font-medium" onClick={loadStats}>
+            Intentar de nuevo
+          </button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
+      {/* ── TARJETAS DE RESUMEN ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -366,7 +478,7 @@ export const CandidateStats = () => {
         </Card>
       </div>
 
-      {/* Tabla de Postulaciones */}
+      {/* ── TABLA DE POSTULACIONES ── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -375,10 +487,24 @@ export const CandidateStats = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {postulaciones.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No tienes postulaciones registradas
+          {tableError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No se pudieron cargar las postulaciones.{" "}
+                <button type="button" className="underline font-medium" onClick={() => loadPostulaciones(currentPage)}>
+                  Intentar de nuevo
+                </button>
+              </AlertDescription>
+            </Alert>
+          ) : loadingTable ? (
+            <div className="space-y-2">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
             </div>
+          ) : postulaciones.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No tienes postulaciones registradas</div>
           ) : (
             <>
               <div className="rounded-md border">
@@ -396,23 +522,24 @@ export const CandidateStats = () => {
                   </TableHeader>
                   <TableBody>
                     {postulaciones.map((postulacion) => {
-                      const vacanteCerrada = postulacion.publicacion?.vacante?.estatus === "cerrada" || 
-                                            postulacion.publicacion?.vacante?.estatus === "cancelada";
+                      const vacanteCerrada =
+                        postulacion.publicacion?.vacante?.estatus === "cerrada" ||
+                        postulacion.publicacion?.vacante?.estatus === "cancelada";
                       const tienePublicacion = postulacion.publicacion !== null;
-                      
+
                       return (
                         <TableRow key={postulacion.id}>
                           <TableCell className="font-medium">
-                            {tienePublicacion ? postulacion.publicacion?.titulo_puesto : "Vacante eliminada"}
+                            {tienePublicacion ? postulacion.publicacion?.titulo_puesto || "—" : "Vacante eliminada"}
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                              <MapPin className="h-3 w-3" />
-                              {tienePublicacion ? (postulacion.publicacion?.ubicacion || "No especificada") : "-"}
+                              <MapPin className="h-3 w-3 shrink-0" />
+                              {tienePublicacion ? postulacion.publicacion?.ubicacion || "No especificada" : "—"}
                             </div>
                           </TableCell>
                           <TableCell>
-                            {tienePublicacion ? getModalidadLabel(postulacion.publicacion?.lugar_trabajo || "") : "-"}
+                            {tienePublicacion ? getModalidadLabel(postulacion.publicacion?.lugar_trabajo || "") : "—"}
                           </TableCell>
                           <TableCell>
                             {tienePublicacion && postulacion.publicacion?.sueldo_bruto_aprobado ? (
@@ -421,24 +548,21 @@ export const CandidateStats = () => {
                                 {postulacion.publicacion.sueldo_bruto_aprobado.toLocaleString("es-MX")}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-sm">-</span>
+                              <span className="text-muted-foreground text-sm">—</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge 
-                              variant="outline" 
-                              className={getEstadoColor(postulacion.estado, vacanteCerrada)}
-                            >
-                              {vacanteCerrada ? "Vacante Cerrada" : postulacion.etapa || postulacion.estado}
+                            <Badge variant="outline" className={getEstadoColor(postulacion.estado, vacanteCerrada)}>
+                              {getEstadoLabel(postulacion.estado, postulacion.etapa, vacanteCerrada)}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             {tienePublicacion ? (
-                              <Badge 
-                                variant="outline" 
+                              <Badge
+                                variant="outline"
                                 className={
-                                  vacanteCerrada 
-                                    ? "bg-red-500/10 text-red-600 border-red-500/20" 
+                                  vacanteCerrada
+                                    ? "bg-red-500/10 text-red-600 border-red-500/20"
                                     : "bg-green-500/10 text-green-600 border-green-500/20"
                                 }
                               >
@@ -452,8 +576,8 @@ export const CandidateStats = () => {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1 text-muted-foreground text-sm">
-                              <Calendar className="h-3 w-3" />
-                              {format(new Date(postulacion.fecha_postulacion), "dd MMM yyyy", { locale: es })}
+                              <Calendar className="h-3 w-3 shrink-0" />
+                              {formatFecha(postulacion.fecha_postulacion)}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -463,18 +587,19 @@ export const CandidateStats = () => {
                 </Table>
               </div>
 
-              {/* Pagination */}
+              {/* Paginación */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} de {totalCount}
+                    Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                    {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} de {totalCount}
                   </p>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1 || loadingTable}
                     >
                       <ChevronLeft className="h-4 w-4" />
                       Anterior
@@ -485,8 +610,8 @@ export const CandidateStats = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages || loadingTable}
                     >
                       Siguiente
                       <ChevronRight className="h-4 w-4" />
@@ -499,7 +624,7 @@ export const CandidateStats = () => {
         </CardContent>
       </Card>
 
-      {/* Chart: Postulaciones por mes - últimos 3 meses */}
+      {/* ── GRÁFICA ── */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Postulaciones por Mes (últimos 3 meses)</CardTitle>
@@ -509,29 +634,21 @@ export const CandidateStats = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis 
-                  dataKey="mes" 
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <YAxis 
-                  allowDecimals={false}
-                  tick={{ fontSize: 12 }}
-                  className="text-muted-foreground"
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
+                <XAxis dataKey="mes" tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 12 }} className="text-muted-foreground" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
                   }}
-                  formatter={(value: number) => [value, 'Postulaciones']}
+                  formatter={(value: number) => [value, "Postulaciones"]}
                 />
                 <Bar dataKey="postulaciones" radius={[4, 4, 0, 0]}>
                   {monthlyData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.isCurrent ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'} 
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.isCurrent ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
                       opacity={entry.isCurrent ? 1 : 0.5}
                     />
                   ))}
@@ -542,8 +659,8 @@ export const CandidateStats = () => {
         </CardContent>
       </Card>
 
-      {/* Feedback de Reclutadores */}
-      {feedbacks.length > 0 && (
+      {/* ── FEEDBACK DE RECLUTADORES ── */}
+      {feedbacks.length > 0 ? (
         <Card>
           <CardHeader>
             <CardTitle>Comentarios de Reclutadores</CardTitle>
@@ -555,31 +672,29 @@ export const CandidateStats = () => {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <p className="font-semibold">{feedback.publicacion.titulo_puesto}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(feedback.created_at).toLocaleDateString('es-MX', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{formatFechaLarga(feedback.created_at)}</p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    {/* Estrellas con puntuación validada — nunca más de 5 */}
+                    <div className="flex items-center gap-0.5" aria-label={`${feedback.puntuacion} de 5 estrellas`}>
                       {Array.from({ length: 5 }).map((_, i) => (
-                        <span key={i} className={i < feedback.puntuacion ? "text-yellow-500" : "text-gray-300"}>
+                        <span
+                          key={i}
+                          className={i < feedback.puntuacion ? "text-yellow-500" : "text-gray-300"}
+                          aria-hidden="true"
+                        >
                           ★
                         </span>
                       ))}
                     </div>
                   </div>
+                  {/* Comentario sanitizado — no se renderiza HTML arbitrario */}
                   <p className="text-sm">{feedback.comentario}</p>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
-      )}
-
-      {feedbacks.length === 0 && (
+      ) : (
         <Card>
           <CardContent className="py-8 text-center text-muted-foreground">
             Aún no has recibido feedback de los reclutadores
