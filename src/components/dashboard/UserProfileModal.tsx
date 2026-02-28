@@ -65,9 +65,10 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Load non-sensitive fields from empresas
       const { data, error } = await supabase
         .from("empresas")
-        .select("*")
+        .select("id, nombre_empresa, sector, tamano_empresa, email_contacto, telefono_contacto, ciudad, estado, codigo_postal, pais, sitio_web, descripcion_empresa")
         .eq("created_by", user.id)
         .maybeSingle();
 
@@ -75,15 +76,34 @@ export const UserProfileModal = ({ open, onOpenChange, onSuccess }: UserProfileM
 
       if (data) {
         setProfileExists(true);
+        
+        // Load sensitive fields via decryption RPC
+        let rfc = "";
+        let razon_social = "";
+        let direccion_fiscal = "";
+        
+        try {
+          const { data: decrypted } = await supabase
+            .rpc('get_empresa_decrypted', { empresa_id: data.id });
+          
+          if (decrypted && decrypted.length > 0) {
+            rfc = decrypted[0].rfc_decrypted || "";
+            razon_social = decrypted[0].razon_social_decrypted || "";
+            direccion_fiscal = decrypted[0].direccion_fiscal_decrypted || "";
+          }
+        } catch {
+          // Decryption may fail if key not configured - fields stay empty
+        }
+        
         setFormData({
           nombre_empresa: data.nombre_empresa || "",
-          razon_social: data.razon_social || "",
-          rfc: data.rfc || "",
+          razon_social,
+          rfc,
           sector: data.sector || "",
           tamano_empresa: data.tamano_empresa || "",
           email_contacto: data.email_contacto || "",
           telefono_contacto: data.telefono_contacto || "",
-          direccion_fiscal: data.direccion_fiscal || "",
+          direccion_fiscal,
           ciudad: data.ciudad || "",
           estado: data.estado || "",
           codigo_postal: data.codigo_postal || "",
