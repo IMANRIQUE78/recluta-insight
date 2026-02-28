@@ -93,7 +93,7 @@ interface GestionEstatusPostulacionDialogProps {
 interface Verificador {
   id: string;
   nombre_verificador: string;
-  zona_cobertura: string | null;
+  zona_cobertura: string[] | null;
   disponible: boolean;
 }
 
