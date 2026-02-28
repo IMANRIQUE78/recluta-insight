@@ -1,27 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Eye, Briefcase, MapPin, DollarSign, Calendar, Lock, Search, X, Filter, Coins } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Users, Eye, Briefcase, DollarSign, Calendar, Lock, Search, X, Filter, Coins, AlertCircle } from "lucide-react";
+import { CandidateProfileViewModal } from "@/components/candidate/CandidateProfileViewModal";
 
+// ─── Constantes ───────────────────────────────────────────────────────────────
+const CREDITOS_MINIMOS = 2;
+// Columnas explícitas — nunca SELECT * sobre datos sensibles
+const COLUMNAS_PUBLICAS = [
+  "user_id",
+  "puesto_actual",
+  "resumen_profesional",
+  "habilidades_tecnicas",
+  "habilidades_blandas",
+  "salario_esperado_min",
+  "salario_esperado_max",
+  "disponibilidad",
+  "modalidad_preferida",
+  "nivel_educacion",
+  "experiencia_laboral",
+].join(", ");
+
+// ─── Helpers de seguridad ─────────────────────────────────────────────────────
+const sanitizeText = (value: string | null | undefined): string => {
+  if (!value) return "";
+  return value.replace(/[<>{}\[\]\\;`'"&|$^%*=+~]/g, "").trim();
+};
+
+const sanitizeSearch = (value: string): string =>
+  value
+    .replace(/[<>{}\[\]\\;`'"&|$^%*=+~]/g, "")
+    .trim()
+    .slice(0, 100);
+
+const truncateToWords = (text: string | null, wordCount: number): string => {
+  if (!text) return "";
+  const sanitized = sanitizeText(text);
+  const words = sanitized.trim().split(/\s+/);
+  if (words.length <= wordCount) return sanitized;
+  return words.slice(0, wordCount).join(" ") + "...";
+};
+
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 interface PoolCandidatosProps {
   reclutadorId: string;
 }
 
 interface Candidato {
   user_id: string;
-  nombre_completo: string;
-  email: string;
   puesto_actual: string | null;
-  empresa_actual: string | null;
-  ubicacion: string | null;
+  resumen_profesional: string | null;
   habilidades_tecnicas: string[] | null;
   habilidades_blandas: string[] | null;
   salario_esperado_min: number | null;
@@ -30,20 +65,33 @@ interface Candidato {
   modalidad_preferida: string | null;
   nivel_educacion: string | null;
   experiencia_laboral: any;
-  resumen_profesional: string | null;
 }
 
-const truncateToWords = (text: string | null, wordCount: number): string => {
-  if (!text) return "";
-  const words = text.trim().split(/\s+/);
-  if (words.length <= wordCount) return text;
-  return words.slice(0, wordCount).join(" ") + "...";
+// ─── Helpers de formato ───────────────────────────────────────────────────────
+const formatSalario = (min: number | null, max: number | null): string => {
+  if (!min && !max) return "No especificado";
+  if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+  if (min) return `Desde $${min.toLocaleString()}`;
+  return `Hasta $${max!.toLocaleString()}`;
 };
 
+const formatDisponibilidad = (disp: string | null): string => {
+  if (!disp) return "No especificada";
+  const map: Record<string, string> = {
+    inmediata: "Inmediata",
+    "2_semanas": "2 semanas",
+    "1_mes": "1 mes",
+    mas_1_mes: "Más de 1 mes",
+  };
+  return map[disp] || sanitizeText(disp);
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [hasAccess, setHasAccess] = useState(false);
+  const [accessError, setAccessError] = useState(false);
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
   const [filteredCandidatos, setFilteredCandidatos] = useState<Candidato[]>([]);
   const [selectedCandidatoUserId, setSelectedCandidatoUserId] = useState<string | null>(null);
@@ -51,7 +99,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const [accessReason, setAccessReason] = useState<string>("");
   const [creditosDisponibles, setCreditosDisponibles] = useState<number>(0);
   const [empresaActiva, setEmpresaActiva] = useState<string | null>(null);
-  
+
   // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [educacionFilter, setEducacionFilter] = useState<string>("all");
@@ -59,14 +107,55 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
   const [habilidadFilter, setHabilidadFilter] = useState<string>("all");
   const [allHabilidades, setAllHabilidades] = useState<string[]>([]);
 
-  useEffect(() => {
-    checkAccess();
-  }, [reclutadorId]);
-
-  const checkAccess = async () => {
-    setLoading(true);
+  // ── Cargar candidatos — solo columnas públicas, sin datos de identidad ────────
+  const loadCandidatos = useCallback(async () => {
     try {
-      // Obtener créditos disponibles del reclutador
+      const { data, error } = await supabase
+        .from("perfil_candidato")
+        .select(COLUMNAS_PUBLICAS)
+        .order("puesto_actual", { ascending: true });
+
+      if (error) throw error;
+
+      const candidatosSanitizados: Candidato[] = (data || []).map((c) => ({
+        user_id: c.user_id,
+        puesto_actual: sanitizeText(c.puesto_actual),
+        resumen_profesional: sanitizeText(c.resumen_profesional),
+        habilidades_tecnicas: (c.habilidades_tecnicas || []).map(sanitizeText).filter(Boolean),
+        habilidades_blandas: (c.habilidades_blandas || []).map(sanitizeText).filter(Boolean),
+        salario_esperado_min: typeof c.salario_esperado_min === "number" ? c.salario_esperado_min : null,
+        salario_esperado_max: typeof c.salario_esperado_max === "number" ? c.salario_esperado_max : null,
+        disponibilidad: c.disponibilidad,
+        modalidad_preferida: sanitizeText(c.modalidad_preferida),
+        nivel_educacion: sanitizeText(c.nivel_educacion),
+        experiencia_laboral: c.experiencia_laboral,
+      }));
+
+      setCandidatos(candidatosSanitizados);
+      setFilteredCandidatos(candidatosSanitizados);
+
+      // Extraer habilidades únicas sanitizadas
+      const habilidadesSet = new Set<string>();
+      candidatosSanitizados.forEach((c) => {
+        c.habilidades_tecnicas?.forEach((h) => h && habilidadesSet.add(h));
+        c.habilidades_blandas?.forEach((h) => h && habilidadesSet.add(h));
+      });
+      setAllHabilidades(Array.from(habilidadesSet).sort());
+    } catch (error: any) {
+      console.error("Error cargando candidatos:", error.message);
+      toast({
+        title: "Error al cargar candidatos",
+        description: "No se pudieron cargar los candidatos. Intenta de nuevo.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // ── Verificar acceso por créditos ─────────────────────────────────────────────
+  const checkAccess = useCallback(async () => {
+    setLoading(true);
+    setAccessError(false);
+    try {
       const { data: wallet } = await supabase
         .from("wallet_reclutador")
         .select("creditos_propios, creditos_heredados")
@@ -76,7 +165,6 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
       const totalCreditos = (wallet?.creditos_propios || 0) + (wallet?.creditos_heredados || 0);
       setCreditosDisponibles(totalCreditos);
 
-      // Obtener empresa activa (para usar créditos heredados si aplica)
       const { data: asociacion } = await supabase
         .from("reclutador_empresa")
         .select("empresa_id")
@@ -87,87 +175,59 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
 
       setEmpresaActiva(asociacion?.empresa_id || null);
 
-      // Nuevo criterio: tiene acceso si tiene al menos 2 créditos
-      if (totalCreditos >= 2) {
+      if (totalCreditos >= CREDITOS_MINIMOS) {
         setHasAccess(true);
         await loadCandidatos();
       } else {
         setHasAccess(false);
-        setAccessReason("Necesitas al menos 2 créditos para acceder al pool de candidatos");
+        setAccessReason(`Necesitas al menos ${CREDITOS_MINIMOS} créditos para acceder al pool de candidatos`);
       }
     } catch (error: any) {
-      console.error("Error checking access:", error);
+      console.error("Error verificando acceso:", error.message);
       setHasAccess(false);
+      setAccessError(true);
       setAccessReason("Error al verificar acceso");
     } finally {
       setLoading(false);
     }
-  };
+  }, [reclutadorId, loadCandidatos]);
 
-  const loadCandidatos = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("perfil_candidato")
-        .select("*")
-        .order("nombre_completo", { ascending: true });
-
-      if (error) throw error;
-      setCandidatos(data || []);
-      setFilteredCandidatos(data || []);
-      
-      // Extraer todas las habilidades únicas
-      const habilidadesSet = new Set<string>();
-      data?.forEach((candidato) => {
-        candidato.habilidades_tecnicas?.forEach((hab: string) => habilidadesSet.add(hab));
-        candidato.habilidades_blandas?.forEach((hab: string) => habilidadesSet.add(hab));
-      });
-      setAllHabilidades(Array.from(habilidadesSet).sort());
-    } catch (error: any) {
-      toast({
-        title: "Error al cargar candidatos",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Aplicar filtros
   useEffect(() => {
+    checkAccess();
+  }, [checkAccess]);
+
+  // ── Aplicar filtros ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    const termLower = sanitizeSearch(searchTerm).toLowerCase();
     let filtered = [...candidatos];
 
-    // Filtro de búsqueda por puesto (sin nombre para privacidad)
-    if (searchTerm) {
-      filtered = filtered.filter(c => 
-        c.puesto_actual?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.habilidades_tecnicas?.some(h => h.toLowerCase().includes(searchTerm.toLowerCase()))
+    if (termLower) {
+      filtered = filtered.filter(
+        (c) =>
+          c.puesto_actual?.toLowerCase().includes(termLower) ||
+          c.habilidades_tecnicas?.some((h) => h.toLowerCase().includes(termLower)),
       );
     }
 
-    // Filtro por educación
     if (educacionFilter !== "all") {
-      filtered = filtered.filter(c => c.nivel_educacion === educacionFilter);
+      filtered = filtered.filter((c) => c.nivel_educacion === educacionFilter);
     }
 
-    // Filtro por experiencia
     if (experienciaFilter !== "all") {
-      filtered = filtered.filter(c => {
-        const experiencias = c.experiencia_laboral;
-        if (!Array.isArray(experiencias)) return false;
-        
-        const yearsOfExperience = experiencias.length;
-        
-        if (experienciaFilter === "0-2") return yearsOfExperience <= 2;
-        if (experienciaFilter === "3-5") return yearsOfExperience >= 3 && yearsOfExperience <= 5;
-        if (experienciaFilter === "6+") return yearsOfExperience >= 6;
+      filtered = filtered.filter((c) => {
+        const exp = c.experiencia_laboral;
+        if (!Array.isArray(exp)) return false;
+        const count = exp.length;
+        if (experienciaFilter === "0-2") return count <= 2;
+        if (experienciaFilter === "3-5") return count >= 3 && count <= 5;
+        if (experienciaFilter === "6+") return count >= 6;
         return true;
       });
     }
 
-    // Filtro por habilidad
     if (habilidadFilter && habilidadFilter !== "all") {
-      filtered = filtered.filter(c => 
-        c.habilidades_tecnicas?.includes(habilidadFilter) ||
-        c.habilidades_blandas?.includes(habilidadFilter)
+      filtered = filtered.filter(
+        (c) => c.habilidades_tecnicas?.includes(habilidadFilter) || c.habilidades_blandas?.includes(habilidadFilter),
       );
     }
 
@@ -181,27 +241,10 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     setHabilidadFilter("all");
   };
 
-  const formatSalario = (min: number | null, max: number | null) => {
-    if (!min && !max) return "No especificado";
-    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-    if (min) return `Desde $${min.toLocaleString()}`;
-    return `Hasta $${max?.toLocaleString()}`;
-  };
+  const hayFiltrosActivos =
+    searchTerm || educacionFilter !== "all" || experienciaFilter !== "all" || habilidadFilter !== "all";
 
-  const formatDisponibilidad = (disp: string | null) => {
-    if (!disp) return "No especificada";
-    const map: Record<string, string> = {
-      inmediata: "Inmediata",
-      "2_semanas": "2 semanas",
-      "1_mes": "1 mes",
-    };
-    return map[disp] || disp;
-  };
-
-  const handleRefreshCredits = () => {
-    checkAccess();
-  };
-
+  // ── Estado: cargando ──────────────────────────────────────────────────────────
   if (loading) {
     return (
       <Card>
@@ -220,6 +263,33 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     );
   }
 
+  // ── Estado: error de acceso ───────────────────────────────────────────────────
+  if (accessError) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Lock className="h-6 w-6 text-muted-foreground" />
+            Pool de Candidatos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error de verificación</AlertTitle>
+            <AlertDescription>
+              No se pudo verificar tu acceso.{" "}
+              <button type="button" className="underline font-medium" onClick={checkAccess}>
+                Intentar de nuevo
+              </button>
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // ── Estado: sin acceso ────────────────────────────────────────────────────────
   if (!hasAccess) {
     return (
       <Card>
@@ -228,9 +298,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
             <Lock className="h-6 w-6 text-muted-foreground" />
             Pool de Candidatos
           </CardTitle>
-          <CardDescription>
-            Accede a todos los candidatos registrados en la plataforma
-          </CardDescription>
+          <CardDescription>Accede a todos los candidatos registrados en la plataforma</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -242,8 +310,8 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                 Actualmente tienes <strong>{creditosDisponibles} créditos</strong>.
               </p>
               <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-muted-foreground">
-                <li>Navegar el pool de candidatos requiere al menos 2 créditos</li>
-                <li>Desbloquear la identidad de un candidato cuesta 2 créditos</li>
+                <li>Navegar el pool requiere al menos {CREDITOS_MINIMOS} créditos</li>
+                <li>Desbloquear la identidad de un candidato cuesta {CREDITOS_MINIMOS} créditos</li>
                 <li>Compra créditos desde tu wallet para acceder</li>
               </ul>
             </AlertDescription>
@@ -253,6 +321,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
     );
   }
 
+  // ── Render principal ──────────────────────────────────────────────────────────
   return (
     <>
       <div className="space-y-6">
@@ -279,8 +348,9 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800">
               <Coins className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-800 dark:text-blue-200 text-sm">
-                <strong>Costo de desbloqueo:</strong> Ver los datos de contacto e identidad de un candidato cuesta 2 créditos. 
-                La experiencia, habilidades y perfil profesional están disponibles sin costo.
+                <strong>Costo de desbloqueo:</strong> Ver los datos de contacto e identidad de un candidato cuesta{" "}
+                {CREDITOS_MINIMOS} créditos. La experiencia, habilidades y perfil profesional están disponibles sin
+                costo adicional.
               </AlertDescription>
             </Alert>
 
@@ -291,27 +361,26 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                   <Filter className="h-4 w-4" />
                   Filtros de Búsqueda
                 </h3>
-                {(searchTerm || educacionFilter !== "all" || experienciaFilter !== "all" || habilidadFilter !== "all") && (
+                {hayFiltrosActivos && (
                   <Button variant="ghost" size="sm" onClick={clearFilters}>
                     <X className="h-4 w-4 mr-2" />
                     Limpiar Filtros
                   </Button>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Búsqueda por texto */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar por puesto o habilidad..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    maxLength={100}
                     className="pl-9"
                   />
                 </div>
 
-                {/* Filtro por Educación */}
                 <Select value={educacionFilter} onValueChange={setEducacionFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Nivel de Educación" />
@@ -326,7 +395,6 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                   </SelectContent>
                 </Select>
 
-                {/* Filtro por Experiencia */}
                 <Select value={experienciaFilter} onValueChange={setExperienciaFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Años de Experiencia" />
@@ -339,7 +407,6 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                   </SelectContent>
                 </Select>
 
-                {/* Filtro por Habilidad */}
                 <Select value={habilidadFilter} onValueChange={setHabilidadFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Habilidades" />
@@ -361,10 +428,9 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
               <div className="text-center py-12">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <p className="text-muted-foreground">
-                  {candidatos.length === 0 
+                  {candidatos.length === 0
                     ? "No hay candidatos registrados en la plataforma"
-                    : "No se encontraron candidatos con los filtros seleccionados"
-                  }
+                    : "No se encontraron candidatos con los filtros seleccionados"}
                 </p>
               </div>
             ) : (
@@ -374,15 +440,14 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                     <CardContent className="pt-6">
                       <div className="space-y-3">
                         <div className="flex items-start justify-between">
-                          <div className="flex-1 space-y-1">
-                            {/* No mostrar nombre, solo indicador */}
+                          <div className="flex-1 space-y-1 min-w-0">
                             <h3 className="font-semibold text-lg flex items-center gap-2">
-                              <Lock className="h-4 w-4 text-muted-foreground" />
+                              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
                               Candidato
                             </h3>
                             {candidato.puesto_actual && (
                               <p className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Briefcase className="h-3 w-3" />
+                                <Briefcase className="h-3 w-3 shrink-0" />
                                 {candidato.puesto_actual}
                               </p>
                             )}
@@ -399,6 +464,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                             }}
                             variant="outline"
                             size="sm"
+                            className="shrink-0 ml-2"
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -410,17 +476,13 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
                               {candidato.modalidad_preferida}
                             </Badge>
                           )}
-                          {candidato.nivel_educacion && (
-                            <Badge variant="outline">
-                              {candidato.nivel_educacion}
-                            </Badge>
-                          )}
+                          {candidato.nivel_educacion && <Badge variant="outline">{candidato.nivel_educacion}</Badge>}
                         </div>
 
                         {candidato.habilidades_tecnicas && candidato.habilidades_tecnicas.length > 0 && (
                           <div className="flex flex-wrap gap-1">
-                            {candidato.habilidades_tecnicas.slice(0, 4).map((skill, idx) => (
-                              <Badge key={idx} variant="default" className="text-xs">
+                            {candidato.habilidades_tecnicas.slice(0, 4).map((skill) => (
+                              <Badge key={skill} variant="default" className="text-xs">
                                 #{skill}
                               </Badge>
                             ))}
@@ -460,8 +522,7 @@ export const PoolCandidatos = ({ reclutadorId }: PoolCandidatosProps) => {
             setShowProfileModal(open);
             if (!open) {
               setSelectedCandidatoUserId(null);
-              // Refrescar créditos al cerrar
-              handleRefreshCredits();
+              checkAccess(); // Refrescar créditos al cerrar
             }
           }}
           candidatoUserId={selectedCandidatoUserId}
