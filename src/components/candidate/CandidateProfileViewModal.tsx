@@ -262,24 +262,28 @@ export const CandidateProfileViewModal = ({
     setCvSignedUrl(null);
 
     try {
-      // Esperar a que la sesión esté lista antes de consultar
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData?.session) {
-        // Si no hay sesión, esperar un poco y reintentar una vez
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const { data: retrySession } = await supabase.auth.getSession();
-        if (!retrySession?.session) {
-          setLoadError(true);
-          setLoading(false);
-          return;
-        }
+      // Validar sesión de forma robusta (más confiable que solo getSession en restauración)
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error("Sesión no disponible para cargar el perfil");
       }
 
-      const { data, error } = await supabase
-        .from("perfil_candidato")
-        .select("*")
-        .eq("user_id", candidatoUserId)
-        .maybeSingle();
+      const fetchProfile = () =>
+        supabase.from("perfil_candidato").select("*").eq("user_id", candidatoUserId).maybeSingle();
+
+      let { data, error } = await fetchProfile();
+
+      // Reintento corto para mitigar latencia de restauración de auth/RLS
+      if (!data && !error) {
+        await new Promise((resolve) => setTimeout(resolve, 350));
+        const retryResult = await fetchProfile();
+        data = retryResult.data;
+        error = retryResult.error;
+      }
 
       if (error) throw error;
 
