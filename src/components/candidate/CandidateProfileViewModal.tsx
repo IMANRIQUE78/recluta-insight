@@ -217,6 +217,8 @@ export const CandidateProfileViewModal = ({
   const [reclutadorUserId, setReclutadorUserId] = useState<string | null>(null);
   const [cvSignedUrl, setCvSignedUrl] = useState<string | null>(null);
   const [showCvModal, setShowCvModal] = useState(false);
+  const { loading: authLoading } = useAuth();
+  const activeLoadIdRef = useRef(0);
   const { generarMensajeGenerico } = useWhatsAppMessage();
 
   const {
@@ -249,6 +251,25 @@ export const CandidateProfileViewModal = ({
     setCreditosDisponibles(creditos.total);
   }, [reclutadorId, obtenerCreditosDisponibles]);
 
+  const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  const waitForAuthenticatedUser = useCallback(async () => {
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (user && !error) {
+        return user;
+      }
+
+      await delay(200 + attempt * 150);
+    }
+
+    return null;
+  }, []);
+
   // ── Cargar perfil del candidato ───────────────────────────────────────────────
   const loadProfile = useCallback(async () => {
     // Validar UUID antes de hacer la query — evita consultas con IDs manipulados
@@ -258,34 +279,33 @@ export const CandidateProfileViewModal = ({
       return;
     }
 
+    const loadId = ++activeLoadIdRef.current;
     setLoading(true);
     setLoadError(false);
     setCvSignedUrl(null);
 
     try {
-      // Validar sesión de forma robusta (más confiable que solo getSession en restauración)
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-
-      if (authError || !user) {
+      const user = await waitForAuthenticatedUser();
+      if (!user) {
         throw new Error("Sesión no disponible para cargar el perfil");
       }
 
       const fetchProfile = () =>
         supabase.from("perfil_candidato").select("*").eq("user_id", candidatoUserId).maybeSingle();
 
-      let { data, error } = await fetchProfile();
+      let data: CandidateProfile | null = null;
+      let error: any = null;
 
-      // Reintento corto para mitigar latencia de restauración de auth/RLS
-      if (!data && !error) {
-        await new Promise((resolve) => setTimeout(resolve, 350));
-        const retryResult = await fetchProfile();
-        data = retryResult.data;
-        error = retryResult.error;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const result = await fetchProfile();
+        data = (result.data as CandidateProfile | null) ?? null;
+        error = result.error;
+
+        if (data || error) break;
+        await delay(200 + attempt * 150);
       }
 
+      if (loadId !== activeLoadIdRef.current) return;
       if (error) throw error;
 
       if (data) {
@@ -304,6 +324,8 @@ export const CandidateProfileViewModal = ({
             .from("candidate-cvs")
             .createSignedUrl(data.cv_url, 3600);
 
+          if (loadId !== activeLoadIdRef.current) return;
+
           // Validar que la URL firmada sea segura antes de usarla
           if (signedUrlData?.signedUrl && isSafeUrl(signedUrlData.signedUrl)) {
             setCvSignedUrl(signedUrlData.signedUrl);
@@ -313,16 +335,21 @@ export const CandidateProfileViewModal = ({
         setProfile(null);
       }
     } catch (error: any) {
+      if (loadId !== activeLoadIdRef.current) return;
       console.error("Error loading profile:", error.message);
       setLoadError(true);
     } finally {
-      setLoading(false);
+      if (loadId === activeLoadIdRef.current) {
+        setLoading(false);
+      }
     }
-  }, [candidatoUserId]);
+  }, [candidatoUserId, waitForAuthenticatedUser]);
 
   // ── Cargar estudios socioeconómicos ───────────────────────────────────────────
   const loadEstudios = useCallback(async () => {
     if (!candidatoUserId || !isValidUUID(candidatoUserId)) return;
+
+    const loadId = activeLoadIdRef.current;
 
     try {
       const seisaMesesAtras = new Date();
@@ -338,7 +365,9 @@ export const CandidateProfileViewModal = ({
         .order("fecha_entrega", { ascending: false });
 
       if (error) throw error;
-      setEstudios(data || []);
+      if (loadId === activeLoadIdRef.current) {
+        setEstudios(data || []);
+      }
     } catch (error: any) {
       console.error("Error loading estudios:", error.message);
       // No bloqueamos la UI por este error — los estudios son complementarios
@@ -347,15 +376,25 @@ export const CandidateProfileViewModal = ({
 
   // ── Efecto principal — dependencias completas ────────────────────────────────
   useEffect(() => {
-    if (open && candidatoUserId) {
-      loadProfile();
-      loadEstudios();
-      if (reclutadorId && allowUnlock) {
-        checkUnlockStatus();
-        loadCredits();
-      }
+    if (!open || !candidatoUserId || authLoading) return;
+
+    loadProfile();
+    loadEstudios();
+    if (reclutadorId && allowUnlock) {
+      checkUnlockStatus();
+      loadCredits();
     }
-  }, [open, candidatoUserId, reclutadorId, allowUnlock, loadProfile, loadEstudios, checkUnlockStatus, loadCredits]);
+  }, [
+    open,
+    candidatoUserId,
+    authLoading,
+    reclutadorId,
+    allowUnlock,
+    loadProfile,
+    loadEstudios,
+    checkUnlockStatus,
+    loadCredits,
+  ]);
 
   // ── Desbloquear identidad ─────────────────────────────────────────────────────
   const handleUnlockIdentity = async () => {
