@@ -293,12 +293,12 @@ export const CandidateProfileViewModal = ({
       const fetchProfile = () =>
         supabase.from("perfil_candidato").select("*").eq("user_id", candidatoUserId).maybeSingle();
 
-      let data: CandidateProfile | null = null;
+      let data: any = null;
       let error: any = null;
 
       for (let attempt = 0; attempt < 3; attempt++) {
         const result = await fetchProfile();
-        data = (result.data as CandidateProfile | null) ?? null;
+        data = result.data ?? null;
         error = result.error;
 
         if (data || error) break;
