@@ -395,6 +395,11 @@ export const CandidateProfileViewModal = ({
     checkUnlockStatus,
     loadCredits,
   ]);
+  useEffect(() => {
+    if (!open) {
+      activeLoadIdRef.current += 1;
+    }
+  }, [open]);
 
   // ── Desbloquear identidad ─────────────────────────────────────────────────────
   const handleUnlockIdentity = async () => {
