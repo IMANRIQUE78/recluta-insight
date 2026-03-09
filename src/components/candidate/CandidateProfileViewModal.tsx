@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { WhatsAppButton, useWhatsAppMessage } from "@/components/ui/whatsapp-button";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 
 // ─── Tipos ────────────────────────────────────────────────────────────────────
